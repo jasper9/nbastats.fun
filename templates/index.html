@@ -614,7 +614,7 @@
         }
         .calendar-day {
             background: var(--bg-card);
-            min-height: 50px;
+            min-height: 60px;
             padding: 4px;
             font-size: 0.75rem;
             position: relative;
@@ -633,10 +633,13 @@
         .calendar-game {
             background: var(--nuggets-navy);
             border-radius: 2px;
-            padding: 2px 4px;
-            font-size: 0.65rem;
+            padding: 3px 4px;
+            font-size: 0.6rem;
             margin-top: 2px;
-            text-align: center;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .calendar-game.home {
             border-left: 2px solid var(--nuggets-gold);
@@ -654,7 +657,7 @@
             font-weight: 600;
         }
         .calendar-game .score {
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             opacity: 0.8;
         }
         /* Triple-Double Tracker styles */
@@ -954,9 +957,9 @@
                                     <div class="calendar-day-num">{{ day }}</div>
                                     {% for game in day_games %}
                                     {% set opponent = game.away_team if game.is_home else game.home_team %}
-                                    {% set opp_abbrev = opponent.split()[-1][:3]|upper %}
+                                    {% set opp_name = opponent.split()[-1] %}
                                     <div class="calendar-game {{ 'home' if game.is_home else 'away' }} {{ 'win' if game.result == 'W' else 'loss' if game.result == 'L' else '' }}">
-                                        <div class="opponent">{{ '@' if not game.is_home else 'vs' }} {{ opp_abbrev }}</div>
+                                        <div class="opponent">{{ '@' if not game.is_home else 'vs' }} {{ opp_name }}</div>
                                         {% if game.result %}
                                         <div class="score">{{ game.result }} {{ game.home_score }}-{{ game.away_score }}</div>
                                         {% endif %}
