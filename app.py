@@ -1,14 +1,12 @@
 from flask import Flask, render_template
 import json
 import math
-import os
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 JOKIC_PLAYER_ID = 203999
 CACHE_DIR = Path(__file__).parent / 'cache'
-GCS_BUCKET = os.environ.get('GCS_BUCKET')  # Set this in Cloud Run
 
 STAT_NAMES = {
     'PTS': 'Points',
@@ -33,21 +31,7 @@ app = Flask(__name__)
 
 
 def load_cache(filename):
-    """Load data from a cache file (local or GCS)."""
-    # Use Google Cloud Storage if bucket is configured
-    if GCS_BUCKET:
-        try:
-            from google.cloud import storage
-            client = storage.Client()
-            bucket = client.bucket(GCS_BUCKET)
-            blob = bucket.blob(f'cache/{filename}')
-            if blob.exists():
-                return json.loads(blob.download_as_text())
-        except Exception as e:
-            print(f"Error loading {filename} from GCS: {e}")
-        return None
-
-    # Fall back to local file system
+    """Load data from a cache file."""
     cache_file = CACHE_DIR / filename
     if cache_file.exists():
         try:

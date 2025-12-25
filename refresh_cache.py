@@ -3,43 +3,27 @@
 Refresh all cached data for the NBA stats app.
 Run this manually or set up a cron job (e.g., daily at 6am):
     0 6 * * * cd /path/to/nba_fun && ./venv/bin/python refresh_cache.py
-
-For Cloud Run, set GCS_BUCKET environment variable to save to GCS.
 """
 
 import json
-import os
 import time
 from datetime import datetime
 from pathlib import Path
 
 CACHE_DIR = Path(__file__).parent / 'cache'
 JOKIC_PLAYER_ID = 203999
-GCS_BUCKET = os.environ.get('GCS_BUCKET')
 
 
 def ensure_cache_dir():
-    if not GCS_BUCKET:
-        CACHE_DIR.mkdir(exist_ok=True)
+    CACHE_DIR.mkdir(exist_ok=True)
 
 
 def save_cache(filename, data):
-    """Save data to a cache file with timestamp (local or GCS)."""
+    """Save data to a cache file with timestamp."""
     data['_cached_at'] = datetime.now().isoformat()
-
-    if GCS_BUCKET:
-        # Save to Google Cloud Storage
-        from google.cloud import storage
-        client = storage.Client()
-        bucket = client.bucket(GCS_BUCKET)
-        blob = bucket.blob(f'cache/{filename}')
-        blob.upload_from_string(json.dumps(data, indent=2), content_type='application/json')
-        print(f"  Saved {filename} to gs://{GCS_BUCKET}/cache/")
-    else:
-        # Save locally
-        with open(CACHE_DIR / filename, 'w') as f:
-            json.dump(data, f, indent=2)
-        print(f"  Saved {filename}")
+    with open(CACHE_DIR / filename, 'w') as f:
+        json.dump(data, f, indent=2)
+    print(f"  Saved {filename}")
 
 
 def refresh_jokic_career_stats():
