@@ -23,7 +23,7 @@ A web dashboard tracking Nikola Jokic's NBA statistics, including career stats, 
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/nba_fun.git
+git clone https://github.com/jasper9/nbastats.fun.git
 cd nba_fun
 
 # Create virtual environment
@@ -68,7 +68,7 @@ A setup script is included for deploying to an Ubuntu 22.04+ server:
 
 ```bash
 # On your Ubuntu VM
-git clone https://github.com/YOUR_USERNAME/nba_fun.git /tmp/nbastats
+git clone https://github.com/jasper9/nbastats.fun.git /tmp/nbastats
 cd /tmp/nbastats
 chmod +x setup_server.sh
 sudo ./setup_server.sh

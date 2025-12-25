@@ -11,7 +11,7 @@ set -e
 DOMAIN="nbastats.fun"
 APP_DIR="/var/www/nbastats"
 APP_USER="www-data"
-REPO_URL="https://github.com/$(git remote get-url origin 2>/dev/null | sed 's/.*github.com[:/]\(.*\)\.git/\1/' || echo 'YOUR_USERNAME/nba_fun')"
+REPO_URL="https://github.com/jasper9/nbastats.fun.git"
 
 echo "=============================================="
 echo "  nbastats.fun Production Server Setup"
