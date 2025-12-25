@@ -398,34 +398,83 @@ def refresh_nuggets_schedule():
     """Fetch upcoming Nuggets games with betting odds."""
     print("\n[6/6] Fetching Nuggets schedule and odds...")
 
-    api_key = os.getenv('ODDS_API_KEY')
-    if not api_key or api_key == 'your_api_key_here':
-        print("  WARNING: ODDS_API_KEY not set, skipping odds fetch")
-        return None
+    NUGGETS_TEAM_ID = 1610612743
+    nuggets_games = []
 
+    # Step 1: Fetch NBA schedule
     try:
-        response = requests.get(
-            'https://api.the-odds-api.com/v4/sports/basketball_nba/odds',
-            params={
-                'apiKey': api_key,
-                'regions': 'us',
-                'markets': 'h2h,spreads,totals',
-                'oddsFormat': 'american',
-            },
+        print("  Fetching NBA schedule...")
+        schedule_resp = requests.get(
+            'https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json',
+            headers={'User-Agent': 'Mozilla/5.0'},
             timeout=30
         )
-        response.raise_for_status()
-        all_games = response.json()
+        schedule_resp.raise_for_status()
+        schedule_data = schedule_resp.json()
 
-        # Filter for Nuggets games
-        nuggets_games = []
-        for game in all_games:
-            if 'Denver Nuggets' in game.get('home_team', '') or 'Denver Nuggets' in game.get('away_team', ''):
-                # Extract odds from first bookmaker (usually DraftKings or FanDuel)
-                odds_data = {}
+        now = datetime.now()
+
+        # Find upcoming Nuggets games
+        for game_date in schedule_data.get('leagueSchedule', {}).get('gameDates', []):
+            for game in game_date.get('games', []):
+                home_id = game.get('homeTeam', {}).get('teamId')
+                away_id = game.get('awayTeam', {}).get('teamId')
+
+                if home_id == NUGGETS_TEAM_ID or away_id == NUGGETS_TEAM_ID:
+                    game_time_str = game.get('gameDateTimeUTC', '')
+                    if game_time_str:
+                        try:
+                            game_time = datetime.fromisoformat(game_time_str.replace('Z', '+00:00'))
+                            if game_time.replace(tzinfo=None) > now:
+                                home_team = game.get('homeTeam', {})
+                                away_team = game.get('awayTeam', {})
+                                nuggets_games.append({
+                                    'id': game.get('gameId'),
+                                    'commence_time': game_time_str,
+                                    'home_team': f"{home_team.get('teamCity', '')} {home_team.get('teamName', '')}".strip(),
+                                    'away_team': f"{away_team.get('teamCity', '')} {away_team.get('teamName', '')}".strip(),
+                                    'is_home': home_id == NUGGETS_TEAM_ID,
+                                })
+                        except ValueError:
+                            continue
+
+        # Sort by game time and take first 10
+        nuggets_games.sort(key=lambda x: x['commence_time'])
+        nuggets_games = nuggets_games[:10]
+        print(f"  Found {len(nuggets_games)} upcoming games from NBA schedule")
+
+    except Exception as e:
+        print(f"  Error fetching NBA schedule: {e}")
+        return None
+
+    # Step 2: Fetch odds and merge
+    api_key = os.getenv('ODDS_API_KEY')
+    if api_key and api_key != 'your_api_key_here':
+        try:
+            print("  Fetching odds...")
+            odds_resp = requests.get(
+                'https://api.the-odds-api.com/v4/sports/basketball_nba/odds',
+                params={
+                    'apiKey': api_key,
+                    'regions': 'us',
+                    'markets': 'h2h,spreads,totals',
+                    'oddsFormat': 'american',
+                },
+                timeout=30
+            )
+            odds_resp.raise_for_status()
+            odds_games = odds_resp.json()
+
+            remaining = odds_resp.headers.get('x-requests-remaining', 'unknown')
+            print(f"  Odds API requests remaining: {remaining}")
+
+            # Build odds lookup by teams
+            odds_lookup = {}
+            for game in odds_games:
+                key = (game.get('home_team', ''), game.get('away_team', ''))
                 if game.get('bookmakers'):
                     book = game['bookmakers'][0]
-                    odds_data['bookmaker'] = book['title']
+                    odds_data = {'bookmaker': book['title']}
                     for market in book.get('markets', []):
                         if market['key'] == 'h2h':
                             for outcome in market['outcomes']:
@@ -445,30 +494,25 @@ def refresh_nuggets_schedule():
                                     odds_data['over_odds'] = outcome['price']
                                 elif outcome['name'] == 'Under':
                                     odds_data['under_odds'] = outcome['price']
+                    odds_lookup[key] = odds_data
 
-                nuggets_games.append({
-                    'id': game['id'],
-                    'commence_time': game['commence_time'],
-                    'home_team': game['home_team'],
-                    'away_team': game['away_team'],
-                    'is_home': game['home_team'] == 'Denver Nuggets',
-                    **odds_data
-                })
+            # Merge odds into schedule
+            odds_found = 0
+            for game in nuggets_games:
+                key = (game['home_team'], game['away_team'])
+                if key in odds_lookup:
+                    game.update(odds_lookup[key])
+                    odds_found += 1
 
-        # Sort by game time and take first 10
-        nuggets_games.sort(key=lambda x: x['commence_time'])
-        nuggets_games = nuggets_games[:10]
+            print(f"  Matched odds for {odds_found} games")
 
-        # Log remaining API requests
-        remaining = response.headers.get('x-requests-remaining', 'unknown')
-        print(f"  Found {len(nuggets_games)} upcoming Nuggets games (API requests remaining: {remaining})")
+        except Exception as e:
+            print(f"  Error fetching odds (schedule still saved): {e}")
+    else:
+        print("  WARNING: ODDS_API_KEY not set, skipping odds fetch")
 
-        save_cache('nuggets_schedule.json', {'games': nuggets_games})
-        return nuggets_games
-
-    except Exception as e:
-        print(f"  Error fetching odds: {e}")
-        return None
+    save_cache('nuggets_schedule.json', {'games': nuggets_games})
+    return nuggets_games
 
 
 def main():
