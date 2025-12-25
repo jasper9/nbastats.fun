@@ -86,6 +86,40 @@ def mountain_time_filter(iso_timestamp):
         return iso_timestamp[:10] if len(iso_timestamp) >= 10 else iso_timestamp
 
 
+@app.template_filter('game_time')
+def game_time_filter(iso_timestamp):
+    """Convert ISO timestamp to game time display (e.g., Thu Dec 26, 8:30 PM)"""
+    if not iso_timestamp:
+        return 'TBD'
+    try:
+        dt = datetime.fromisoformat(iso_timestamp.replace('Z', '+00:00'))
+        mountain_tz = ZoneInfo('America/Denver')
+        dt_mountain = dt.astimezone(mountain_tz)
+        return dt_mountain.strftime('%a %b %d, %I:%M %p')
+    except Exception:
+        return iso_timestamp
+
+
+@app.template_filter('format_odds')
+def format_odds_filter(odds):
+    """Format American odds with + for positive"""
+    if odds is None:
+        return '-'
+    if odds > 0:
+        return f'+{odds}'
+    return str(odds)
+
+
+@app.template_filter('format_spread')
+def format_spread_filter(spread):
+    """Format point spread with + for positive"""
+    if spread is None:
+        return '-'
+    if spread > 0:
+        return f'+{spread}'
+    return str(spread)
+
+
 @app.route('/')
 def index():
     # Load all data from cache
@@ -93,6 +127,7 @@ def index():
     standings_cache = load_cache('standings.json')
     records_cache = load_cache('alltime_records.json')
     triple_doubles_cache = load_cache('triple_doubles.json')
+    schedule_cache = load_cache('nuggets_schedule.json')
 
     # Check if cache exists
     if not career_cache:
@@ -133,6 +168,9 @@ def index():
             'updated_at': triple_doubles_cache.get('_cached_at', 'Unknown'),
         }
 
+    # Extract schedule
+    upcoming_games = schedule_cache.get('games', []) if schedule_cache else []
+
     # Get cache timestamp for display
     cache_time = career_cache.get('_cached_at', 'Unknown')
 
@@ -146,6 +184,7 @@ def index():
         west_standings=west_standings,
         records_watch=records_watch,
         triple_doubles=triple_doubles,
+        upcoming_games=upcoming_games,
         cache_time=cache_time
     )
 

@@ -37,7 +37,7 @@ fi
 if [ "$START_STEP" -le 1 ]; then
     echo "[1/8] Installing system dependencies..."
     apt update
-    apt install -y python3 python3-pip python3-venv nginx certbot python3-certbot-nginx git ufw fail2ban
+    apt install -y python3 python3-pip python3-venv nginx certbot python3-certbot-nginx git ufw fail2ban cron
 fi
 
 # -------------------------------------------

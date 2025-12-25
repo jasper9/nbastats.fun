@@ -6,9 +6,15 @@ Run this manually or set up a cron job (e.g., daily at 6am):
 """
 
 import json
+import os
 import time
 from datetime import datetime
 from pathlib import Path
+
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 CACHE_DIR = Path(__file__).parent / 'cache'
 JOKIC_PLAYER_ID = 203999
@@ -388,6 +394,83 @@ def refresh_league_leaders():
     return all_leaders
 
 
+def refresh_nuggets_schedule():
+    """Fetch upcoming Nuggets games with betting odds."""
+    print("\n[6/6] Fetching Nuggets schedule and odds...")
+
+    api_key = os.getenv('ODDS_API_KEY')
+    if not api_key or api_key == 'your_api_key_here':
+        print("  WARNING: ODDS_API_KEY not set, skipping odds fetch")
+        return None
+
+    try:
+        response = requests.get(
+            'https://api.the-odds-api.com/v4/sports/basketball_nba/odds',
+            params={
+                'apiKey': api_key,
+                'regions': 'us',
+                'markets': 'h2h,spreads,totals',
+                'oddsFormat': 'american',
+            },
+            timeout=30
+        )
+        response.raise_for_status()
+        all_games = response.json()
+
+        # Filter for Nuggets games
+        nuggets_games = []
+        for game in all_games:
+            if 'Denver Nuggets' in game.get('home_team', '') or 'Denver Nuggets' in game.get('away_team', ''):
+                # Extract odds from first bookmaker (usually DraftKings or FanDuel)
+                odds_data = {}
+                if game.get('bookmakers'):
+                    book = game['bookmakers'][0]
+                    odds_data['bookmaker'] = book['title']
+                    for market in book.get('markets', []):
+                        if market['key'] == 'h2h':
+                            for outcome in market['outcomes']:
+                                if outcome['name'] == 'Denver Nuggets':
+                                    odds_data['nuggets_ml'] = outcome['price']
+                                else:
+                                    odds_data['opponent_ml'] = outcome['price']
+                        elif market['key'] == 'spreads':
+                            for outcome in market['outcomes']:
+                                if outcome['name'] == 'Denver Nuggets':
+                                    odds_data['nuggets_spread'] = outcome['point']
+                                    odds_data['nuggets_spread_odds'] = outcome['price']
+                        elif market['key'] == 'totals':
+                            for outcome in market['outcomes']:
+                                if outcome['name'] == 'Over':
+                                    odds_data['total'] = outcome['point']
+                                    odds_data['over_odds'] = outcome['price']
+                                elif outcome['name'] == 'Under':
+                                    odds_data['under_odds'] = outcome['price']
+
+                nuggets_games.append({
+                    'id': game['id'],
+                    'commence_time': game['commence_time'],
+                    'home_team': game['home_team'],
+                    'away_team': game['away_team'],
+                    'is_home': game['home_team'] == 'Denver Nuggets',
+                    **odds_data
+                })
+
+        # Sort by game time and take first 10
+        nuggets_games.sort(key=lambda x: x['commence_time'])
+        nuggets_games = nuggets_games[:10]
+
+        # Log remaining API requests
+        remaining = response.headers.get('x-requests-remaining', 'unknown')
+        print(f"  Found {len(nuggets_games)} upcoming Nuggets games (API requests remaining: {remaining})")
+
+        save_cache('nuggets_schedule.json', {'games': nuggets_games})
+        return nuggets_games
+
+    except Exception as e:
+        print(f"  Error fetching odds: {e}")
+        return None
+
+
 def main():
     print("=" * 60)
     print(f"NBA Stats Cache Refresh - {datetime.now().isoformat()}")
@@ -409,6 +492,9 @@ def main():
     time.sleep(1)
 
     refresh_league_leaders()
+    time.sleep(1)
+
+    refresh_nuggets_schedule()
 
     print("\n" + "=" * 60)
     print("Cache refresh complete!")
