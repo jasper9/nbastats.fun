@@ -156,37 +156,56 @@ def refresh_alltime_records():
     return results
 
 
-def refresh_triple_doubles():
-    """Cache triple-double data for all tracked players."""
-    print("\n[4/5] Fetching triple-double data...")
+def get_triple_doubles_baseline():
+    """Get or create baseline triple-double data (historical + past seasons).
+
+    This only needs to be refreshed once at the start of each new season.
+    Run with: python -c "from refresh_cache import refresh_triple_doubles_baseline; refresh_triple_doubles_baseline()"
+    """
+    baseline_file = CACHE_DIR / 'triple_doubles_baseline.json'
+    if baseline_file.exists():
+        with open(baseline_file, 'r') as f:
+            return json.load(f)
+    return None
+
+
+def refresh_triple_doubles_baseline():
+    """Rebuild the baseline cache (all seasons BEFORE current season).
+
+    Run this once at the start of each new season to update historical totals.
+    """
+    print("\n[BASELINE] Fetching all historical triple-double data...")
     from nba_api.stats.endpoints import playergamelogs
 
-    PLAYERS_TO_TRACK = [
-        (201566, 'Russell Westbrook', True, list(range(2008, 2026))),
-        (203999, 'Nikola Jokić', True, list(range(2015, 2026))),
-        (2544, 'LeBron James', True, list(range(2003, 2026))),
-        (201935, 'James Harden', True, list(range(2009, 2026))),
-        (1629029, 'Luka Dončić', True, list(range(2018, 2026))),
+    CURRENT_SEASON_YEAR = 2025  # Update this each season
+
+    # Active players with their first NBA season year
+    ACTIVE_PLAYERS = [
+        (201566, 'Russell Westbrook', 2008),
+        (203999, 'Nikola Jokić', 2015),
+        (2544, 'LeBron James', 2003),
+        (201935, 'James Harden', 2009),
+        (1629029, 'Luka Dončić', 2018),
     ]
 
+    # Historical players (stats never change)
     HISTORICAL_PLAYERS = [
-        {'player_id': 0, 'name': 'Oscar Robertson', 'total': 181, 'active': False},
-        {'player_id': 0, 'name': 'Magic Johnson', 'total': 138, 'active': False},
-        {'player_id': 0, 'name': 'Jason Kidd', 'total': 107, 'active': False},
-        {'player_id': 0, 'name': 'Wilt Chamberlain', 'total': 78, 'active': False},
-        {'player_id': 0, 'name': 'Larry Bird', 'total': 59, 'active': False},
-        {'player_id': 0, 'name': 'Fat Lever', 'total': 43, 'active': False},
+        {'player_id': 0, 'name': 'Oscar Robertson', 'total': 181, 'active': False, 'season_breakdown': []},
+        {'player_id': 0, 'name': 'Magic Johnson', 'total': 138, 'active': False, 'season_breakdown': []},
+        {'player_id': 0, 'name': 'Jason Kidd', 'total': 107, 'active': False, 'season_breakdown': []},
+        {'player_id': 0, 'name': 'Wilt Chamberlain', 'total': 78, 'active': False, 'season_breakdown': []},
+        {'player_id': 0, 'name': 'Larry Bird', 'total': 59, 'active': False, 'season_breakdown': []},
+        {'player_id': 0, 'name': 'Fat Lever', 'total': 43, 'active': False, 'season_breakdown': []},
     ]
 
-    results = []
+    baseline = {'active': {}, 'historical': HISTORICAL_PLAYERS}
 
-    for player_id, name, is_active, seasons in PLAYERS_TO_TRACK:
-        print(f"  Fetching {name}...", end=" ", flush=True)
+    for player_id, name, first_season in ACTIVE_PLAYERS:
+        print(f"  Fetching {name} (all seasons before {CURRENT_SEASON_YEAR}-{str(CURRENT_SEASON_YEAR+1)[-2:]})...", end=" ", flush=True)
         total_td = 0
         season_breakdown = []
-        recent_games = []
 
-        for year in seasons:
+        for year in range(first_season, CURRENT_SEASON_YEAR):  # Up to but NOT including current season
             season = f"{year}-{str(year+1)[-2:]}"
             try:
                 logs = playergamelogs.PlayerGameLogs(
@@ -201,13 +220,83 @@ def refresh_triple_doubles():
                     continue
 
                 td_count = int(df['TD3'].sum()) if 'TD3' in df.columns else 0
-
                 if td_count > 0:
                     total_td += td_count
                     season_breakdown.append({'season': season, 'count': td_count})
 
+                time.sleep(0.4)
+            except Exception as e:
+                print(f"Error {season}: {e}")
+                continue
+
+        print(f"{total_td} triple-doubles")
+        baseline['active'][str(player_id)] = {
+            'player_id': player_id,
+            'name': name,
+            'baseline_total': total_td,
+            'season_breakdown': season_breakdown,
+        }
+
+    # Save baseline
+    ensure_cache_dir()
+    baseline['_created_at'] = datetime.now().isoformat()
+    baseline['_current_season'] = f"{CURRENT_SEASON_YEAR}-{str(CURRENT_SEASON_YEAR+1)[-2:]}"
+    with open(CACHE_DIR / 'triple_doubles_baseline.json', 'w') as f:
+        json.dump(baseline, f, indent=2)
+    print(f"  Saved triple_doubles_baseline.json")
+    return baseline
+
+
+def refresh_triple_doubles():
+    """Cache triple-double data - only fetches CURRENT SEASON for active players."""
+    print("\n[4/5] Fetching triple-double data (current season only)...")
+    from nba_api.stats.endpoints import playergamelogs
+
+    CURRENT_SEASON = "2025-26"
+    CURRENT_SEASON_YEAR = 2025
+
+    # Load baseline data
+    baseline = get_triple_doubles_baseline()
+    if not baseline:
+        print("  WARNING: No baseline found. Run refresh_triple_doubles_baseline() first.")
+        print("  Falling back to full refresh...")
+        return refresh_triple_doubles_baseline()
+
+    ACTIVE_PLAYERS = [
+        (201566, 'Russell Westbrook'),
+        (203999, 'Nikola Jokić'),
+        (2544, 'LeBron James'),
+        (201935, 'James Harden'),
+        (1629029, 'Luka Dončić'),
+    ]
+
+    results = []
+
+    for player_id, name in ACTIVE_PLAYERS:
+        print(f"  Fetching {name} ({CURRENT_SEASON})...", end=" ", flush=True)
+
+        # Get baseline data for this player
+        player_baseline = baseline['active'].get(str(player_id), {})
+        baseline_total = player_baseline.get('baseline_total', 0)
+        baseline_breakdown = player_baseline.get('season_breakdown', [])
+
+        current_season_td = 0
+        recent_games = []
+
+        try:
+            logs = playergamelogs.PlayerGameLogs(
+                player_id_nullable=player_id,
+                season_nullable=CURRENT_SEASON,
+                season_type_nullable='Regular Season',
+                timeout=60
+            )
+            df = logs.player_game_logs.get_data_frame()
+
+            if not df.empty and 'TD3' in df.columns:
+                current_season_td = int(df['TD3'].sum())
+
                 # Recent games for Jokic
-                if year == 2025 and player_id == JOKIC_PLAYER_ID:
+                if player_id == JOKIC_PLAYER_ID:
                     td_games = df[df['TD3'] == 1]
                     for _, game in td_games.head(10).iterrows():
                         recent_games.append({
@@ -218,22 +307,29 @@ def refresh_triple_doubles():
                             'ast': int(game['AST'])
                         })
 
-                time.sleep(0.4)
-            except Exception as e:
-                continue
+            time.sleep(0.4)
+        except Exception as e:
+            print(f"Error: {e}")
 
-        print(f"{total_td} triple-doubles")
+        total_td = baseline_total + current_season_td
+        print(f"{total_td} ({baseline_total} + {current_season_td} this season)")
+
+        # Combine baseline breakdown with current season
+        season_breakdown = list(baseline_breakdown)
+        if current_season_td > 0:
+            season_breakdown.append({'season': CURRENT_SEASON, 'count': current_season_td})
+
         results.append({
             'player_id': player_id,
             'name': name,
             'total': total_td,
-            'active': is_active,
+            'active': True,
             'season_breakdown': season_breakdown,
             'recent_games': recent_games
         })
 
-    # Add historical players
-    for hist in HISTORICAL_PLAYERS:
+    # Add historical players from baseline
+    for hist in baseline.get('historical', []):
         results.append(hist)
 
     # Sort and rank
