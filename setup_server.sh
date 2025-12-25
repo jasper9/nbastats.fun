@@ -37,17 +37,48 @@ fi
 if [ "$START_STEP" -le 1 ]; then
     echo "[1/8] Installing system dependencies..."
     apt update
-    apt install -y python3 python3-pip python3-venv nginx certbot python3-certbot-nginx git ufw
+    apt install -y python3 python3-pip python3-venv nginx certbot python3-certbot-nginx git ufw fail2ban
 fi
 
 # -------------------------------------------
-# Step 2: Configure Firewall
+# Step 2: Configure Firewall & Fail2ban
 # -------------------------------------------
 if [ "$START_STEP" -le 2 ]; then
-    echo "[2/8] Configuring firewall..."
+    echo "[2/8] Configuring firewall and fail2ban..."
     ufw allow 'Nginx Full'
     ufw allow OpenSSH
     ufw --force enable
+
+    # Configure fail2ban
+    cat > /etc/fail2ban/jail.local << 'EOF'
+[DEFAULT]
+bantime = 1h
+findtime = 10m
+maxretry = 5
+banaction = ufw
+
+[sshd]
+enabled = true
+
+[nginx-http-auth]
+enabled = true
+
+[nginx-botsearch]
+enabled = true
+logpath = /var/log/nginx/access.log
+maxretry = 2
+
+[nginx-bad-request]
+enabled = true
+logpath = /var/log/nginx/access.log
+
+[nginx-limit-req]
+enabled = true
+logpath = /var/log/nginx/error.log
+EOF
+
+    systemctl enable fail2ban
+    systemctl restart fail2ban
 fi
 
 # -------------------------------------------
