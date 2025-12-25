@@ -459,11 +459,14 @@
             50% { opacity: 0.6; }
         }
         /* Upcoming Games / Schedule styles */
-        .schedule-grid {
+        .schedule-container {
+            margin-top: 20px;
+        }
+        .schedule-featured {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 15px;
-            margin-top: 20px;
+            margin-bottom: 15px;
         }
         .game-card {
             background: var(--bg-card);
@@ -513,6 +516,11 @@
             color: var(--text-muted);
             font-size: 0.8rem;
         }
+        .team-record {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
         .game-odds {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -546,6 +554,53 @@
             color: var(--text-muted);
             text-align: right;
             margin-top: 5px;
+        }
+        /* Compact schedule for games without odds */
+        .schedule-compact {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .schedule-compact-title {
+            background: var(--bg-secondary);
+            padding: 8px 15px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .compact-game {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border);
+            gap: 15px;
+        }
+        .compact-game:last-child {
+            border-bottom: none;
+        }
+        .compact-date {
+            font-family: 'Oswald', sans-serif;
+            color: var(--accent);
+            font-size: 0.85rem;
+            min-width: 120px;
+        }
+        .compact-matchup {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+        .compact-matchup .nuggets {
+            color: var(--nuggets-gold);
+            font-weight: 600;
+        }
+        .compact-location {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            min-width: 50px;
+            text-align: right;
         }
         /* Triple-Double Tracker styles */
         .td-tracker {
@@ -742,41 +797,72 @@
 
         {% if upcoming_games %}
         <h2>Upcoming Games</h2>
-        <div class="schedule-grid">
-            {% for game in upcoming_games %}
-            <div class="game-card {{ 'home-game' if game.is_home else 'away-game' }}">
-                <div class="game-header">
-                    <div class="game-datetime">{{ game.commence_time|game_time }}</div>
-                    <div class="game-location">{{ 'HOME' if game.is_home else 'AWAY' }}</div>
-                </div>
-                <div class="game-matchup">
-                    <div class="game-team {{ 'nuggets' if game.is_home else '' }}">{{ game.home_team }}</div>
-                    <div class="game-vs">vs</div>
-                    <div class="game-team {{ 'nuggets' if not game.is_home else '' }}">{{ game.away_team }}</div>
-                </div>
-                {% if game.nuggets_spread is defined %}
-                <div class="game-odds">
-                    <div class="odds-item">
-                        <div class="odds-label">Spread</div>
-                        <div class="odds-value {{ 'favorite' if game.nuggets_spread < 0 else 'underdog' }}">
-                            {{ game.nuggets_spread|format_spread }}
+        <div class="schedule-container">
+            {# Games with odds - featured cards #}
+            {% set featured_games = upcoming_games | selectattr('nuggets_spread', 'defined') | list %}
+            {% if featured_games %}
+            <div class="schedule-featured">
+                {% for game in featured_games %}
+                <div class="game-card {{ 'home-game' if game.is_home else 'away-game' }}">
+                    <div class="game-header">
+                        <div class="game-datetime">{{ game.commence_time|game_time }}</div>
+                        <div class="game-location">{{ 'HOME' if game.is_home else 'AWAY' }}</div>
+                    </div>
+                    <div class="game-matchup">
+                        <div class="game-team {{ 'nuggets' if game.is_home else '' }}">
+                            {{ game.home_team }}
+                            {% if game.home_record %}<span class="team-record">({{ game.home_record.wins }}-{{ game.home_record.losses }})</span>{% endif %}
+                        </div>
+                        <div class="game-vs">vs</div>
+                        <div class="game-team {{ 'nuggets' if not game.is_home else '' }}">
+                            {{ game.away_team }}
+                            {% if game.away_record %}<span class="team-record">({{ game.away_record.wins }}-{{ game.away_record.losses }})</span>{% endif %}
                         </div>
                     </div>
-                    <div class="odds-item">
-                        <div class="odds-label">Moneyline</div>
-                        <div class="odds-value {{ 'favorite' if game.nuggets_ml < 0 else 'underdog' }}">
-                            {{ game.nuggets_ml|format_odds }}
+                    <div class="game-odds">
+                        <div class="odds-item">
+                            <div class="odds-label">Spread</div>
+                            <div class="odds-value {{ 'favorite' if game.nuggets_spread < 0 else 'underdog' }}">
+                                {{ game.nuggets_spread|format_spread }}
+                            </div>
+                        </div>
+                        <div class="odds-item">
+                            <div class="odds-label">Moneyline</div>
+                            <div class="odds-value {{ 'favorite' if game.nuggets_ml < 0 else 'underdog' }}">
+                                {{ game.nuggets_ml|format_odds }}
+                            </div>
+                        </div>
+                        <div class="odds-item">
+                            <div class="odds-label">Total</div>
+                            <div class="odds-value">{{ game.total }}</div>
                         </div>
                     </div>
-                    <div class="odds-item">
-                        <div class="odds-label">Total</div>
-                        <div class="odds-value">{{ game.total }}</div>
-                    </div>
+                    <div class="odds-source">via {{ game.bookmaker }}</div>
                 </div>
-                <div class="odds-source">via {{ game.bookmaker }}</div>
-                {% endif %}
+                {% endfor %}
             </div>
-            {% endfor %}
+            {% endif %}
+
+            {# Games without odds - compact list #}
+            {% set compact_games = upcoming_games | rejectattr('nuggets_spread', 'defined') | list %}
+            {% if compact_games %}
+            <div class="schedule-compact">
+                <div class="schedule-compact-title">Upcoming Schedule</div>
+                {% for game in compact_games %}
+                <div class="compact-game">
+                    <div class="compact-date">{{ game.commence_time|game_time }}</div>
+                    <div class="compact-matchup">
+                        {% if game.is_home %}
+                        <span class="nuggets">DEN ({{ game.home_record.wins }}-{{ game.home_record.losses }})</span> vs {{ game.away_team }} ({{ game.away_record.wins }}-{{ game.away_record.losses }})
+                        {% else %}
+                        {{ game.home_team }} ({{ game.home_record.wins }}-{{ game.home_record.losses }}) vs <span class="nuggets">DEN ({{ game.away_record.wins }}-{{ game.away_record.losses }})</span>
+                        {% endif %}
+                    </div>
+                    <div class="compact-location">{{ '@' if not game.is_home else 'HOME' }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
         {% endif %}
 

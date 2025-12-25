@@ -401,6 +401,24 @@ def refresh_nuggets_schedule():
     NUGGETS_TEAM_ID = 1610612743
     nuggets_games = []
 
+    # Load standings for team records
+    standings_cache = None
+    standings_file = CACHE_DIR / 'standings.json'
+    if standings_file.exists():
+        with open(standings_file, 'r') as f:
+            standings_cache = json.load(f)
+
+    # Build team records lookup
+    team_records = {}
+    if standings_cache:
+        for conf in ['east', 'west']:
+            for team in standings_cache.get(conf, []):
+                full_name = f"{team['TeamCity']} {team['TeamName']}"
+                team_records[full_name] = {
+                    'wins': team['WINS'],
+                    'losses': team['LOSSES'],
+                }
+
     # Step 1: Fetch NBA schedule
     try:
         print("  Fetching NBA schedule...")
@@ -428,12 +446,16 @@ def refresh_nuggets_schedule():
                             if game_time.replace(tzinfo=None) > now:
                                 home_team = game.get('homeTeam', {})
                                 away_team = game.get('awayTeam', {})
+                                home_name = f"{home_team.get('teamCity', '')} {home_team.get('teamName', '')}".strip()
+                                away_name = f"{away_team.get('teamCity', '')} {away_team.get('teamName', '')}".strip()
                                 nuggets_games.append({
                                     'id': game.get('gameId'),
                                     'commence_time': game_time_str,
-                                    'home_team': f"{home_team.get('teamCity', '')} {home_team.get('teamName', '')}".strip(),
-                                    'away_team': f"{away_team.get('teamCity', '')} {away_team.get('teamName', '')}".strip(),
+                                    'home_team': home_name,
+                                    'away_team': away_name,
                                     'is_home': home_id == NUGGETS_TEAM_ID,
+                                    'home_record': team_records.get(home_name, {}),
+                                    'away_record': team_records.get(away_name, {}),
                                 })
                         except ValueError:
                             continue
