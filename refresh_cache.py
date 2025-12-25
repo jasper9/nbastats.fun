@@ -34,7 +34,7 @@ def save_cache(filename, data):
 
 def refresh_jokic_career_stats():
     """Cache Jokic's career statistics."""
-    print("\n[1/5] Fetching Jokic career stats...")
+    print("\n[1/6] Fetching Jokic career stats...")
     from nba_api.stats.endpoints import playercareerstats
 
     career = playercareerstats.PlayerCareerStats(player_id=JOKIC_PLAYER_ID, timeout=60)
@@ -53,7 +53,7 @@ def refresh_jokic_career_stats():
 
 def refresh_team_standings():
     """Cache current team standings."""
-    print("\n[2/5] Fetching team standings...")
+    print("\n[2/6] Fetching team standings...")
     from nba_api.stats.endpoints import leaguestandings
 
     standings = leaguestandings.LeagueStandings(season='2025-26', timeout=60)
@@ -77,7 +77,7 @@ def refresh_team_standings():
 
 def refresh_alltime_records():
     """Cache all-time records watch data."""
-    print("\n[3/5] Fetching all-time records...")
+    print("\n[3/6] Fetching all-time records...")
     from nba_api.stats.endpoints import alltimeleadersgrids
 
     try:
@@ -255,7 +255,7 @@ def refresh_triple_doubles_baseline():
 
 def refresh_triple_doubles():
     """Cache triple-double data - only fetches CURRENT SEASON for active players."""
-    print("\n[4/5] Fetching triple-double data (current season only)...")
+    print("\n[4/6] Fetching triple-double data (current season only)...")
     from nba_api.stats.endpoints import playergamelogs
 
     CURRENT_SEASON = "2025-26"
@@ -366,7 +366,7 @@ def refresh_triple_doubles():
 
 def refresh_league_leaders():
     """Cache league leaders for all stat categories."""
-    print("\n[5/5] Fetching league leaders...")
+    print("\n[5/6] Fetching league leaders...")
     from nba_api.stats.endpoints import leagueleaders
 
     STAT_CATEGORIES = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'FG_PCT', 'FG3_PCT',
