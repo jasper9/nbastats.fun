@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ stat_name }} Leaders - 2025-26 Season</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+        .back-link {
+            display: inline-block;
+            color: #8892b0;
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+        .back-link:hover {
+            color: #ffd700;
+        }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #ffd700, #ffb347);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .season-badge {
+            display: inline-block;
+            background: rgba(255,215,0,0.2);
+            color: #ffd700;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-top: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: rgba(255,215,0,0.1);
+            color: #ffd700;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        th.stat-col {
+            text-align: right;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        td.stat-value {
+            text-align: right;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .rank {
+            color: #8892b0;
+            font-weight: 600;
+            width: 50px;
+        }
+        .rank-1 { color: #ffd700; }
+        .rank-2 { color: #c0c0c0; }
+        .rank-3 { color: #cd7f32; }
+        .player-name {
+            font-weight: 500;
+        }
+        .team {
+            color: #8892b0;
+            font-size: 0.9rem;
+        }
+        .highlight-row {
+            background: linear-gradient(90deg, rgba(255,215,0,0.2), rgba(255,179,71,0.1)) !important;
+            border-left: 4px solid #ffd700;
+        }
+        .highlight-row td {
+            color: #fff;
+        }
+        .highlight-row .player-name {
+            color: #ffd700;
+            font-weight: 700;
+        }
+        .highlight-row .stat-value {
+            color: #ffd700;
+        }
+        .player-badge {
+            display: inline-block;
+            background: #ffd700;
+            color: #1a1a2e;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            font-weight: 700;
+        }
+        .footer {
+            text-align: center;
+            padding: 40px;
+            color: #8892b0;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/" class="back-link">← Back to Jokić Stats</a>
+            <h1>{{ stat_name }} Leaders</h1>
+            <span class="season-badge">2025-26 Season</span>
+        </header>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Team</th>
+                        <th>GP</th>
+                        <th class="stat-col">{{ stat }}</th>
+                        {% if stat in ['FG_PCT', 'FG3_PCT', 'FT_PCT'] %}
+                        <th class="stat-col">Made</th>
+                        <th class="stat-col">Att</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in players %}
+                    <tr class="{% if player.PLAYER_ID == jokic_id %}highlight-row{% endif %}">
+                        <td class="rank {% if player.RANK == 1 %}rank-1{% elif player.RANK == 2 %}rank-2{% elif player.RANK == 3 %}rank-3{% endif %}">
+                            {{ player.RANK }}
+                        </td>
+                        <td class="player-name">
+                            {{ player.PLAYER }}
+                            {% if player.PLAYER_ID == jokic_id %}<span class="player-badge">JOKIĆ</span>{% endif %}
+                        </td>
+                        <td class="team">{{ player.TEAM }}</td>
+                        <td>{{ player.GP }}</td>
+                        <td class="stat-value">
+                            {% if stat == 'FG_PCT' %}
+                                {{ "%.1f"|format(player.FG_PCT * 100) }}%
+                            {% elif stat == 'FG3_PCT' %}
+                                {{ "%.1f"|format(player.FG3_PCT * 100) }}%
+                            {% elif stat == 'FT_PCT' %}
+                                {{ "%.1f"|format(player.FT_PCT * 100) }}%
+                            {% elif stat == 'EFF' %}
+                                {{ player.EFF }}
+                            {% else %}
+                                {{ player[stat] }}
+                            {% endif %}
+                        </td>
+                        {% if stat == 'FG_PCT' %}
+                        <td class="stat-value">{{ player.FGM }}</td>
+                        <td class="stat-value">{{ player.FGA }}</td>
+                        {% elif stat == 'FG3_PCT' %}
+                        <td class="stat-value">{{ player.FG3M }}</td>
+                        <td class="stat-value">{{ player.FG3A }}</td>
+                        {% elif stat == 'FT_PCT' %}
+                        <td class="stat-value">{{ player.FTM }}</td>
+                        <td class="stat-value">{{ player.FTA }}</td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            Data from NBA API | Top 50 Players Shown
+        </div>
+    </div>
+</body>
+</html>
