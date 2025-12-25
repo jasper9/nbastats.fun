@@ -114,6 +114,22 @@ EOF
 mkdir -p /var/log/nbastats
 chown -R $APP_USER:$APP_USER /var/log/nbastats
 
+# Setup log rotation
+cat > /etc/logrotate.d/nbastats << 'EOF'
+/var/log/nbastats/*.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 www-data www-data
+    postrotate
+        systemctl reload nbastats > /dev/null 2>&1 || true
+    endscript
+}
+EOF
+
 # Enable and start the service
     systemctl daemon-reload
     systemctl enable nbastats
