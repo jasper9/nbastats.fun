@@ -64,13 +64,17 @@ This fetches:
 
 ### Automated Setup
 
-A setup script is included for deploying to an Ubuntu 22.04+ server:
+A setup script is included for deploying to an Ubuntu 22.04+ server.
 
+**One-liner install:**
 ```bash
-# On your Ubuntu VM
+curl -sSL https://raw.githubusercontent.com/jasper9/nbastats.fun/main/setup_server.sh | sudo bash
+```
+
+**Or clone first:**
+```bash
 git clone https://github.com/jasper9/nbastats.fun.git /tmp/nbastats
 cd /tmp/nbastats
-chmod +x setup_server.sh
 sudo ./setup_server.sh
 ```
 
