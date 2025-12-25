@@ -10,9 +10,12 @@ import os
 import time
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import requests
 from dotenv import load_dotenv
+
+MOUNTAIN_TZ = ZoneInfo('America/Denver')
 
 load_dotenv()
 
@@ -470,9 +473,14 @@ def refresh_nuggets_schedule():
                                 away_score = game.get('awayTeam', {}).get('score')
                                 game_status = game.get('gameStatus', 1)  # 1=scheduled, 2=in progress, 3=final
 
+                                # Convert to Mountain Time for calendar display
+                                game_time_mt = game_time.astimezone(MOUNTAIN_TZ)
+                                local_date = game_time_mt.strftime('%Y-%m-%d')
+
                                 game_data = {
                                     'id': game.get('gameId'),
                                     'commence_time': game_time_str,
+                                    'local_date': local_date,  # Mountain Time date for calendar
                                     'home_team': home_name,
                                     'away_team': away_name,
                                     'is_home': home_id == NUGGETS_TEAM_ID,

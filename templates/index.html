@@ -910,7 +910,7 @@
                     <div class="calendar-container">
                         {% set months = {} %}
                         {% for game in calendar_games %}
-                            {% set game_date = game.commence_time[:10] %}
+                            {% set game_date = game.local_date if game.local_date else game.commence_time[:10] %}
                             {% set month_key = game_date[:7] %}
                             {% if month_key not in months %}
                                 {% set _ = months.update({month_key: []}) %}
@@ -945,7 +945,7 @@
                                 {% for day in range(1, days_in_month + 1) %}
                                 {% set day_str = '%04d-%02d-%02d'|format(year, month, day) %}
                                 {% set day_games = [] %}
-                                {% for g in month_games if g.commence_time[:10] == day_str %}
+                                {% for g in month_games if (g.local_date if g.local_date else g.commence_time[:10]) == day_str %}
                                     {% set _ = day_games.append(g) %}
                                 {% endfor %}
                                 {% set is_today = day_str == now_date %}
