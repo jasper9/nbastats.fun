@@ -462,12 +462,6 @@
         .schedule-container {
             margin-top: 20px;
         }
-        .schedule-featured {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-        }
         .game-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
@@ -558,10 +552,11 @@
         /* Schedule layout - cards + calendar side by side */
         .schedule-layout {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            grid-template-columns: minmax(300px, 400px) 1fr;
+            gap: 25px;
+            align-items: start;
         }
-        @media (max-width: 1200px) {
+        @media (max-width: 1100px) {
             .schedule-layout {
                 grid-template-columns: 1fr;
             }
@@ -575,18 +570,24 @@
             letter-spacing: 1px;
             margin-bottom: 15px;
         }
+        .schedule-cards-section {
+            min-width: 0;
+        }
+        .schedule-featured {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
         /* Calendar styles */
         .calendar-container {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 15px;
-            flex-wrap: wrap;
         }
         .calendar-month {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 4px;
-            flex: 1;
-            min-width: 280px;
         }
         .calendar-header {
             background: var(--bg-secondary);
