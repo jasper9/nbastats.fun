@@ -432,7 +432,20 @@ def refresh_nuggets_schedule():
 
         now = datetime.now()
 
-        # Find upcoming Nuggets games
+        # Get date range for calendar (current month and next month)
+        from datetime import timedelta
+        calendar_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        # Go to start of next month, then add another month
+        if now.month == 12:
+            calendar_end = now.replace(year=now.year + 1, month=2, day=1)
+        elif now.month == 11:
+            calendar_end = now.replace(year=now.year + 1, month=1, day=1)
+        else:
+            calendar_end = now.replace(month=now.month + 2, day=1)
+
+        all_nuggets_games = []
+
+        # Find all Nuggets games in date range
         for game_date in schedule_data.get('leagueSchedule', {}).get('gameDates', []):
             for game in game_date.get('games', []):
                 home_id = game.get('homeTeam', {}).get('teamId')
@@ -443,12 +456,21 @@ def refresh_nuggets_schedule():
                     if game_time_str:
                         try:
                             game_time = datetime.fromisoformat(game_time_str.replace('Z', '+00:00'))
-                            if game_time.replace(tzinfo=None) > now:
+                            game_time_naive = game_time.replace(tzinfo=None)
+
+                            # Check if game is in our calendar range
+                            if calendar_start <= game_time_naive < calendar_end:
                                 home_team = game.get('homeTeam', {})
                                 away_team = game.get('awayTeam', {})
                                 home_name = f"{home_team.get('teamCity', '')} {home_team.get('teamName', '')}".strip()
                                 away_name = f"{away_team.get('teamCity', '')} {away_team.get('teamName', '')}".strip()
-                                nuggets_games.append({
+
+                                # Get game result if completed
+                                home_score = game.get('homeTeam', {}).get('score')
+                                away_score = game.get('awayTeam', {}).get('score')
+                                game_status = game.get('gameStatus', 1)  # 1=scheduled, 2=in progress, 3=final
+
+                                game_data = {
                                     'id': game.get('gameId'),
                                     'commence_time': game_time_str,
                                     'home_team': home_name,
@@ -456,14 +478,29 @@ def refresh_nuggets_schedule():
                                     'is_home': home_id == NUGGETS_TEAM_ID,
                                     'home_record': team_records.get(home_name, {}),
                                     'away_record': team_records.get(away_name, {}),
-                                })
+                                    'is_past': game_time_naive < now,
+                                    'game_status': game_status,
+                                }
+
+                                # Add scores for completed games
+                                if game_status == 3 and home_score is not None:
+                                    game_data['home_score'] = home_score
+                                    game_data['away_score'] = away_score
+                                    nuggets_score = home_score if home_id == NUGGETS_TEAM_ID else away_score
+                                    opponent_score = away_score if home_id == NUGGETS_TEAM_ID else home_score
+                                    game_data['result'] = 'W' if nuggets_score > opponent_score else 'L'
+
+                                all_nuggets_games.append(game_data)
                         except ValueError:
                             continue
 
-        # Sort by game time and take first 10
-        nuggets_games.sort(key=lambda x: x['commence_time'])
-        nuggets_games = nuggets_games[:10]
-        print(f"  Found {len(nuggets_games)} upcoming games from NBA schedule")
+        # Sort by game time
+        all_nuggets_games.sort(key=lambda x: x['commence_time'])
+
+        # Separate upcoming and all games
+        nuggets_games = [g for g in all_nuggets_games if not g.get('is_past')][:10]
+
+        print(f"  Found {len(nuggets_games)} upcoming games, {len(all_nuggets_games)} total in calendar range")
 
     except Exception as e:
         print(f"  Error fetching NBA schedule: {e}")
@@ -533,7 +570,10 @@ def refresh_nuggets_schedule():
     else:
         print("  WARNING: ODDS_API_KEY not set, skipping odds fetch")
 
-    save_cache('nuggets_schedule.json', {'games': nuggets_games})
+    save_cache('nuggets_schedule.json', {
+        'games': nuggets_games,
+        'calendar_games': all_nuggets_games,
+    })
     return nuggets_games
 
 

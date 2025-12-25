@@ -1,4 +1,5 @@
 from flask import Flask, render_template
+import calendar
 import json
 import math
 from datetime import datetime
@@ -120,6 +121,23 @@ def format_spread_filter(spread):
     return str(spread)
 
 
+@app.template_filter('calendar_weekday')
+def calendar_weekday_filter(date_tuple):
+    """Get weekday for first day of month (Sunday=0)"""
+    year, month, day = date_tuple
+    # Python's weekday: Monday=0, Sunday=6
+    # We want: Sunday=0, Monday=1, etc.
+    weekday = calendar.weekday(year, month, day)
+    return (weekday + 1) % 7
+
+
+@app.template_filter('days_in_month')
+def days_in_month_filter(year_month_tuple):
+    """Get number of days in a month"""
+    year, month = year_month_tuple
+    return calendar.monthrange(year, month)[1]
+
+
 @app.route('/')
 def index():
     # Load all data from cache
@@ -170,9 +188,13 @@ def index():
 
     # Extract schedule
     upcoming_games = schedule_cache.get('games', []) if schedule_cache else []
+    calendar_games = schedule_cache.get('calendar_games', []) if schedule_cache else []
 
     # Get cache timestamp for display
     cache_time = career_cache.get('_cached_at', 'Unknown')
+
+    # Current date for calendar highlighting
+    now_date = datetime.now().strftime('%Y-%m-%d')
 
     return render_template('index.html',
         regular_season=regular_season,
@@ -185,6 +207,8 @@ def index():
         records_watch=records_watch,
         triple_doubles=triple_doubles,
         upcoming_games=upcoming_games,
+        calendar_games=calendar_games,
+        now_date=now_date,
         cache_time=cache_time
     )
 
