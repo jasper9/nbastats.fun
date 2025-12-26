@@ -229,10 +229,13 @@ fi
 # Step 8: Setup Cron Job for Cache Refresh
 # -------------------------------------------
 if [ "$START_STEP" -le 8 ]; then
-    echo "[8/8] Setting up daily cache refresh cron job..."
+    echo "[8/8] Setting up cache refresh cron jobs..."
 cat > /etc/cron.d/nbastats-refresh << 'EOF'
-# Refresh NBA stats cache daily at 6am Mountain Time (12:00 UTC in winter, 13:00 UTC in summer)
+# Full cache refresh daily at 6am Mountain Time (13:00 UTC)
 0 13 * * * www-data cd /var/www/nbastats && /var/www/nbastats/venv/bin/python refresh_cache.py >> /var/log/nbastats/refresh.log 2>&1
+
+# Odds refresh hourly
+0 * * * * www-data cd /var/www/nbastats && /var/www/nbastats/venv/bin/python refresh_odds.py >> /var/log/nbastats/odds.log 2>&1
 EOF
 
     chmod 644 /etc/cron.d/nbastats-refresh
