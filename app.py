@@ -193,8 +193,9 @@ def index():
     # Get cache timestamp for display
     cache_time = career_cache.get('_cached_at', 'Unknown')
 
-    # Current date for calendar highlighting
-    now_date = datetime.now().strftime('%Y-%m-%d')
+    # Current date for calendar highlighting (Mountain Time)
+    mountain_tz = ZoneInfo('America/Denver')
+    now_date = datetime.now(mountain_tz).strftime('%Y-%m-%d')
 
     return render_template('index.html',
         regular_season=regular_season,
