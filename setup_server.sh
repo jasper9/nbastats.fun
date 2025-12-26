@@ -231,11 +231,11 @@ fi
 if [ "$START_STEP" -le 8 ]; then
     echo "[8/8] Setting up cache refresh cron jobs..."
 cat > /etc/cron.d/nbastats-refresh << 'EOF'
-# Full cache refresh daily at 6am Mountain Time (13:00 UTC)
-0 13 * * * www-data cd /var/www/nbastats && /var/www/nbastats/venv/bin/python refresh_cache.py >> /var/log/nbastats/refresh.log 2>&1
+# Full cache refresh hourly (stats, standings, schedule from NBA.com)
+0 * * * * www-data cd /var/www/nbastats && /var/www/nbastats/venv/bin/python refresh_cache.py >> /var/log/nbastats/refresh.log 2>&1
 
-# Odds refresh hourly
-0 * * * * www-data cd /var/www/nbastats && /var/www/nbastats/venv/bin/python refresh_odds.py >> /var/log/nbastats/odds.log 2>&1
+# Odds refresh daily at 6am Mountain Time (13:00 UTC) to conserve API quota
+0 13 * * * www-data cd /var/www/nbastats && /var/www/nbastats/venv/bin/python refresh_odds.py >> /var/log/nbastats/odds.log 2>&1
 EOF
 
     chmod 644 /etc/cron.d/nbastats-refresh

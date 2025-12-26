@@ -514,69 +514,8 @@ def refresh_nuggets_schedule():
         print(f"  Error fetching NBA schedule: {e}")
         return None
 
-    # Step 2: Fetch odds and merge
-    api_key = os.getenv('ODDS_API_KEY')
-    if api_key and api_key != 'your_api_key_here':
-        try:
-            print("  Fetching odds...")
-            odds_resp = requests.get(
-                'https://api.the-odds-api.com/v4/sports/basketball_nba/odds',
-                params={
-                    'apiKey': api_key,
-                    'regions': 'us',
-                    'markets': 'h2h,spreads,totals',
-                    'oddsFormat': 'american',
-                },
-                timeout=30
-            )
-            odds_resp.raise_for_status()
-            odds_games = odds_resp.json()
-
-            remaining = odds_resp.headers.get('x-requests-remaining', 'unknown')
-            print(f"  Odds API requests remaining: {remaining}")
-
-            # Build odds lookup by teams
-            odds_lookup = {}
-            for game in odds_games:
-                key = (game.get('home_team', ''), game.get('away_team', ''))
-                if game.get('bookmakers'):
-                    book = game['bookmakers'][0]
-                    odds_data = {'bookmaker': book['title']}
-                    for market in book.get('markets', []):
-                        if market['key'] == 'h2h':
-                            for outcome in market['outcomes']:
-                                if outcome['name'] == 'Denver Nuggets':
-                                    odds_data['nuggets_ml'] = outcome['price']
-                                else:
-                                    odds_data['opponent_ml'] = outcome['price']
-                        elif market['key'] == 'spreads':
-                            for outcome in market['outcomes']:
-                                if outcome['name'] == 'Denver Nuggets':
-                                    odds_data['nuggets_spread'] = outcome['point']
-                                    odds_data['nuggets_spread_odds'] = outcome['price']
-                        elif market['key'] == 'totals':
-                            for outcome in market['outcomes']:
-                                if outcome['name'] == 'Over':
-                                    odds_data['total'] = outcome['point']
-                                    odds_data['over_odds'] = outcome['price']
-                                elif outcome['name'] == 'Under':
-                                    odds_data['under_odds'] = outcome['price']
-                    odds_lookup[key] = odds_data
-
-            # Merge odds into schedule
-            odds_found = 0
-            for game in nuggets_games:
-                key = (game['home_team'], game['away_team'])
-                if key in odds_lookup:
-                    game.update(odds_lookup[key])
-                    odds_found += 1
-
-            print(f"  Matched odds for {odds_found} games")
-
-        except Exception as e:
-            print(f"  Error fetching odds (schedule still saved): {e}")
-    else:
-        print("  WARNING: ODDS_API_KEY not set, skipping odds fetch")
+    # Note: Odds are fetched separately by refresh_odds.py (daily)
+    # to conserve API quota (500 requests/month)
 
     save_cache('nuggets_schedule.json', {
         'games': nuggets_games,
