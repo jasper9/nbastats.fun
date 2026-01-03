@@ -146,6 +146,7 @@ def index():
     records_cache = load_cache('alltime_records.json')
     triple_doubles_cache = load_cache('triple_doubles.json')
     schedule_cache = load_cache('nuggets_schedule.json')
+    injuries_cache = load_cache('injuries.json')
 
     # Check if cache exists
     if not career_cache:
@@ -190,6 +191,9 @@ def index():
     upcoming_games = schedule_cache.get('games', []) if schedule_cache else []
     calendar_games = schedule_cache.get('calendar_games', []) if schedule_cache else []
 
+    # Extract injuries
+    injuries = injuries_cache.get('injuries', []) if injuries_cache else []
+
     # Get cache timestamp for display
     cache_time = career_cache.get('_cached_at', 'Unknown')
 
@@ -209,6 +213,7 @@ def index():
         triple_doubles=triple_doubles,
         upcoming_games=upcoming_games,
         calendar_games=calendar_games,
+        injuries=injuries,
         now_date=now_date,
         cache_time=cache_time
     )

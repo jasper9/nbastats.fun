@@ -458,6 +458,74 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.6; }
         }
+        /* Injury Report styles */
+        .injuries-section {
+            margin-top: 20px;
+        }
+        .injuries-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 12px;
+        }
+        .injury-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .injury-jersey {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.5rem;
+            color: var(--nuggets-gold);
+            min-width: 40px;
+            text-align: center;
+        }
+        .injury-info {
+            flex: 1;
+        }
+        .injury-name {
+            font-weight: bold;
+            font-size: 1rem;
+        }
+        .injury-position {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+        .injury-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .injury-status.out {
+            background: #991b1b;
+            color: #fca5a5;
+        }
+        .injury-status.day-to-day {
+            background: #92400e;
+            color: #fcd34d;
+        }
+        .injury-status.questionable {
+            background: #854d0e;
+            color: #fef08a;
+        }
+        .injury-return {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+        .injury-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
         /* Upcoming Games / Schedule styles */
         .schedule-container {
             margin-top: 20px;
@@ -1125,6 +1193,30 @@
                         {% endfor %}
                     </div>
                 </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if injuries %}
+        <h2>Injury Report</h2>
+        <div class="injuries-section">
+            <div class="injuries-grid">
+                {% for injury in injuries %}
+                <div class="injury-card">
+                    <div class="injury-jersey">#{{ injury.jersey }}</div>
+                    <div class="injury-info">
+                        <div class="injury-name">{{ injury.name }}</div>
+                        <div class="injury-position">{{ injury.position }}</div>
+                        <span class="injury-status {{ injury.status|lower|replace(' ', '-') }}">{{ injury.status }}</span>
+                        {% if injury.return_date %}
+                        <div class="injury-return">Expected: {{ injury.return_date }}</div>
+                        {% endif %}
+                        {% if injury.description %}
+                        <div class="injury-desc">{{ injury.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
         {% endif %}

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Refresh just the odds data (can run hourly).
+Refresh just the odds data (runs daily).
 For full cache refresh, use refresh_cache.py instead.
 """
 
@@ -8,7 +8,6 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 import requests
 from dotenv import load_dotenv
@@ -16,7 +15,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 CACHE_DIR = Path(__file__).parent / 'cache'
-MOUNTAIN_TZ = ZoneInfo('America/Denver')
 
 
 def refresh_odds():
