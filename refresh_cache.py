@@ -435,10 +435,16 @@ def refresh_nuggets_schedule():
 
         now = datetime.now()
 
-        # Get date range for calendar (current month and next month)
-        from datetime import timedelta
-        calendar_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        # Go to start of next month, then add another month
+        # Get date range for calendar (previous month, current month, next month)
+        current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        # Start from previous month
+        if now.month == 1:
+            calendar_start = current_month_start.replace(year=now.year - 1, month=12)
+        else:
+            calendar_start = current_month_start.replace(month=now.month - 1)
+
+        # End at the end of next month
         if now.month == 12:
             calendar_end = now.replace(year=now.year + 1, month=2, day=1)
         elif now.month == 11:
