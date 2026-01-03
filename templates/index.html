@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nikola Jokić Stats</title>
+    {% if ga_tracking_id %}
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_tracking_id }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{ ga_tracking_id }}');
+    </script>
+    {% endif %}
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23f85' stroke='%23333' stroke-width='3'/><path d='M50 5 v90 M5 50 h90 M15 20 Q50 50 15 80 M85 20 Q50 50 85 80' fill='none' stroke='%23333' stroke-width='3'/></svg>">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
@@ -685,6 +695,44 @@
             text-align: right;
             margin-top: 5px;
         }
+        .odds-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .odds-provider {
+            background: var(--bg-secondary);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        .odds-provider-name {
+            color: var(--text-muted);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            text-align: center;
+        }
+        .odds-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 0;
+        }
+        .odds-row-label {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+        }
+        .odds-row-value {
+            font-weight: 600;
+        }
+        .odds-row-value.favorite {
+            color: #4ade80;
+        }
+        .odds-row-value.underdog {
+            color: #f87171;
+        }
         /* Schedule layout - cards + calendar side by side */
         .schedule-layout {
             display: grid;
@@ -1137,7 +1185,7 @@
                 {# Left side - Games with odds cards #}
                 <div class="schedule-cards-section">
                     <h3>Games with Odds</h3>
-                    {% set featured_games = upcoming_games | selectattr('nuggets_spread', 'defined') | list %}
+                    {% set featured_games = upcoming_games | selectattr('nuggets_ml', 'defined') | list %}
                     {% if featured_games %}
                     <div class="schedule-featured">
                         {% for game in featured_games %}
@@ -1157,25 +1205,62 @@
                                     {% if game.away_record %}<span class="team-record">({{ game.away_record.wins }}-{{ game.away_record.losses }})</span>{% endif %}
                                 </div>
                             </div>
+                            {% set providers = game.odds_providers or {} %}
+                            {% if providers|length > 1 %}
+                            {# Show comparison when both providers have data #}
+                            <div class="odds-comparison">
+                                {% for pname, pdata in providers.items() %}
+                                <div class="odds-provider">
+                                    <div class="odds-provider-name">{{ pdata.bookmaker or pname }}</div>
+                                    <div class="odds-row">
+                                        <span class="odds-row-label">ML</span>
+                                        <span class="odds-row-value {{ 'favorite' if pdata.nuggets_ml and pdata.nuggets_ml < 0 else 'underdog' }}">
+                                            {{ pdata.nuggets_ml|format_odds if pdata.nuggets_ml else '-' }}
+                                        </span>
+                                    </div>
+                                    {% if pdata.nuggets_spread %}
+                                    <div class="odds-row">
+                                        <span class="odds-row-label">Spread</span>
+                                        <span class="odds-row-value {{ 'favorite' if pdata.nuggets_spread < 0 else 'underdog' }}">
+                                            {{ pdata.nuggets_spread|format_spread }}
+                                        </span>
+                                    </div>
+                                    {% endif %}
+                                    {% if pdata.total %}
+                                    <div class="odds-row">
+                                        <span class="odds-row-label">O/U</span>
+                                        <span class="odds-row-value">{{ pdata.total }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            {# Single provider - show available odds #}
                             <div class="game-odds">
+                                {% if game.nuggets_spread is defined %}
                                 <div class="odds-item">
                                     <div class="odds-label">Spread</div>
                                     <div class="odds-value {{ 'favorite' if game.nuggets_spread < 0 else 'underdog' }}">
                                         {{ game.nuggets_spread|format_spread }}
                                     </div>
                                 </div>
+                                {% endif %}
                                 <div class="odds-item">
                                     <div class="odds-label">Moneyline</div>
                                     <div class="odds-value {{ 'favorite' if game.nuggets_ml < 0 else 'underdog' }}">
                                         {{ game.nuggets_ml|format_odds }}
                                     </div>
                                 </div>
+                                {% if game.total is defined %}
                                 <div class="odds-item">
                                     <div class="odds-label">Total</div>
                                     <div class="odds-value">{{ game.total }}</div>
                                 </div>
+                                {% endif %}
                             </div>
                             <div class="odds-source">via {{ game.bookmaker }}</div>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>

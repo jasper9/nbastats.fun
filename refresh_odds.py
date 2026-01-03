@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-Refresh just the odds data (runs daily).
+Refresh odds data from multiple providers (runs daily).
+Fetches from: the-odds-api.com and BALLDONTLIE.
 For full cache refresh, use refresh_cache.py instead.
 """
 
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import requests
@@ -16,35 +17,50 @@ load_dotenv()
 
 CACHE_DIR = Path(__file__).parent / 'cache'
 
+# Team name mappings for matching between providers
+TEAM_NAME_MAP = {
+    'Denver Nuggets': 'DEN',
+    'Brooklyn Nets': 'BKN',
+    'Philadelphia 76ers': 'PHI',
+    'Boston Celtics': 'BOS',
+    'Atlanta Hawks': 'ATL',
+    'Milwaukee Bucks': 'MIL',
+    'New Orleans Pelicans': 'NOP',
+    'Dallas Mavericks': 'DAL',
+    'Washington Wizards': 'WAS',
+    'Charlotte Hornets': 'CHA',
+    'Los Angeles Lakers': 'LAL',
+    'Los Angeles Clippers': 'LAC',
+    'Golden State Warriors': 'GSW',
+    'Phoenix Suns': 'PHX',
+    'Sacramento Kings': 'SAC',
+    'Portland Trail Blazers': 'POR',
+    'Utah Jazz': 'UTA',
+    'Oklahoma City Thunder': 'OKC',
+    'Minnesota Timberwolves': 'MIN',
+    'San Antonio Spurs': 'SAS',
+    'Houston Rockets': 'HOU',
+    'Memphis Grizzlies': 'MEM',
+    'Miami Heat': 'MIA',
+    'Orlando Magic': 'ORL',
+    'Indiana Pacers': 'IND',
+    'Chicago Bulls': 'CHI',
+    'Cleveland Cavaliers': 'CLE',
+    'Detroit Pistons': 'DET',
+    'Toronto Raptors': 'TOR',
+    'New York Knicks': 'NYK',
+}
 
-def refresh_odds():
-    """Fetch latest odds and merge into existing schedule cache."""
-    print(f"[Odds Refresh] {datetime.now().isoformat()}")
 
-    # Load existing schedule cache
-    schedule_file = CACHE_DIR / 'nuggets_schedule.json'
-    if not schedule_file.exists():
-        print("  ERROR: No schedule cache found. Run refresh_cache.py first.")
-        return None
-
-    with open(schedule_file, 'r') as f:
-        schedule_data = json.load(f)
-
-    games = schedule_data.get('games', [])
-    calendar_games = schedule_data.get('calendar_games', [])
-
-    if not games and not calendar_games:
-        print("  No games in cache to update.")
-        return None
-
-    # Fetch odds
+def fetch_theoddsapi_odds():
+    """Fetch odds from the-odds-api.com."""
     api_key = os.getenv('ODDS_API_KEY')
     if not api_key or api_key == 'your_api_key_here':
-        print("  WARNING: ODDS_API_KEY not set")
-        return None
+        print("  [the-odds-api] WARNING: ODDS_API_KEY not set")
+        return {}
 
     try:
-        print("  Fetching odds from API...")
+        print("  [the-odds-api] Fetching odds...")
         response = requests.get(
             'https://api.the-odds-api.com/v4/sports/basketball_nba/odds',
             params={
@@ -59,7 +75,7 @@ def refresh_odds():
         odds_games = response.json()
 
         remaining = response.headers.get('x-requests-remaining', 'unknown')
-        print(f"  API requests remaining: {remaining}")
+        print(f"  [the-odds-api] API requests remaining: {remaining}")
 
         # Build odds lookup by teams
         odds_lookup = {}
@@ -67,7 +83,10 @@ def refresh_odds():
             key = (game.get('home_team', ''), game.get('away_team', ''))
             if game.get('bookmakers'):
                 book = game['bookmakers'][0]
-                odds_data = {'bookmaker': book['title']}
+                odds_data = {
+                    'source': 'the-odds-api',
+                    'bookmaker': book['title'],
+                }
                 for market in book.get('markets', []):
                     if market['key'] == 'h2h':
                         for outcome in market['outcomes']:
@@ -89,33 +108,230 @@ def refresh_odds():
                                 odds_data['under_odds'] = outcome['price']
                 odds_lookup[key] = odds_data
 
-        # Merge odds into games
-        odds_found = 0
-        for game in games:
-            key = (game['home_team'], game['away_team'])
-            if key in odds_lookup:
-                game.update(odds_lookup[key])
-                odds_found += 1
-
-        # Also update calendar_games
-        for game in calendar_games:
-            key = (game['home_team'], game['away_team'])
-            if key in odds_lookup:
-                game.update(odds_lookup[key])
-
-        print(f"  Updated odds for {odds_found} upcoming games")
-
-        # Save updated cache
-        schedule_data['_odds_updated_at'] = datetime.now().isoformat()
-        with open(schedule_file, 'w') as f:
-            json.dump(schedule_data, f, indent=2)
-        print("  Saved updated schedule cache")
-
-        return odds_found
+        print(f"  [the-odds-api] Found odds for {len(odds_lookup)} games")
+        return odds_lookup
 
     except Exception as e:
-        print(f"  ERROR: {e}")
+        print(f"  [the-odds-api] ERROR: {e}")
+        return {}
+
+
+def fetch_balldontlie_odds(dates):
+    """Fetch odds from BALLDONTLIE v2 API."""
+    api_key = os.getenv('BALLDONTLIE_API_KEY')
+    if not api_key:
+        print("  [balldontlie] WARNING: BALLDONTLIE_API_KEY not set")
+        return {}
+
+    try:
+        print(f"  [balldontlie] Fetching odds for {len(dates)} dates...")
+
+        # Build request with multiple dates
+        params = [('dates[]', d) for d in dates] + [('per_page', 100)]
+        response = requests.get(
+            'https://api.balldontlie.io/v2/odds',
+            params=params,
+            headers={'Authorization': api_key},
+            timeout=30
+        )
+        response.raise_for_status()
+        odds_data = response.json().get('data', [])
+
+        print(f"  [balldontlie] Got {len(odds_data)} odds entries")
+
+        # Get game details to map game_id to teams
+        game_ids = set(o['game_id'] for o in odds_data)
+        game_teams = {}
+
+        for gid in game_ids:
+            try:
+                game_resp = requests.get(
+                    f'https://api.balldontlie.io/v1/games/{gid}',
+                    headers={'Authorization': api_key},
+                    timeout=30
+                )
+                game = game_resp.json().get('data', {})
+                home = game.get('home_team', {}).get('full_name', '')
+                away = game.get('visitor_team', {}).get('full_name', '')
+                home_abbr = game.get('home_team', {}).get('abbreviation', '')
+                away_abbr = game.get('visitor_team', {}).get('abbreviation', '')
+                game_teams[gid] = {
+                    'home': home,
+                    'away': away,
+                    'home_abbr': home_abbr,
+                    'away_abbr': away_abbr,
+                }
+            except Exception:
+                pass
+
+        # Group odds by game and pick best vendor (prefer one with most data)
+        from collections import defaultdict
+        game_odds = defaultdict(list)
+        for o in odds_data:
+            game_odds[o['game_id']].append(o)
+
+        # Build odds lookup by teams
+        odds_lookup = {}
+        for game_id, odds_list in game_odds.items():
+            teams = game_teams.get(game_id)
+            if not teams:
+                continue
+
+            # Pick the vendor with most complete data
+            best_odds = None
+            best_score = -1
+            for o in odds_list:
+                score = sum([
+                    o.get('moneyline_home_odds') is not None,
+                    o.get('spread_home_value') is not None,
+                    o.get('total_value') is not None,
+                ])
+                if score > best_score:
+                    best_score = score
+                    best_odds = o
+
+            if best_odds and best_odds.get('moneyline_home_odds') is not None:
+                # Determine if Nuggets is home or away
+                is_nuggets_home = teams['home_abbr'] == 'DEN'
+                is_nuggets_away = teams['away_abbr'] == 'DEN'
+
+                if is_nuggets_home or is_nuggets_away:
+                    odds_data = {
+                        'source': 'balldontlie',
+                        'bookmaker': best_odds.get('vendor', 'unknown'),
+                        'updated_at': best_odds.get('updated_at'),
+                    }
+
+                    if is_nuggets_home:
+                        odds_data['nuggets_ml'] = best_odds.get('moneyline_home_odds')
+                        odds_data['opponent_ml'] = best_odds.get('moneyline_away_odds')
+                        if best_odds.get('spread_home_value'):
+                            odds_data['nuggets_spread'] = float(best_odds['spread_home_value'])
+                            odds_data['nuggets_spread_odds'] = best_odds.get('spread_home_odds')
+                    else:
+                        odds_data['nuggets_ml'] = best_odds.get('moneyline_away_odds')
+                        odds_data['opponent_ml'] = best_odds.get('moneyline_home_odds')
+                        if best_odds.get('spread_away_value'):
+                            odds_data['nuggets_spread'] = float(best_odds['spread_away_value'])
+                            odds_data['nuggets_spread_odds'] = best_odds.get('spread_away_odds')
+
+                    if best_odds.get('total_value'):
+                        odds_data['total'] = float(best_odds['total_value'])
+                        odds_data['over_odds'] = best_odds.get('total_over_odds')
+                        odds_data['under_odds'] = best_odds.get('total_under_odds')
+
+                    key = (teams['home'], teams['away'])
+                    odds_lookup[key] = odds_data
+
+        print(f"  [balldontlie] Found Nuggets odds for {len(odds_lookup)} games")
+        return odds_lookup
+
+    except Exception as e:
+        print(f"  [balldontlie] ERROR: {e}")
+        return {}
+
+
+def refresh_odds():
+    """Fetch latest odds from both providers and merge into schedule cache."""
+    print(f"[Odds Refresh] {datetime.now().isoformat()}")
+
+    # Load existing schedule cache
+    schedule_file = CACHE_DIR / 'nuggets_schedule.json'
+    if not schedule_file.exists():
+        print("  ERROR: No schedule cache found. Run refresh_cache.py first.")
         return None
+
+    with open(schedule_file, 'r') as f:
+        schedule_data = json.load(f)
+
+    games = schedule_data.get('games', [])
+    calendar_games = schedule_data.get('calendar_games', [])
+
+    if not games and not calendar_games:
+        print("  No games in cache to update.")
+        return None
+
+    # Get upcoming dates for BALLDONTLIE query
+    upcoming_dates = set()
+    for game in games:
+        if game.get('local_date'):
+            upcoming_dates.add(game['local_date'])
+    for game in calendar_games:
+        if game.get('local_date') and not game.get('is_past'):
+            upcoming_dates.add(game['local_date'])
+
+    # Also add next 14 days just in case
+    today = datetime.now()
+    for i in range(14):
+        d = (today + timedelta(days=i)).strftime('%Y-%m-%d')
+        upcoming_dates.add(d)
+
+    upcoming_dates = sorted(list(upcoming_dates))[:14]  # Limit to 14 dates
+
+    # Fetch from both providers
+    theoddsapi_odds = fetch_theoddsapi_odds()
+    balldontlie_odds = fetch_balldontlie_odds(upcoming_dates)
+
+    # Merge odds into games
+    theoddsapi_matched = 0
+    balldontlie_matched = 0
+    for game in games:
+        key = (game['home_team'], game['away_team'])
+
+        # Store odds from both providers
+        game['odds_providers'] = {}
+
+        if key in theoddsapi_odds:
+            game['odds_providers']['theoddsapi'] = theoddsapi_odds[key]
+            # Also set as primary for backwards compatibility
+            for k, v in theoddsapi_odds[key].items():
+                if k not in ['source']:
+                    game[k] = v
+            theoddsapi_matched += 1
+
+        if key in balldontlie_odds:
+            game['odds_providers']['balldontlie'] = balldontlie_odds[key]
+            # If no theoddsapi, use balldontlie as primary
+            if 'theoddsapi' not in game['odds_providers']:
+                for k, v in balldontlie_odds[key].items():
+                    if k not in ['source', 'updated_at']:
+                        game[k] = v
+            balldontlie_matched += 1
+
+    # Also update calendar_games
+    for game in calendar_games:
+        key = (game['home_team'], game['away_team'])
+        game['odds_providers'] = {}
+
+        if key in theoddsapi_odds:
+            game['odds_providers']['theoddsapi'] = theoddsapi_odds[key]
+            for k, v in theoddsapi_odds[key].items():
+                if k not in ['source']:
+                    game[k] = v
+
+        if key in balldontlie_odds:
+            game['odds_providers']['balldontlie'] = balldontlie_odds[key]
+            if 'theoddsapi' not in game['odds_providers']:
+                for k, v in balldontlie_odds[key].items():
+                    if k not in ['source', 'updated_at']:
+                        game[k] = v
+
+    games_with_odds = sum(1 for g in games if g.get('odds_providers'))
+    print(f"  Updated {games_with_odds} upcoming games with odds:")
+    print(f"    the-odds-api: {theoddsapi_matched} Nuggets games matched")
+    print(f"    balldontlie: {balldontlie_matched} Nuggets games matched")
+
+    # Save updated cache
+    schedule_data['_odds_updated_at'] = datetime.now().isoformat()
+    schedule_data['_odds_providers'] = {
+        'theoddsapi': len(theoddsapi_odds),
+        'balldontlie': len(balldontlie_odds),
+    }
+    with open(schedule_file, 'w') as f:
+        json.dump(schedule_data, f, indent=2)
+    print("  Saved updated schedule cache")
+
+    return games_with_odds
 
 
 if __name__ == '__main__':

@@ -2,10 +2,26 @@ from flask import Flask, render_template
 import calendar
 import json
 import math
+import os
 import re
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
+
+# Load .env file if python-dotenv is available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # Fallback: manually read .env file
+    env_file = Path(__file__).parent / '.env'
+    if env_file.exists():
+        with open(env_file) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    os.environ.setdefault(key.strip(), value.strip())
 
 JOKIC_PLAYER_ID = 203999
 CACHE_DIR = Path(__file__).parent / 'cache'
@@ -48,6 +64,11 @@ STAT_NAMES = {
 }
 
 app = Flask(__name__)
+
+# Make GA tracking ID available to all templates
+@app.context_processor
+def inject_ga():
+    return {'ga_tracking_id': os.getenv('GA_TRACKING_ID')}
 
 
 def load_cache(filename):
