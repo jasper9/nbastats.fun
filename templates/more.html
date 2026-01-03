@@ -203,6 +203,44 @@
             margin-top: 40px;
             border-top: 1px solid var(--border);
         }
+
+        /* Contracts Table */
+        .contracts-table .player-meta {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-left: 8px;
+        }
+        .contracts-table .salary {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.1rem;
+            color: var(--nuggets-gold);
+        }
+        .contracts-table .contract-type {
+            font-weight: 500;
+        }
+        .contracts-table .signed-using {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+        .contracts-table .fa-status {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+        .notes-row {
+            background: var(--bg-secondary) !important;
+        }
+        .notes-row:hover {
+            background: var(--bg-secondary) !important;
+        }
+        .contract-notes {
+            margin: 0;
+            padding-left: 20px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+        .contract-notes li {
+            margin: 2px 0;
+        }
     </style>
 </head>
 <body>
@@ -306,6 +344,52 @@
             </div>
             {% endfor %}
         </div>
+        {% endif %}
+
+        {% if contracts %}
+        <h2>Team Contracts</h2>
+        <table class="games-table contracts-table">
+            <thead>
+                <tr>
+                    <th>Player</th>
+                    <th>2025-26 Salary</th>
+                    <th>Contract</th>
+                    <th>Years</th>
+                    <th>Free Agent</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contract in contracts %}
+                <tr>
+                    <td>
+                        <strong>{{ contract.name }}</strong>
+                        <span class="player-meta">#{{ contract.jersey }} {{ contract.position }}</span>
+                    </td>
+                    <td class="salary">${{ "{:,.0f}".format(contract.current_salary) }}</td>
+                    <td>
+                        <span class="contract-type">{{ contract.contract_type or '-' }}</span>
+                        {% if contract.signed_using %}<br><span class="signed-using">{{ contract.signed_using }}</span>{% endif %}
+                    </td>
+                    <td>{{ contract.start_year or '-' }}-{{ contract.end_year or '-' }}</td>
+                    <td>
+                        {{ contract.free_agent_year or '-' }}
+                        {% if contract.free_agent_status %}<br><span class="fa-status">{{ contract.free_agent_status }}</span>{% endif %}
+                    </td>
+                </tr>
+                {% if contract.contract_notes %}
+                <tr class="notes-row">
+                    <td colspan="5">
+                        <ul class="contract-notes">
+                            {% for note in contract.contract_notes %}
+                            <li>{{ note }}</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
         {% endif %}
 
         <div class="footer">

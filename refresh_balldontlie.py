@@ -248,6 +248,100 @@ def refresh_jokic_stats():
         return None
 
 
+def refresh_contracts():
+    """Fetch contract details for all Nuggets players."""
+    print(f"\n[Contracts] {datetime.now().isoformat()}")
+
+    api_key = get_api_key()
+    if not api_key:
+        return None
+
+    try:
+        # First get all current season contracts for the team
+        print("  Fetching team contracts...")
+        response = requests.get(
+            'https://api.balldontlie.io/nba/v1/contracts/teams',
+            params={'team_id': NUGGETS_BALLDONTLIE_ID},
+            headers={'Authorization': api_key},
+            timeout=30
+        )
+        response.raise_for_status()
+        team_data = response.json()
+
+        # Get player IDs from team contracts
+        player_ids = set()
+        current_salaries = {}
+        for contract in team_data.get('data', []):
+            pid = contract.get('player_id')
+            if pid and contract.get('season') == 2025:
+                player_ids.add(pid)
+                current_salaries[pid] = {
+                    'salary_2025': contract.get('base_salary', 0),
+                    'cap_hit': contract.get('cap_hit', 0),
+                }
+
+        print(f"  Found {len(player_ids)} players with contracts")
+
+        # Get detailed contract info for each player
+        contracts = []
+        for pid in player_ids:
+            try:
+                resp = requests.get(
+                    'https://api.balldontlie.io/nba/v1/contracts/players/aggregate',
+                    params={'player_id': pid},
+                    headers={'Authorization': api_key},
+                    timeout=30
+                )
+                resp.raise_for_status()
+                data = resp.json()
+
+                # Find the current contract
+                for contract in data.get('data', []):
+                    if contract.get('contract_status') == 'CURRENT':
+                        player = contract.get('player', {})
+                        salary_info = current_salaries.get(pid, {})
+                        contracts.append({
+                            'player_id': pid,
+                            'name': f"{player.get('first_name', '')} {player.get('last_name', '')}".strip(),
+                            'jersey': player.get('jersey_number', ''),
+                            'position': player.get('position', ''),
+                            'contract_type': contract.get('contract_type', ''),
+                            'start_year': contract.get('start_year'),
+                            'end_year': contract.get('end_year'),
+                            'contract_years': contract.get('contract_years'),
+                            'total_value': contract.get('total_value', 0),
+                            'average_salary': contract.get('average_salary', 0),
+                            'current_salary': salary_info.get('salary_2025', 0),
+                            'signed_using': contract.get('signed_using', ''),
+                            'free_agent_year': contract.get('free_agent_year'),
+                            'free_agent_status': contract.get('free_agent_status', ''),
+                            'contract_notes': contract.get('contract_notes', []),
+                        })
+                        break
+            except Exception as e:
+                print(f"  Error fetching contract for player {pid}: {e}")
+                continue
+
+        # Sort by current salary descending
+        contracts.sort(key=lambda x: x.get('current_salary', 0), reverse=True)
+
+        print(f"  Retrieved {len(contracts)} contract details")
+
+        contracts_data = {
+            'contracts': contracts,
+            '_cached_at': datetime.now().isoformat(),
+        }
+        with open(CACHE_DIR / 'contracts.json', 'w') as f:
+            json.dump(contracts_data, f, indent=2)
+        print("  Saved contracts cache")
+
+        return contracts
+
+    except Exception as e:
+        print(f"  ERROR: {e}")
+        return None
+
+
 if __name__ == '__main__':
     print("=" * 50)
     print("BALLDONTLIE Data Refresh")
@@ -256,6 +350,7 @@ if __name__ == '__main__':
     refresh_roster()
     refresh_recent_games()
     refresh_jokic_stats()
+    refresh_contracts()
     print("\n" + "=" * 50)
     print("Done!")
     print("=" * 50)
