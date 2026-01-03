@@ -2,12 +2,31 @@ from flask import Flask, render_template
 import calendar
 import json
 import math
+import re
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 JOKIC_PLAYER_ID = 203999
 CACHE_DIR = Path(__file__).parent / 'cache'
+
+# Month name to number mapping for sorting
+MONTH_MAP = {
+    'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+    'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
+}
+
+
+def parse_return_date(date_str):
+    """Parse 'Jan 4' format to sortable tuple (month, day)."""
+    if not date_str:
+        return (99, 99)  # No date sorts last
+    match = re.match(r'(\w+)\s+(\d+)', date_str)
+    if match:
+        month_str, day = match.groups()
+        month = MONTH_MAP.get(month_str.lower(), 99)
+        return (month, int(day))
+    return (99, 99)
 
 STAT_NAMES = {
     'PTS': 'Points',
@@ -191,8 +210,9 @@ def index():
     upcoming_games = schedule_cache.get('games', []) if schedule_cache else []
     calendar_games = schedule_cache.get('calendar_games', []) if schedule_cache else []
 
-    # Extract injuries
+    # Extract injuries and sort by return date
     injuries = injuries_cache.get('injuries', []) if injuries_cache else []
+    injuries = sorted(injuries, key=lambda x: parse_return_date(x.get('return_date', '')))
     injuries_updated = injuries_cache.get('_content_changed_at') if injuries_cache else None
 
     # Get cache timestamp for display
