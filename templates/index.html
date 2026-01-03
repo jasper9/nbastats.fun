@@ -643,6 +643,49 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            position: relative;
+            cursor: pointer;
+        }
+        .calendar-game .tooltip {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a2e;
+            border: 1px solid var(--nuggets-gold);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            margin-bottom: 5px;
+        }
+        .calendar-game:hover .tooltip {
+            display: block;
+        }
+        .tooltip .tt-matchup {
+            font-weight: bold;
+            color: var(--nuggets-gold);
+            margin-bottom: 4px;
+        }
+        .tooltip .tt-time {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            margin-bottom: 4px;
+        }
+        .tooltip .tt-result {
+            font-weight: bold;
+        }
+        .tooltip .tt-result.win { color: #22c55e; }
+        .tooltip .tt-result.loss { color: #ef4444; }
+        .tooltip .tt-odds {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            margin-top: 4px;
+            border-top: 1px solid #333;
+            padding-top: 4px;
         }
         .calendar-game.home {
             border-left: 2px solid var(--nuggets-gold);
@@ -966,6 +1009,21 @@
                                         {% if game.result %}
                                         <div class="score">{{ game.result }} {{ game.home_score }}-{{ game.away_score }}</div>
                                         {% endif %}
+                                        <div class="tooltip">
+                                            <div class="tt-matchup">{{ 'vs' if game.is_home else '@' }} {{ opponent }}</div>
+                                            <div class="tt-time">{{ game.commence_time|game_time }}</div>
+                                            {% if game.result %}
+                                            <div class="tt-result {{ 'win' if game.result == 'W' else 'loss' }}">
+                                                {{ 'WIN' if game.result == 'W' else 'LOSS' }} {{ game.home_score }} - {{ game.away_score }}
+                                            </div>
+                                            {% elif game.nuggets_spread is defined %}
+                                            <div class="tt-odds">
+                                                Spread: {{ game.nuggets_spread|format_spread }}<br>
+                                                ML: {{ game.nuggets_ml|format_odds }}<br>
+                                                O/U: {{ game.total }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                     {% endfor %}
                                 </div>
