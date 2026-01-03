@@ -250,5 +250,34 @@ def leaders(stat):
     )
 
 
+@app.route('/more')
+def more():
+    """Additional stats and info page."""
+    roster_cache = load_cache('roster.json')
+    games_cache = load_cache('recent_games.json')
+    jokic_cache = load_cache('jokic_live.json')
+    injuries_cache = load_cache('injuries.json')
+
+    roster = roster_cache.get('roster', []) if roster_cache else []
+    recent_games = games_cache.get('games', []) if games_cache else []
+    jokic_stats = jokic_cache.get('stats', {}) if jokic_cache else {}
+    injuries = injuries_cache.get('injuries', []) if injuries_cache else []
+
+    # Mark injured players in roster
+    injured_names = {inj['name'] for inj in injuries}
+    for player in roster:
+        player['is_injured'] = player['name'] in injured_names
+
+    cache_time = roster_cache.get('_cached_at', 'Unknown') if roster_cache else 'Unknown'
+
+    return render_template('more.html',
+        roster=roster,
+        recent_games=recent_games,
+        jokic_stats=jokic_stats,
+        injuries=injuries,
+        cache_time=cache_time
+    )
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

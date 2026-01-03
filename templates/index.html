@@ -78,6 +78,21 @@
             text-transform: uppercase;
             font-weight: 500;
         }
+        .more-link {
+            display: inline-block;
+            margin-top: 15px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+            padding: 6px 16px;
+            border: 1px solid var(--text-muted);
+            border-radius: 20px;
+            transition: all 0.2s;
+        }
+        .more-link:hover {
+            color: var(--nuggets-gold);
+            border-color: var(--nuggets-gold);
+        }
         .career-highlights {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -1032,6 +1047,7 @@
     <header>
         <h1 class="player-name">Nikola Jokić</h1>
         <p class="team-info">Denver Nuggets | #15 | Center</p>
+        <a href="/more" class="more-link">More Stats &rarr;</a>
     </header>
 
     <div class="container">

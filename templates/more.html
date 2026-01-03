@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>More - Nuggets Stats</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23f85' stroke='%23333' stroke-width='3'/><path d='M50 5 v90 M5 50 h90 M15 20 Q50 50 15 80 M85 20 Q50 50 85 80' fill='none' stroke='%23333' stroke-width='3'/></svg>">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: #1c2128;
+            --border: #30363d;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b8c1;
+            --text-muted: #6b7280;
+            --nuggets-gold: #fec524;
+            --nuggets-navy: #0d2240;
+            --nuggets-red: #c4122e;
+            --accent: var(--nuggets-gold);
+            --positive: #34d399;
+            --negative: #f87171;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        header {
+            background: linear-gradient(135deg, var(--nuggets-navy) 0%, #1a3a5c 100%);
+            text-align: center;
+            padding: 30px 20px;
+            border-bottom: 4px solid var(--nuggets-gold);
+        }
+        .page-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-primary);
+        }
+        .back-link {
+            color: var(--nuggets-gold);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-top: 8px;
+            display: inline-block;
+        }
+        .back-link:hover { text-decoration: underline; }
+
+        h2 {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.5rem;
+            color: var(--nuggets-gold);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 30px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        /* Jokic Live Stats */
+        .jokic-live {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .jokic-live-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+        .jokic-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 15px;
+        }
+        .jokic-stat {
+            text-align: center;
+        }
+        .jokic-stat-value {
+            font-family: 'Oswald', sans-serif;
+            font-size: 2rem;
+            color: var(--nuggets-gold);
+        }
+        .jokic-stat-label {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        /* Recent Games */
+        .games-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .games-table th, .games-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        .games-table th {
+            background: var(--bg-secondary);
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+        .games-table tr:hover {
+            background: var(--bg-secondary);
+        }
+        .result-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        .result-badge.W {
+            background: #166534;
+            color: #22c55e;
+        }
+        .result-badge.L {
+            background: #991b1b;
+            color: #fca5a5;
+        }
+        .quarter-scores {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* Roster */
+        .roster-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+        }
+        .player-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.2s;
+        }
+        .player-card:hover {
+            border-color: var(--nuggets-gold);
+        }
+        .player-card.injured {
+            border-left: 3px solid var(--nuggets-red);
+        }
+        .player-jersey {
+            font-family: 'Oswald', sans-serif;
+            font-size: 2rem;
+            color: var(--nuggets-gold);
+            min-width: 50px;
+            text-align: center;
+        }
+        .player-info {
+            flex: 1;
+        }
+        .player-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        .player-details {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .injured-badge {
+            background: var(--nuggets-red);
+            color: white;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 40px;
+            border-top: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="page-title">Denver Nuggets - More Stats</div>
+        <a href="/" class="back-link">&larr; Back to Jokic Stats</a>
+    </header>
+
+    <div class="container">
+        {% if jokic_stats %}
+        <h2>Jokic 2025-26 Season Averages</h2>
+        <div class="jokic-live">
+            <div class="jokic-stats-grid">
+                <div class="jokic-stat">
+                    <div class="jokic-stat-value">{{ "%.1f"|format(jokic_stats.pts or 0) }}</div>
+                    <div class="jokic-stat-label">PPG</div>
+                </div>
+                <div class="jokic-stat">
+                    <div class="jokic-stat-value">{{ "%.1f"|format(jokic_stats.reb or 0) }}</div>
+                    <div class="jokic-stat-label">RPG</div>
+                </div>
+                <div class="jokic-stat">
+                    <div class="jokic-stat-value">{{ "%.1f"|format(jokic_stats.ast or 0) }}</div>
+                    <div class="jokic-stat-label">APG</div>
+                </div>
+                <div class="jokic-stat">
+                    <div class="jokic-stat-value">{{ "%.1f"|format(jokic_stats.stl or 0) }}</div>
+                    <div class="jokic-stat-label">SPG</div>
+                </div>
+                <div class="jokic-stat">
+                    <div class="jokic-stat-value">{{ "%.1f"|format(jokic_stats.blk or 0) }}</div>
+                    <div class="jokic-stat-label">BPG</div>
+                </div>
+                <div class="jokic-stat">
+                    <div class="jokic-stat-value">{{ "%.1f"|format((jokic_stats.fg_pct or 0) * 100) }}%</div>
+                    <div class="jokic-stat-label">FG%</div>
+                </div>
+                <div class="jokic-stat">
+                    <div class="jokic-stat-value">{{ "%.1f"|format((jokic_stats.fg3_pct or 0) * 100) }}%</div>
+                    <div class="jokic-stat-label">3P%</div>
+                </div>
+                <div class="jokic-stat">
+                    <div class="jokic-stat-value">{{ jokic_stats.games_played or 0 }}</div>
+                    <div class="jokic-stat-label">Games</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if recent_games %}
+        <h2>Recent Games</h2>
+        <table class="games-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Opponent</th>
+                    <th>Result</th>
+                    <th>Score</th>
+                    <th>Quarters</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for game in recent_games %}
+                <tr>
+                    <td>{{ game.date }}</td>
+                    <td>{{ '@' if not game.is_home else 'vs' }} {{ game.opponent }}</td>
+                    <td><span class="result-badge {{ game.result }}">{{ game.result }}</span></td>
+                    <td>{{ game.nuggets_score }} - {{ game.opponent_score }}</td>
+                    <td class="quarter-scores">
+                        {% if game.is_home %}
+                        {{ game.home_q1 }}-{{ game.visitor_q1 }} | {{ game.home_q2 }}-{{ game.visitor_q2 }} | {{ game.home_q3 }}-{{ game.visitor_q3 }} | {{ game.home_q4 }}-{{ game.visitor_q4 }}{% if game.home_ot1 %} | OT: {{ game.home_ot1 }}-{{ game.visitor_ot1 }}{% endif %}
+                        {% else %}
+                        {{ game.visitor_q1 }}-{{ game.home_q1 }} | {{ game.visitor_q2 }}-{{ game.home_q2 }} | {{ game.visitor_q3 }}-{{ game.home_q3 }} | {{ game.visitor_q4 }}-{{ game.home_q4 }}{% if game.visitor_ot1 %} | OT: {{ game.visitor_ot1 }}-{{ game.home_ot1 }}{% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if roster %}
+        <h2>Nuggets Roster</h2>
+        <div class="roster-grid">
+            {% for player in roster %}
+            <div class="player-card {{ 'injured' if player.is_injured else '' }}">
+                <div class="player-jersey">#{{ player.jersey }}</div>
+                <div class="player-info">
+                    <div class="player-name">
+                        {{ player.name }}
+                        {% if player.is_injured %}<span class="injured-badge">Injured</span>{% endif %}
+                    </div>
+                    <div class="player-details">
+                        {{ player.position }} | {{ player.height }} | {{ player.weight }} lbs
+                    </div>
+                    <div class="player-details">
+                        {% if player.college %}{{ player.college }}{% endif %}
+                        {% if player.draft_year %} | {{ player.draft_year }} Draft (Rd {{ player.draft_round }}, #{{ player.draft_number }}){% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="footer">
+            Data from BALLDONTLIE API | <a href="/" style="color: var(--nuggets-gold);">Back to Main</a>
+            <br><br>
+            Last updated: {{ cache_time|mountain_time }}
+        </div>
+    </div>
+</body>
+</html>
