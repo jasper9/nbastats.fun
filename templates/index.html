@@ -584,9 +584,11 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 15px;
+            overflow: visible;
         }
         .calendar-month {
             background: var(--bg-card);
+            overflow: visible;
             border: 1px solid var(--border);
             border-radius: 4px;
         }
@@ -604,6 +606,7 @@
             gap: 1px;
             background: var(--border);
             padding: 1px;
+            overflow: visible;
         }
         .calendar-day-header {
             background: var(--bg-secondary);
@@ -619,8 +622,8 @@
             padding: 4px;
             font-size: 0.75rem;
             position: relative;
-            overflow: hidden;
             min-width: 0;
+            overflow: visible;
         }
         .calendar-day.empty {
             background: var(--bg-secondary);
@@ -646,46 +649,111 @@
             position: relative;
             cursor: pointer;
         }
-        .calendar-game .tooltip {
+        /* Game detail modal */
+        .game-modal-overlay {
             display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+        .game-modal-overlay.active {
+            display: flex;
+        }
+        .game-modal {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0d1b2a 100%);
+            border: 2px solid var(--nuggets-gold);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 340px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+            position: relative;
+        }
+        .game-modal-close {
             position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1a1a2e;
-            border: 1px solid var(--nuggets-gold);
-            border-radius: 6px;
-            padding: 8px 12px;
+            top: 10px;
+            right: 14px;
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            line-height: 1;
+        }
+        .game-modal-close:hover {
+            color: var(--text);
+        }
+        .game-modal-matchup {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.4rem;
+            color: var(--nuggets-gold);
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .game-modal-time {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .game-modal-result {
+            text-align: center;
+            font-family: 'Oswald', sans-serif;
+            font-size: 2rem;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        .game-modal-result.win {
+            background: linear-gradient(135deg, #166534 0%, #14532d 100%);
+            color: #22c55e;
+        }
+        .game-modal-result.loss {
+            background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
+            color: #fca5a5;
+        }
+        .game-modal-result .label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.8;
+        }
+        .game-modal-result .score {
+            font-size: 2.2rem;
+            font-weight: bold;
+        }
+        .game-modal-odds {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .game-modal-odds-title {
             font-size: 0.75rem;
-            white-space: nowrap;
-            z-index: 100;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            margin-bottom: 5px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            text-align: center;
         }
-        .calendar-game:hover .tooltip {
-            display: block;
+        .game-modal-odds-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            text-align: center;
         }
-        .tooltip .tt-matchup {
+        .game-modal-odds-item .label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        .game-modal-odds-item .value {
+            font-size: 1.1rem;
             font-weight: bold;
             color: var(--nuggets-gold);
-            margin-bottom: 4px;
-        }
-        .tooltip .tt-time {
-            color: var(--text-muted);
-            font-size: 0.7rem;
-            margin-bottom: 4px;
-        }
-        .tooltip .tt-result {
-            font-weight: bold;
-        }
-        .tooltip .tt-result.win { color: #22c55e; }
-        .tooltip .tt-result.loss { color: #ef4444; }
-        .tooltip .tt-odds {
-            color: var(--text-muted);
-            font-size: 0.7rem;
-            margin-top: 4px;
-            border-top: 1px solid #333;
-            padding-top: 4px;
         }
         .calendar-game.home {
             border-left: 2px solid var(--nuggets-gold);
@@ -1004,26 +1072,20 @@
                                     {% for game in day_games %}
                                     {% set opponent = game.away_team if game.is_home else game.home_team %}
                                     {% set opp_name = opponent.split()[-1] %}
-                                    <div class="calendar-game {{ 'home' if game.is_home else 'away' }} {{ 'win' if game.result == 'W' else 'loss' if game.result == 'L' else '' }}">
+                                    <div class="calendar-game {{ 'home' if game.is_home else 'away' }} {{ 'win' if game.result == 'W' else 'loss' if game.result == 'L' else '' }}"
+                                         data-matchup="{{ 'vs' if game.is_home else '@' }} {{ opponent }}"
+                                         data-time="{{ game.commence_time|game_time }}"
+                                         data-result="{{ game.result or '' }}"
+                                         data-home-score="{{ game.home_score or '' }}"
+                                         data-away-score="{{ game.away_score or '' }}"
+                                         data-spread="{{ game.nuggets_spread|format_spread if game.nuggets_spread is defined else '' }}"
+                                         data-ml="{{ game.nuggets_ml|format_odds if game.nuggets_ml is defined else '' }}"
+                                         data-total="{{ game.total or '' }}"
+                                         onclick="showGameModal(this)">
                                         <div class="opponent">{{ '@' if not game.is_home else 'vs' }} {{ opp_name }}</div>
                                         {% if game.result %}
                                         <div class="score">{{ game.result }} {{ game.home_score }}-{{ game.away_score }}</div>
                                         {% endif %}
-                                        <div class="tooltip">
-                                            <div class="tt-matchup">{{ 'vs' if game.is_home else '@' }} {{ opponent }}</div>
-                                            <div class="tt-time">{{ game.commence_time|game_time }}</div>
-                                            {% if game.result %}
-                                            <div class="tt-result {{ 'win' if game.result == 'W' else 'loss' }}">
-                                                {{ 'WIN' if game.result == 'W' else 'LOSS' }} {{ game.home_score }} - {{ game.away_score }}
-                                            </div>
-                                            {% elif game.nuggets_spread is defined %}
-                                            <div class="tt-odds">
-                                                Spread: {{ game.nuggets_spread|format_spread }}<br>
-                                                ML: {{ game.nuggets_ml|format_odds }}<br>
-                                                O/U: {{ game.total }}
-                                            </div>
-                                            {% endif %}
-                                        </div>
                                     </div>
                                     {% endfor %}
                                 </div>
@@ -1326,5 +1388,79 @@
             Last updated: {{ cache_time|mountain_time }}
         </div>
     </div>
+
+    <!-- Game Detail Modal -->
+    <div class="game-modal-overlay" id="gameModal" onclick="hideGameModal(event)">
+        <div class="game-modal" onclick="event.stopPropagation()">
+            <span class="game-modal-close" onclick="hideGameModal()">&times;</span>
+            <div class="game-modal-matchup" id="modalMatchup"></div>
+            <div class="game-modal-time" id="modalTime"></div>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+    function showGameModal(el) {
+        const modal = document.getElementById('gameModal');
+        const matchup = el.dataset.matchup;
+        const time = el.dataset.time;
+        const result = el.dataset.result;
+        const homeScore = el.dataset.homeScore;
+        const awayScore = el.dataset.awayScore;
+        const spread = el.dataset.spread;
+        const ml = el.dataset.ml;
+        const total = el.dataset.total;
+
+        document.getElementById('modalMatchup').textContent = matchup;
+        document.getElementById('modalTime').textContent = time;
+
+        let content = '';
+        if (result) {
+            const isWin = result === 'W';
+            content = `
+                <div class="game-modal-result ${isWin ? 'win' : 'loss'}">
+                    <div class="label">${isWin ? 'Victory' : 'Defeat'}</div>
+                    <div class="score">${homeScore} - ${awayScore}</div>
+                </div>
+            `;
+        } else if (spread) {
+            content = `
+                <div class="game-modal-odds">
+                    <div class="game-modal-odds-title">Betting Lines</div>
+                    <div class="game-modal-odds-grid">
+                        <div class="game-modal-odds-item">
+                            <div class="label">Spread</div>
+                            <div class="value">${spread}</div>
+                        </div>
+                        <div class="game-modal-odds-item">
+                            <div class="label">ML</div>
+                            <div class="value">${ml}</div>
+                        </div>
+                        <div class="game-modal-odds-item">
+                            <div class="label">O/U</div>
+                            <div class="value">${total}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            content = '<div style="text-align: center; color: var(--text-muted);">No additional details available</div>';
+        }
+
+        document.getElementById('modalContent').innerHTML = content;
+        modal.classList.add('active');
+    }
+
+    function hideGameModal(event) {
+        if (!event || event.target === document.getElementById('gameModal')) {
+            document.getElementById('gameModal').classList.remove('active');
+        }
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') hideGameModal();
+    });
+    </script>
 </body>
 </html>
