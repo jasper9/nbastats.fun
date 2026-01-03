@@ -213,6 +213,21 @@
             color: var(--text-muted);
             font-style: italic;
         }
+        .player-contract.expiring {
+            color: #ffa726;
+        }
+        .expiring-badge {
+            display: inline-block;
+            background: #ff9800;
+            color: #000;
+            font-size: 0.6rem;
+            padding: 1px 5px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
 
         .footer {
             text-align: center;
@@ -634,8 +649,9 @@
                         {% if player.draft_year %} | {{ player.draft_year }} Draft (Rd {{ player.draft_round }}, #{{ player.draft_number }}){% endif %}
                     </div>
                     {% if player.contract_end %}
-                    <div class="player-contract">
+                    <div class="player-contract {{ 'expiring' if player.contract_end == 2026 else '' }}">
                         📄 Under contract thru {{ player.contract_end }} · {{ player.free_agent_status or 'UFA' }} {{ player.free_agent_year or player.contract_end }}
+                        {% if player.contract_end == 2026 %}<span class="expiring-badge">Expiring</span>{% endif %}
                     </div>
                     {% else %}
                     <div class="player-contract two-way">No standard contract on file</div>
