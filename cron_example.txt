@@ -1,0 +1,3 @@
+0 * * * * /var/www/nbastats/venv/bin/python /var/www/nbastats/refresh_cache.py > /dev/null 2>&1
+0 12 * * * /var/www/nbastats/venv/bin/python /var/www/nbastats/refresh_odds.py > /dev/null 2>&1
+1 * * * * /var/www/nbastats/venv/bin/python /var/www/nbastats/refresh_injuries.py > /dev/null 2>&1

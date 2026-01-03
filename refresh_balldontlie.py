@@ -370,29 +370,67 @@ def refresh_contracts():
                 resp.raise_for_status()
                 data = resp.json()
 
-                # Find the current contract
+                # Find current and upcoming extension contracts
+                current_contract = None
+                extension_contract = None
                 for contract in data.get('data', []):
-                    if contract.get('contract_status') == 'CURRENT':
-                        player = contract.get('player', {})
-                        salary_info = current_salaries.get(pid, {})
-                        contracts.append({
-                            'player_id': pid,
-                            'name': f"{player.get('first_name', '')} {player.get('last_name', '')}".strip(),
-                            'jersey': player.get('jersey_number', ''),
-                            'position': player.get('position', ''),
-                            'contract_type': contract.get('contract_type', ''),
-                            'start_year': contract.get('start_year'),
-                            'end_year': contract.get('end_year'),
-                            'contract_years': contract.get('contract_years'),
-                            'total_value': contract.get('total_value', 0),
-                            'average_salary': contract.get('average_salary', 0),
-                            'current_salary': salary_info.get('salary_2025', 0),
-                            'signed_using': contract.get('signed_using', ''),
-                            'free_agent_year': contract.get('free_agent_year'),
-                            'free_agent_status': contract.get('free_agent_status', ''),
-                            'contract_notes': contract.get('contract_notes', []),
-                        })
-                        break
+                    status = contract.get('contract_status', '').upper()
+                    if status == 'CURRENT':
+                        current_contract = contract
+                    elif 'EXTENSION' in status or 'UPCOMING' in status:
+                        extension_contract = contract
+
+                if current_contract:
+                    player = current_contract.get('player', {})
+                    salary_info = current_salaries.get(pid, {})
+
+                    # Calculate effective end year (use extension if exists)
+                    effective_end_year = current_contract.get('end_year')
+                    effective_fa_year = current_contract.get('free_agent_year')
+                    effective_fa_status = current_contract.get('free_agent_status', '')
+
+                    if extension_contract:
+                        effective_end_year = extension_contract.get('end_year')
+                        effective_fa_year = extension_contract.get('free_agent_year')
+                        effective_fa_status = extension_contract.get('free_agent_status', '')
+
+                    # Build extension info if exists
+                    extension_info = None
+                    if extension_contract:
+                        extension_info = {
+                            'contract_type': extension_contract.get('contract_type', ''),
+                            'start_year': extension_contract.get('start_year'),
+                            'end_year': extension_contract.get('end_year'),
+                            'contract_years': extension_contract.get('contract_years'),
+                            'total_value': extension_contract.get('total_value', 0),
+                            'average_salary': extension_contract.get('average_salary', 0),
+                            'signed_using': extension_contract.get('signed_using', ''),
+                            'contract_notes': extension_contract.get('contract_notes', []),
+                        }
+
+                    contracts.append({
+                        'player_id': pid,
+                        'name': f"{player.get('first_name', '')} {player.get('last_name', '')}".strip(),
+                        'jersey': player.get('jersey_number', ''),
+                        'position': player.get('position', ''),
+                        'contract_type': current_contract.get('contract_type', ''),
+                        'start_year': current_contract.get('start_year'),
+                        'end_year': current_contract.get('end_year'),
+                        'contract_years': current_contract.get('contract_years'),
+                        'total_value': current_contract.get('total_value', 0),
+                        'average_salary': current_contract.get('average_salary', 0),
+                        'current_salary': salary_info.get('salary_2025', 0),
+                        'signed_using': current_contract.get('signed_using', ''),
+                        'free_agent_year': current_contract.get('free_agent_year'),
+                        'free_agent_status': current_contract.get('free_agent_status', ''),
+                        'contract_notes': current_contract.get('contract_notes', []),
+                        # Effective values considering extensions
+                        'effective_end_year': effective_end_year,
+                        'effective_fa_year': effective_fa_year,
+                        'effective_fa_status': effective_fa_status,
+                        'has_extension': extension_contract is not None,
+                        'extension': extension_info,
+                    })
             except Exception as e:
                 print(f"  Error fetching contract for player {pid}: {e}")
                 continue

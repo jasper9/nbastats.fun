@@ -194,6 +194,25 @@
             font-weight: bold;
             margin-left: 8px;
         }
+        .extended-badge {
+            background: linear-gradient(135deg, #2e7d32, #4caf50);
+            color: white;
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-left: 6px;
+        }
+        .player-contract {
+            font-size: 0.75rem;
+            color: #64b5f6;
+            margin-top: 4px;
+        }
+        .player-contract.two-way {
+            color: var(--text-muted);
+            font-style: italic;
+        }
 
         .footer {
             text-align: center;
@@ -262,6 +281,44 @@
         }
         .contract-notes li {
             margin: 2px 0;
+        }
+        .extension-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #2e7d32, #4caf50);
+            color: white;
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        .extension-row {
+            background: linear-gradient(90deg, rgba(46, 125, 50, 0.15), rgba(46, 125, 50, 0.05)) !important;
+        }
+        .extension-row:hover {
+            background: linear-gradient(90deg, rgba(46, 125, 50, 0.2), rgba(46, 125, 50, 0.1)) !important;
+        }
+        .extension-info {
+            padding: 10px 15px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .extension-label {
+            color: #4caf50;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .extension-value {
+            color: #8bc34a;
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.1rem;
+        }
+        .effective-dates {
+            margin-top: 5px;
+            color: #81c784;
+            font-size: 0.85rem;
         }
 
         /* Salary Cap Section */
@@ -567,6 +624,7 @@
                     <div class="player-name">
                         {{ player.name }}
                         {% if player.is_injured %}<span class="injured-badge">Injured</span>{% endif %}
+                        {% if player.has_extension %}<span class="extended-badge">Extended</span>{% endif %}
                     </div>
                     <div class="player-details">
                         {{ player.position }} | {{ player.height }} | {{ player.weight }} lbs
@@ -575,6 +633,13 @@
                         {% if player.college %}{{ player.college }}{% endif %}
                         {% if player.draft_year %} | {{ player.draft_year }} Draft (Rd {{ player.draft_round }}, #{{ player.draft_number }}){% endif %}
                     </div>
+                    {% if player.contract_end %}
+                    <div class="player-contract">
+                        📄 Under contract thru {{ player.contract_end }} · {{ player.free_agent_status or 'UFA' }} {{ player.free_agent_year or player.contract_end }}
+                    </div>
+                    {% else %}
+                    <div class="player-contract two-way">Two-Way / Exhibit 10</div>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -670,6 +735,7 @@
                     <td>
                         <strong>{{ contract.name }}</strong>
                         <span class="player-meta">#{{ contract.jersey }} {{ contract.position }}</span>
+                        {% if contract.has_extension %}<span class="extension-badge">Extended</span>{% endif %}
                     </td>
                     <td class="salary">${{ "{:,.0f}".format(contract.current_salary) }}</td>
                     <td class="total-value">
@@ -688,9 +754,48 @@
                         </div>
                     </td>
                 </tr>
-                {% if contract.contract_notes %}
+                {% if contract.has_extension %}
+                <tr class="extension-row">
+                    <td colspan="4">
+                        <div class="extension-info">
+                            <span class="extension-label">📝 SIGNED EXTENSION:</span>
+                            <strong>{{ contract.extension.contract_type }}</strong> ·
+                            {{ contract.extension.start_year }}-{{ contract.extension.end_year }} ({{ contract.extension.contract_years }} yrs) ·
+                            <span class="extension-value">${{ "{:,.0f}".format(contract.extension.total_value) }}</span>
+                            (${{ "{:,.0f}".format(contract.extension.average_salary) }}/yr)
+                            {% if contract.extension.signed_using %} · via {{ contract.extension.signed_using }}{% endif %}
+                            <div class="effective-dates">
+                                → Effectively under contract through {{ contract.effective_end_year }} · {{ contract.effective_fa_status or 'UFA' }} in {{ contract.effective_fa_year }}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% if contract.extension.contract_notes %}
                 <tr class="notes-row">
                     <td colspan="4">
+                        <ul class="contract-notes">
+                            {% for note in contract.extension.contract_notes %}
+                            <li>{{ note }}</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endif %}
+                {% if contract.contract_notes and not contract.has_extension %}
+                <tr class="notes-row">
+                    <td colspan="4">
+                        <ul class="contract-notes">
+                            {% for note in contract.contract_notes %}
+                            <li>{{ note }}</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+                {% elif contract.contract_notes and contract.has_extension %}
+                <tr class="notes-row">
+                    <td colspan="4">
+                        <div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 5px;">Current contract notes:</div>
                         <ul class="contract-notes">
                             {% for note in contract.contract_notes %}
                             <li>{{ note }}</li>

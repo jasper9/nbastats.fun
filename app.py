@@ -267,10 +267,18 @@ def more():
     contracts = contracts_cache.get('contracts', []) if contracts_cache else []
     salary_cap = salary_cap_cache if salary_cap_cache else {}
 
-    # Mark injured players in roster
+    # Mark injured players in roster and add contract info
     injured_names = {inj['name'] for inj in injuries}
+    contract_lookup = {c['name']: c for c in contracts}
     for player in roster:
         player['is_injured'] = player['name'] in injured_names
+        # Add contract expiration info
+        contract = contract_lookup.get(player['name'])
+        if contract:
+            player['contract_end'] = contract.get('effective_end_year') or contract.get('end_year')
+            player['has_extension'] = contract.get('has_extension', False)
+            player['free_agent_year'] = contract.get('effective_fa_year') or contract.get('free_agent_year')
+            player['free_agent_status'] = contract.get('effective_fa_status') or contract.get('free_agent_status', 'UFA')
 
     cache_time = roster_cache.get('_cached_at', 'Unknown') if roster_cache else 'Unknown'
 
