@@ -698,7 +698,34 @@
             color: var(--text-muted);
             font-size: 0.9rem;
             text-align: center;
+            margin-bottom: 6px;
+        }
+        .game-modal-location {
+            text-align: center;
             margin-bottom: 16px;
+            font-size: 0.85rem;
+        }
+        .game-modal-location .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.7rem;
+        }
+        .game-modal-location .badge.home {
+            background: var(--nuggets-gold);
+            color: #000;
+        }
+        .game-modal-location .badge.away {
+            background: #4a5568;
+            color: #fff;
+        }
+        .game-modal-location .venue {
+            display: block;
+            margin-top: 4px;
+            color: var(--text-muted);
         }
         .game-modal-result {
             text-align: center;
@@ -1072,9 +1099,12 @@
                                     {% for game in day_games %}
                                     {% set opponent = game.away_team if game.is_home else game.home_team %}
                                     {% set opp_name = opponent.split()[-1] %}
+                                    {% set opp_city = opponent.split()[:-1]|join(' ') %}
                                     <div class="calendar-game {{ 'home' if game.is_home else 'away' }} {{ 'win' if game.result == 'W' else 'loss' if game.result == 'L' else '' }}"
                                          data-matchup="{{ 'vs' if game.is_home else '@' }} {{ opponent }}"
-                                         data-time="{{ game.commence_time|game_time }}"
+                                         data-time="{{ game.commence_time|game_time }} MT"
+                                         data-is-home="{{ 'true' if game.is_home else 'false' }}"
+                                         data-location="{{ 'Ball Arena, Denver' if game.is_home else opp_city }}"
                                          data-result="{{ game.result or '' }}"
                                          data-home-score="{{ game.home_score or '' }}"
                                          data-away-score="{{ game.away_score or '' }}"
@@ -1395,6 +1425,7 @@
             <span class="game-modal-close" onclick="hideGameModal()">&times;</span>
             <div class="game-modal-matchup" id="modalMatchup"></div>
             <div class="game-modal-time" id="modalTime"></div>
+            <div class="game-modal-location" id="modalLocation"></div>
             <div id="modalContent"></div>
         </div>
     </div>
@@ -1404,6 +1435,8 @@
         const modal = document.getElementById('gameModal');
         const matchup = el.dataset.matchup;
         const time = el.dataset.time;
+        const isHome = el.dataset.isHome === 'true';
+        const location = el.dataset.location;
         const result = el.dataset.result;
         const homeScore = el.dataset.homeScore;
         const awayScore = el.dataset.awayScore;
@@ -1413,6 +1446,18 @@
 
         document.getElementById('modalMatchup').textContent = matchup;
         document.getElementById('modalTime').textContent = time;
+
+        // Show location for future games
+        const locationEl = document.getElementById('modalLocation');
+        if (!result) {
+            locationEl.innerHTML = `
+                <span class="badge ${isHome ? 'home' : 'away'}">${isHome ? 'Home' : 'Away'}</span>
+                <span class="venue">${location}</span>
+            `;
+            locationEl.style.display = 'block';
+        } else {
+            locationEl.style.display = 'none';
+        }
 
         let content = '';
         if (result) {
