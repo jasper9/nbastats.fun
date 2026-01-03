@@ -5,6 +5,7 @@ Fetches: injuries, roster, recent games, Jokic season stats.
 Run daily to keep data current.
 """
 
+import hashlib
 import json
 import os
 from datetime import datetime
@@ -137,12 +138,39 @@ def refresh_injuries():
 
         print(f"  Found {len(injuries)} injured players")
 
+        # Compute content hash to detect actual changes
+        content_hash = hashlib.md5(
+            json.dumps(injuries, sort_keys=True).encode()
+        ).hexdigest()
+
+        # Load existing cache to check for changes
+        injuries_file = CACHE_DIR / 'injuries.json'
+        content_changed_at = None
+        if injuries_file.exists():
+            try:
+                with open(injuries_file, 'r') as f:
+                    existing = json.load(f)
+                old_hash = existing.get('_content_hash')
+                if old_hash == content_hash:
+                    # Content unchanged, preserve the old change timestamp
+                    content_changed_at = existing.get('_content_changed_at')
+                    print("  Content unchanged from previous fetch")
+                else:
+                    print("  Content has changed!")
+            except Exception:
+                pass
+
+        # If no previous change time or content changed, use now
+        if not content_changed_at:
+            content_changed_at = datetime.now().isoformat()
+
         # Save injuries cache
         injuries_data = {
             'injuries': injuries,
             '_cached_at': datetime.now().isoformat(),
+            '_content_changed_at': content_changed_at,
+            '_content_hash': content_hash,
         }
-        injuries_file = CACHE_DIR / 'injuries.json'
         with open(injuries_file, 'w') as f:
             json.dump(injuries_data, f, indent=2)
         print("  Saved injuries cache")

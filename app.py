@@ -193,6 +193,7 @@ def index():
 
     # Extract injuries
     injuries = injuries_cache.get('injuries', []) if injuries_cache else []
+    injuries_updated = injuries_cache.get('_content_changed_at') if injuries_cache else None
 
     # Get cache timestamp for display
     cache_time = career_cache.get('_cached_at', 'Unknown')
@@ -214,6 +215,7 @@ def index():
         upcoming_games=upcoming_games,
         calendar_games=calendar_games,
         injuries=injuries,
+        injuries_updated=injuries_updated,
         now_date=now_date,
         cache_time=cache_time
     )

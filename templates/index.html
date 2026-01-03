@@ -584,6 +584,14 @@
             margin-top: 6px;
             line-height: 1.4;
         }
+        .injuries-updated {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: right;
+        }
 
         /* Upcoming Games / Schedule styles */
         .schedule-container {
@@ -1290,6 +1298,11 @@
                 </div>
                 {% endfor %}
             </div>
+            {% if injuries_updated %}
+            <div class="injuries-updated">
+                Data last changed: {{ injuries_updated|mountain_time }}
+            </div>
+            {% endif %}
         </div>
         {% endif %}
 
