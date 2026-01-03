@@ -488,7 +488,7 @@
             border-radius: 8px;
             padding: 12px 16px;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 12px;
         }
         .injury-jersey {
@@ -501,6 +501,12 @@
         .injury-info {
             flex: 1;
         }
+        .injury-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
         .injury-name {
             font-weight: bold;
             font-size: 1rem;
@@ -508,14 +514,22 @@
         .injury-position {
             color: var(--text-muted);
             font-size: 0.8rem;
+            margin-left: 6px;
+        }
+        .injury-type {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #f87171;
+            margin-top: 4px;
         }
         .injury-status {
             display: inline-block;
-            padding: 2px 8px;
+            padding: 3px 10px;
             border-radius: 4px;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: bold;
             text-transform: uppercase;
+            white-space: nowrap;
         }
         .injury-status.out {
             background: #991b1b;
@@ -529,10 +543,40 @@
             background: #854d0e;
             color: #fef08a;
         }
+        .injury-badges {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .game-status {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .game-status.probable {
+            background: #166534;
+            color: #86efac;
+        }
+        .game-status.questionable {
+            background: #854d0e;
+            color: #fef08a;
+        }
+        .game-status.doubtful {
+            background: #9a3412;
+            color: #fdba74;
+        }
+        .game-status.out {
+            background: #991b1b;
+            color: #fca5a5;
+        }
         .injury-return {
             color: var(--text-muted);
             font-size: 0.8rem;
-            margin-top: 4px;
+            margin-top: 6px;
         }
         .injury-desc {
             font-size: 0.75rem;
@@ -1221,11 +1265,23 @@
                 <div class="injury-card">
                     <div class="injury-jersey">#{{ injury.jersey }}</div>
                     <div class="injury-info">
-                        <div class="injury-name">{{ injury.name }}</div>
-                        <div class="injury-position">{{ injury.position }}</div>
-                        <span class="injury-status {{ injury.status|lower|replace(' ', '-') }}">{{ injury.status }}</span>
+                        <div class="injury-header">
+                            <div>
+                                <span class="injury-name">{{ injury.name }}</span>
+                                <span class="injury-position">{{ injury.position }}</span>
+                            </div>
+                            <div class="injury-badges">
+                                <span class="injury-status {{ injury.status|lower|replace(' ', '-') }}">{{ injury.status }}</span>
+                                {% if injury.game_status %}
+                                <span class="game-status {{ injury.game_status|lower }}">{{ injury.game_status }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if injury.injury_type %}
+                        <div class="injury-type">{{ injury.injury_type }}</div>
+                        {% endif %}
                         {% if injury.return_date %}
-                        <div class="injury-return">Expected: {{ injury.return_date }}</div>
+                        <div class="injury-return">Return: {{ injury.return_date }}</div>
                         {% endif %}
                         {% if injury.description %}
                         <div class="injury-desc">{{ injury.description }}</div>

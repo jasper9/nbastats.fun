@@ -29,6 +29,74 @@ def get_api_key():
     return api_key
 
 
+def extract_injury_type(description):
+    """Extract injury type from description text."""
+    import re
+    if not description:
+        return None
+
+    desc_lower = description.lower()
+
+    # Common patterns for injury mentions
+    patterns = [
+        r'for (?:a |an )?(.+?)(?: that | he | she | during | suffered)',
+        r'with (?:a |an )?(.+?)(?: that | he | she |,|\.)',
+        r'due to (?:a |an )?(.+?)(?: that | he | she |,|\.)',
+        r'nursing (?:a |an )?(.+?)(?: that | he | she |,|\.)',
+        r'(\w+ (?:strain|sprain|contusion|fracture|tear|injury|soreness|tightness|inflammation))',
+        r'(hyperextended \w+ \w+)',
+        r'(\w+ \w+ (?:strain|sprain|contusion|fracture|tear|injury|soreness))',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, desc_lower)
+        if match:
+            injury = match.group(1).strip()
+            # Clean up and title case
+            injury = re.sub(r'\s+', ' ', injury)
+            # Remove trailing punctuation
+            injury = injury.rstrip('.,;:')
+            if len(injury) > 3 and len(injury) < 50:
+                return injury.title()
+
+    # Fallback: look for body parts with common injury keywords
+    body_parts = ['knee', 'ankle', 'foot', 'hamstring', 'calf', 'back', 'shoulder',
+                  'wrist', 'hip', 'groin', 'quad', 'thigh', 'elbow', 'hand', 'finger', 'toe']
+    for part in body_parts:
+        if part in desc_lower:
+            # Try to get context around the body part
+            match = re.search(rf'(\w+ )?{part}( \w+)?', desc_lower)
+            if match:
+                return match.group(0).strip().title()
+
+    return None
+
+
+def extract_game_status(description):
+    """Extract game status (probable, questionable, doubtful, out) from description."""
+    import re
+    if not description:
+        return None
+
+    desc_lower = description.lower()
+
+    # NBA standard injury designations
+    statuses = ['probable', 'questionable', 'doubtful', 'out', 'available', 'cleared']
+
+    for status in statuses:
+        if f'is {status}' in desc_lower or f"'{status}" in desc_lower:
+            return status.title()
+        # Also check for patterns like "listed as questionable"
+        if f'listed as {status}' in desc_lower:
+            return status.title()
+        if f'upgraded to {status}' in desc_lower:
+            return status.title()
+        if f'downgraded to {status}' in desc_lower:
+            return status.title()
+
+    return None
+
+
 def refresh_injuries():
     """Fetch latest injury report for Nuggets."""
     print(f"\n[Injuries] {datetime.now().isoformat()}")
@@ -51,13 +119,20 @@ def refresh_injuries():
         injuries = []
         for injury in data.get('data', []):
             player = injury.get('player', {})
+            description = injury.get('description', '')
+            injury_type = extract_injury_type(description)
+
+            game_status = extract_game_status(description)
+
             injuries.append({
                 'name': f"{player.get('first_name', '')} {player.get('last_name', '')}".strip(),
                 'position': player.get('position', ''),
                 'jersey': player.get('jersey_number', ''),
                 'status': injury.get('status', ''),
                 'return_date': injury.get('return_date', ''),
-                'description': injury.get('description', ''),
+                'description': description,
+                'injury_type': injury_type,
+                'game_status': game_status,
             })
 
         print(f"  Found {len(injuries)} injured players")
@@ -342,6 +417,122 @@ def refresh_contracts():
         return None
 
 
+def refresh_salary_cap_status():
+    """
+    Calculate team salary cap status using contract data from API.
+
+    Cap thresholds are hardcoded for 2025-26 season as they don't change mid-season.
+    Source: NBA.com official announcement, June 2025
+    https://www.nba.com/news/nba-salary-cap-set-2025-26-season
+    """
+    print(f"\n[Salary Cap Status] {datetime.now().isoformat()}")
+
+    api_key = get_api_key()
+    if not api_key:
+        return None
+
+    # 2025-26 NBA Salary Cap Thresholds (official, set by NBA)
+    # Retrieved: January 2026 from NBA.com
+    CAP_THRESHOLDS = {
+        'salary_cap': 154_647_000,
+        'luxury_tax_line': 187_895_000,
+        'first_apron': 195_945_000,
+        'second_apron': 207_824_000,
+        'minimum_team_salary': 139_182_000,
+        'taxpayer_mle': 5_685_000,
+        'non_taxpayer_mle': 14_104_000,
+        'cap_thresholds_season': '2025-26',
+        'cap_thresholds_source': 'NBA.com official announcement',
+        'cap_thresholds_retrieved': '2026-01-03',
+    }
+
+    try:
+        print("  Fetching team contracts for cap calculation...")
+        response = requests.get(
+            'https://api.balldontlie.io/nba/v1/contracts/teams',
+            params={'team_id': NUGGETS_BALLDONTLIE_ID},
+            headers={'Authorization': api_key},
+            timeout=30
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        # Calculate totals from 2025 season contracts
+        players = []
+        total_cap_hit = 0
+        total_base_salary = 0
+
+        for contract in data.get('data', []):
+            if contract.get('season') == 2025:  # 2025-26 season
+                player = contract.get('player', {})
+                cap_hit = contract.get('cap_hit', 0) or 0
+                base_salary = contract.get('base_salary', 0) or 0
+
+                total_cap_hit += cap_hit
+                total_base_salary += base_salary
+
+                players.append({
+                    'name': f"{player.get('first_name', '')} {player.get('last_name', '')}".strip(),
+                    'jersey': player.get('jersey_number', ''),
+                    'position': player.get('position', ''),
+                    'cap_hit': cap_hit,
+                    'base_salary': base_salary,
+                })
+
+        # Sort by cap hit descending
+        players.sort(key=lambda x: x['cap_hit'], reverse=True)
+
+        # Calculate status vs each threshold
+        cap = CAP_THRESHOLDS['salary_cap']
+        tax = CAP_THRESHOLDS['luxury_tax_line']
+        apron1 = CAP_THRESHOLDS['first_apron']
+        apron2 = CAP_THRESHOLDS['second_apron']
+
+        cap_status = {
+            'team_total_cap_hit': total_cap_hit,
+            'team_total_base_salary': total_base_salary,
+            'roster_count': len(players),
+            'players': players,
+
+            # Threshold amounts
+            'thresholds': CAP_THRESHOLDS,
+
+            # Status calculations
+            'over_cap': total_cap_hit > cap,
+            'over_cap_amount': max(0, total_cap_hit - cap),
+            'cap_space': max(0, cap - total_cap_hit),
+
+            'over_tax': total_cap_hit > tax,
+            'over_tax_amount': max(0, total_cap_hit - tax),
+            'tax_space': max(0, tax - total_cap_hit),
+
+            'over_first_apron': total_cap_hit > apron1,
+            'first_apron_amount': max(0, total_cap_hit - apron1),
+            'first_apron_space': max(0, apron1 - total_cap_hit),
+
+            'over_second_apron': total_cap_hit > apron2,
+            'second_apron_amount': max(0, total_cap_hit - apron2),
+            'second_apron_space': max(0, apron2 - total_cap_hit),
+
+            '_cached_at': datetime.now().isoformat(),
+        }
+
+        print(f"  Team cap hit: ${total_cap_hit:,}")
+        print(f"  Over cap: {'Yes' if cap_status['over_cap'] else 'No'} (${cap_status['over_cap_amount']:,})")
+        print(f"  Over tax: {'Yes' if cap_status['over_tax'] else 'No'}")
+        print(f"  Over first apron: {'Yes' if cap_status['over_first_apron'] else 'No'}")
+
+        with open(CACHE_DIR / 'salary_cap.json', 'w') as f:
+            json.dump(cap_status, f, indent=2)
+        print("  Saved salary cap status cache")
+
+        return cap_status
+
+    except Exception as e:
+        print(f"  ERROR: {e}")
+        return None
+
+
 if __name__ == '__main__':
     print("=" * 50)
     print("BALLDONTLIE Data Refresh")
@@ -351,6 +542,7 @@ if __name__ == '__main__':
     refresh_recent_games()
     refresh_jokic_stats()
     refresh_contracts()
+    refresh_salary_cap_status()
     print("\n" + "=" * 50)
     print("Done!")
     print("=" * 50)

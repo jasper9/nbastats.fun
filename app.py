@@ -258,12 +258,14 @@ def more():
     jokic_cache = load_cache('jokic_live.json')
     injuries_cache = load_cache('injuries.json')
     contracts_cache = load_cache('contracts.json')
+    salary_cap_cache = load_cache('salary_cap.json')
 
     roster = roster_cache.get('roster', []) if roster_cache else []
     recent_games = games_cache.get('games', []) if games_cache else []
     jokic_stats = jokic_cache.get('stats', {}) if jokic_cache else {}
     injuries = injuries_cache.get('injuries', []) if injuries_cache else []
     contracts = contracts_cache.get('contracts', []) if contracts_cache else []
+    salary_cap = salary_cap_cache if salary_cap_cache else {}
 
     # Mark injured players in roster
     injured_names = {inj['name'] for inj in injuries}
@@ -278,6 +280,7 @@ def more():
         jokic_stats=jokic_stats,
         injuries=injuries,
         contracts=contracts,
+        salary_cap=salary_cap,
         cache_time=cache_time
     )
 
