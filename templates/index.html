@@ -733,6 +733,120 @@
         .odds-row-value.underdog {
             color: #f87171;
         }
+        /* Detailed odds display */
+        .game-odds-detailed {
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            padding: 12px;
+        }
+        .odds-matchup-line {
+            display: flex;
+            justify-content: space-around;
+            gap: 15px;
+        }
+        .odds-team {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 16px;
+            border-radius: 4px;
+            background: var(--bg-card);
+            min-width: 80px;
+        }
+        .odds-team.favorite {
+            border: 1px solid #4ade80;
+        }
+        .odds-team.underdog {
+            border: 1px solid var(--border);
+        }
+        .team-abbrev {
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        .odds-team.favorite .team-abbrev {
+            color: #4ade80;
+        }
+        .team-odds {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        .odds-team.favorite .team-odds {
+            color: #4ade80;
+        }
+        .odds-team.underdog .team-odds {
+            color: var(--text-secondary);
+        }
+        .fav-tag {
+            font-size: 0.6rem;
+            background: #4ade80;
+            color: #000;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-top: 4px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .odds-extras {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+        .odds-extra-item {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .odds-extra-item strong {
+            color: var(--text-primary);
+        }
+        /* Multi-bookmaker table */
+        .multi-book-odds {
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        .bookmaker-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+        .bookmaker-table th {
+            background: var(--bg-card);
+            color: var(--text-muted);
+            padding: 8px 6px;
+            text-align: center;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        .bookmaker-table td {
+            padding: 8px 6px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .bookmaker-table .book-name {
+            text-align: left;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .bookmaker-table .favorite {
+            color: #4ade80;
+            font-weight: 600;
+        }
+        .bookmaker-table .underdog {
+            color: var(--text-secondary);
+        }
+        .bookmaker-table tr:last-child td {
+            border-bottom: none;
+        }
         /* Schedule layout - cards + calendar side by side */
         .schedule-layout {
             display: grid;
@@ -1236,30 +1350,70 @@
                                 {% endfor %}
                             </div>
                             {% else %}
-                            {# Single provider - show available odds #}
-                            <div class="game-odds">
-                                {% if game.nuggets_spread is defined %}
-                                <div class="odds-item">
-                                    <div class="odds-label">Spread</div>
-                                    <div class="odds-value {{ 'favorite' if game.nuggets_spread < 0 else 'underdog' }}">
-                                        {{ game.nuggets_spread|format_spread }}
+                            {# Single provider - show available odds with team context #}
+                            {% set opponent = game.home_team if not game.is_home else game.away_team %}
+                            {% set opp_abbrev = opponent.split()[-1][:3]|upper %}
+                            {% set bdl_data = providers.get('balldontlie', {}) %}
+                            {% set all_vendors = bdl_data.get('vendors', {}) %}
+
+                            {% if all_vendors|length > 1 %}
+                            {# Multiple bookmakers - show comparison table #}
+                            <div class="multi-book-odds">
+                                <table class="bookmaker-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Book</th>
+                                            <th>DEN</th>
+                                            <th>{{ opp_abbrev }}</th>
+                                            <th>Spread</th>
+                                            <th>O/U</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for vname, vdata in all_vendors.items() %}
+                                        <tr>
+                                            <td class="book-name">{{ vname|capitalize }}</td>
+                                            <td class="{{ 'favorite' if vdata.nuggets_ml and vdata.nuggets_ml < 0 else 'underdog' }}">
+                                                {{ vdata.nuggets_ml|format_odds if vdata.nuggets_ml else '-' }}
+                                            </td>
+                                            <td class="{{ 'favorite' if vdata.opponent_ml and vdata.opponent_ml < 0 else 'underdog' }}">
+                                                {{ vdata.opponent_ml|format_odds if vdata.opponent_ml else '-' }}
+                                            </td>
+                                            <td>{{ vdata.nuggets_spread|format_spread if vdata.nuggets_spread else '-' }}</td>
+                                            <td>{{ vdata.total if vdata.total else '-' }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            {# Single bookmaker - show detailed view #}
+                            <div class="game-odds-detailed">
+                                <div class="odds-matchup-line">
+                                    <div class="odds-team {{ 'favorite' if game.nuggets_ml < 0 else 'underdog' }}">
+                                        <span class="team-abbrev">DEN</span>
+                                        <span class="team-odds">{{ game.nuggets_ml|format_odds }}</span>
+                                        {% if game.nuggets_ml < 0 %}<span class="fav-tag">FAV</span>{% endif %}
+                                    </div>
+                                    <div class="odds-team {{ 'favorite' if game.opponent_ml and game.opponent_ml < 0 else 'underdog' }}">
+                                        <span class="team-abbrev">{{ opp_abbrev }}</span>
+                                        <span class="team-odds">{{ game.opponent_ml|format_odds if game.opponent_ml else '-' }}</span>
+                                        {% if game.opponent_ml and game.opponent_ml < 0 %}<span class="fav-tag">FAV</span>{% endif %}
                                     </div>
                                 </div>
-                                {% endif %}
-                                <div class="odds-item">
-                                    <div class="odds-label">Moneyline</div>
-                                    <div class="odds-value {{ 'favorite' if game.nuggets_ml < 0 else 'underdog' }}">
-                                        {{ game.nuggets_ml|format_odds }}
-                                    </div>
-                                </div>
-                                {% if game.total is defined %}
-                                <div class="odds-item">
-                                    <div class="odds-label">Total</div>
-                                    <div class="odds-value">{{ game.total }}</div>
+                                {% if game.nuggets_spread is defined or game.total is defined %}
+                                <div class="odds-extras">
+                                    {% if game.nuggets_spread is defined %}
+                                    <span class="odds-extra-item">Spread: <strong>{{ game.nuggets_spread|format_spread }}</strong></span>
+                                    {% endif %}
+                                    {% if game.total is defined %}
+                                    <span class="odds-extra-item">O/U: <strong>{{ game.total }}</strong></span>
+                                    {% endif %}
                                 </div>
                                 {% endif %}
                             </div>
                             <div class="odds-source">via {{ game.bookmaker }}</div>
+                            {% endif %}
                             {% endif %}
                         </div>
                         {% endfor %}

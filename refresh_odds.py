@@ -164,64 +164,70 @@ def fetch_balldontlie_odds(dates):
             except Exception:
                 pass
 
-        # Group odds by game and pick best vendor (prefer one with most data)
+        # Group odds by game
         from collections import defaultdict
         game_odds = defaultdict(list)
         for o in odds_data:
             game_odds[o['game_id']].append(o)
 
-        # Build odds lookup by teams
+        # Build odds lookup by teams - include ALL vendors with data
         odds_lookup = {}
         for game_id, odds_list in game_odds.items():
             teams = game_teams.get(game_id)
             if not teams:
                 continue
 
-            # Pick the vendor with most complete data
-            best_odds = None
-            best_score = -1
+            # Determine if Nuggets is home or away
+            is_nuggets_home = teams['home_abbr'] == 'DEN'
+            is_nuggets_away = teams['away_abbr'] == 'DEN'
+
+            if not (is_nuggets_home or is_nuggets_away):
+                continue
+
+            # Collect odds from ALL vendors that have data
+            all_vendors = {}
             for o in odds_list:
-                score = sum([
-                    o.get('moneyline_home_odds') is not None,
-                    o.get('spread_home_value') is not None,
-                    o.get('total_value') is not None,
-                ])
-                if score > best_score:
-                    best_score = score
-                    best_odds = o
+                if o.get('moneyline_home_odds') is None:
+                    continue
 
-            if best_odds and best_odds.get('moneyline_home_odds') is not None:
-                # Determine if Nuggets is home or away
-                is_nuggets_home = teams['home_abbr'] == 'DEN'
-                is_nuggets_away = teams['away_abbr'] == 'DEN'
+                vendor = o.get('vendor', 'unknown')
+                vendor_data = {
+                    'bookmaker': vendor,
+                    'updated_at': o.get('updated_at'),
+                }
 
-                if is_nuggets_home or is_nuggets_away:
-                    odds_data = {
-                        'source': 'balldontlie',
-                        'bookmaker': best_odds.get('vendor', 'unknown'),
-                        'updated_at': best_odds.get('updated_at'),
-                    }
+                if is_nuggets_home:
+                    vendor_data['nuggets_ml'] = o.get('moneyline_home_odds')
+                    vendor_data['opponent_ml'] = o.get('moneyline_away_odds')
+                    if o.get('spread_home_value'):
+                        vendor_data['nuggets_spread'] = float(o['spread_home_value'])
+                        vendor_data['nuggets_spread_odds'] = o.get('spread_home_odds')
+                else:
+                    vendor_data['nuggets_ml'] = o.get('moneyline_away_odds')
+                    vendor_data['opponent_ml'] = o.get('moneyline_home_odds')
+                    if o.get('spread_away_value'):
+                        vendor_data['nuggets_spread'] = float(o['spread_away_value'])
+                        vendor_data['nuggets_spread_odds'] = o.get('spread_away_odds')
 
-                    if is_nuggets_home:
-                        odds_data['nuggets_ml'] = best_odds.get('moneyline_home_odds')
-                        odds_data['opponent_ml'] = best_odds.get('moneyline_away_odds')
-                        if best_odds.get('spread_home_value'):
-                            odds_data['nuggets_spread'] = float(best_odds['spread_home_value'])
-                            odds_data['nuggets_spread_odds'] = best_odds.get('spread_home_odds')
-                    else:
-                        odds_data['nuggets_ml'] = best_odds.get('moneyline_away_odds')
-                        odds_data['opponent_ml'] = best_odds.get('moneyline_home_odds')
-                        if best_odds.get('spread_away_value'):
-                            odds_data['nuggets_spread'] = float(best_odds['spread_away_value'])
-                            odds_data['nuggets_spread_odds'] = best_odds.get('spread_away_odds')
+                if o.get('total_value'):
+                    vendor_data['total'] = float(o['total_value'])
+                    vendor_data['over_odds'] = o.get('total_over_odds')
+                    vendor_data['under_odds'] = o.get('total_under_odds')
 
-                    if best_odds.get('total_value'):
-                        odds_data['total'] = float(best_odds['total_value'])
-                        odds_data['over_odds'] = best_odds.get('total_over_odds')
-                        odds_data['under_odds'] = best_odds.get('total_under_odds')
+                all_vendors[vendor] = vendor_data
 
-                    key = (teams['home'], teams['away'])
-                    odds_lookup[key] = odds_data
+            if all_vendors:
+                key = (teams['home'], teams['away'])
+                odds_lookup[key] = {
+                    'source': 'balldontlie',
+                    'vendors': all_vendors,
+                    # For backwards compat, pick best vendor as primary
+                    **max(all_vendors.values(), key=lambda v: sum([
+                        v.get('nuggets_ml') is not None,
+                        v.get('nuggets_spread') is not None,
+                        v.get('total') is not None,
+                    ]))
+                }
 
         print(f"  [balldontlie] Found Nuggets odds for {len(odds_lookup)} games")
         return odds_lookup
