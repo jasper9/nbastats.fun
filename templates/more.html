@@ -212,19 +212,41 @@
         }
         .contracts-table .salary {
             font-family: 'Oswald', sans-serif;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             color: var(--nuggets-gold);
+            white-space: nowrap;
+        }
+        .contracts-table .total-value {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.1rem;
+            color: #8bc34a;
+            white-space: nowrap;
+        }
+        .contracts-table .contract-years {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: 'Inter', sans-serif;
+        }
+        .contracts-table .contract-details {
+            line-height: 1.6;
         }
         .contracts-table .contract-type {
-            font-weight: 500;
+            font-weight: 600;
+            color: #fff;
         }
         .contracts-table .signed-using {
             color: var(--text-muted);
-            font-size: 0.75rem;
+            font-size: 0.8rem;
         }
-        .contracts-table .fa-status {
-            color: var(--text-muted);
-            font-size: 0.75rem;
+        .contracts-table .contract-duration {
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+        .contracts-table .free-agent-info {
+            font-size: 0.8rem;
+            color: #64b5f6;
+            margin-top: 2px;
         }
         .notes-row {
             background: var(--bg-secondary) !important;
@@ -240,6 +262,46 @@
         }
         .contract-notes li {
             margin: 2px 0;
+        }
+
+        /* Contract Glossary */
+        .contract-glossary {
+            margin-top: 40px;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .contract-glossary h3 {
+            color: var(--nuggets-gold);
+            margin: 0 0 15px 0;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .contract-glossary dl {
+            margin: 0;
+            columns: 2;
+            column-gap: 40px;
+        }
+        .contract-glossary dt {
+            font-weight: 600;
+            color: #fff;
+            font-size: 0.85rem;
+            margin-bottom: 2px;
+            break-after: avoid;
+        }
+        .contract-glossary dd {
+            margin: 0 0 15px 0;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            line-height: 1.4;
+            break-inside: avoid;
+        }
+        @media (max-width: 800px) {
+            .contract-glossary dl {
+                columns: 1;
+            }
         }
     </style>
 </head>
@@ -353,9 +415,8 @@
                 <tr>
                     <th>Player</th>
                     <th>2025-26 Salary</th>
-                    <th>Contract</th>
-                    <th>Years</th>
-                    <th>Free Agent</th>
+                    <th>Total Value</th>
+                    <th>Contract Details</th>
                 </tr>
             </thead>
             <tbody>
@@ -366,19 +427,25 @@
                         <span class="player-meta">#{{ contract.jersey }} {{ contract.position }}</span>
                     </td>
                     <td class="salary">${{ "{:,.0f}".format(contract.current_salary) }}</td>
-                    <td>
-                        <span class="contract-type">{{ contract.contract_type or '-' }}</span>
-                        {% if contract.signed_using %}<br><span class="signed-using">{{ contract.signed_using }}</span>{% endif %}
+                    <td class="total-value">
+                        ${{ "{:,.0f}".format(contract.total_value) }}
+                        <span class="contract-years">{{ contract.contract_years or '-' }} years</span>
                     </td>
-                    <td>{{ contract.start_year or '-' }}-{{ contract.end_year or '-' }}</td>
-                    <td>
-                        {{ contract.free_agent_year or '-' }}
-                        {% if contract.free_agent_status %}<br><span class="fa-status">{{ contract.free_agent_status }}</span>{% endif %}
+                    <td class="contract-details">
+                        <div class="contract-type">{{ contract.contract_type or '-' }}</div>
+                        {% if contract.signed_using %}<div class="signed-using">Signed via {{ contract.signed_using }}</div>{% endif %}
+                        <div class="contract-duration">
+                            <strong>{{ contract.start_year }}-{{ contract.end_year }}</strong>
+                            &nbsp;·&nbsp; Expires after {{ contract.end_year - 1 }}-{{ '%02d' % (contract.end_year % 100) }} season
+                        </div>
+                        <div class="free-agent-info">
+                            {{ contract.free_agent_status or 'UFA' }} in {{ contract.free_agent_year or contract.end_year }}
+                        </div>
                     </td>
                 </tr>
                 {% if contract.contract_notes %}
                 <tr class="notes-row">
-                    <td colspan="5">
+                    <td colspan="4">
                         <ul class="contract-notes">
                             {% for note in contract.contract_notes %}
                             <li>{{ note }}</li>
@@ -390,6 +457,41 @@
                 {% endfor %}
             </tbody>
         </table>
+
+        <div class="contract-glossary">
+            <h3>Contract Terms Glossary</h3>
+            <dl>
+                <dt>Bird Rights</dt>
+                <dd>Named after Larry Bird. Allows teams to exceed the salary cap to re-sign their own players who have been on the roster for 3+ years. Enables offering larger contracts than other teams can.</dd>
+
+                <dt>UFA (Unrestricted Free Agent)</dt>
+                <dd>Player can sign with any team without restrictions. Their current team has no special rights to match offers.</dd>
+
+                <dt>RFA (Restricted Free Agent)</dt>
+                <dd>Player can receive offers from other teams, but their current team has the right to match any offer and retain the player.</dd>
+
+                <dt>Player Option</dt>
+                <dd>Player can choose to opt out of the final year(s) of their contract and become a free agent, or stay on the current deal.</dd>
+
+                <dt>Club Option</dt>
+                <dd>Team can choose whether to keep the player for an additional year at a set salary, or let them become a free agent.</dd>
+
+                <dt>Designated Veteran Extension</dt>
+                <dd>Also called "supermax." Allows teams to offer their best players contracts worth up to 35% of the salary cap. Limited to players meeting MVP/All-NBA criteria.</dd>
+
+                <dt>Rookie Scale Contract</dt>
+                <dd>Pre-set salaries for first-round draft picks based on draft position. Teams hold options for years 3 and 4.</dd>
+
+                <dt>LTBE / ULTBE</dt>
+                <dd><strong>Likely To Be Earned</strong> / <strong>Unlikely To Be Earned</strong> incentives. Bonuses based on performance benchmarks. "Likely" means player achieved it last season.</dd>
+
+                <dt>TPE (Trade Player Exception)</dt>
+                <dd>Created when a team trades away a player without taking salary back. Can be used to acquire players within one year.</dd>
+
+                <dt>Sign-and-Trade</dt>
+                <dd>Team signs their own free agent then immediately trades them. Allows the player to get a larger contract while moving to a new team.</dd>
+            </dl>
+        </div>
         {% endif %}
 
         <div class="footer">
