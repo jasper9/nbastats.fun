@@ -15,6 +15,7 @@
     {% endif %}
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23f85' stroke='%23333' stroke-width='3'/><path d='M50 5 v90 M5 50 h90 M15 20 Q50 50 15 80 M85 20 Q50 50 85 80' fill='none' stroke='%23333' stroke-width='3'/></svg>">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.1.0/dist/chartjs-plugin-annotation.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
         :root {
@@ -78,12 +79,12 @@
         header {
             background: linear-gradient(135deg, var(--nuggets-navy) 0%, #1a3a5c 100%);
             text-align: center;
-            padding: 20px 20px;
+            padding: 12px 20px;
             border-bottom: 3px solid var(--nuggets-gold);
         }
         .page-title {
             font-family: 'Oswald', sans-serif;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             font-weight: 700;
             text-transform: uppercase;
             color: var(--text-primary);
@@ -91,18 +92,18 @@
         .page-subtitle {
             color: var(--nuggets-gold);
             font-size: 0.85rem;
-            margin-top: 5px;
+            margin-top: 3px;
         }
         .container {
-            max-width: 1200px;
+            max-width: 900px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 15px;
         }
         .result-banner {
             text-align: center;
-            padding: 30px;
+            padding: 20px;
             border-radius: 12px;
-            margin-bottom: 30px;
+            margin-bottom: 15px;
         }
         .result-banner.win {
             background: linear-gradient(135deg, rgba(52, 211, 153, 0.2), rgba(52, 211, 153, 0.05));
@@ -114,80 +115,118 @@
         }
         .final-score {
             font-family: 'Oswald', sans-serif;
-            font-size: 3rem;
+            font-size: 2.5rem;
             font-weight: 700;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
         .final-score .nuggets { color: var(--nuggets-gold); }
         .final-score .opponent { color: var(--text-primary); }
-        .final-score .separator { color: var(--text-muted); margin: 0 15px; }
+        .final-score .separator { color: var(--text-muted); margin: 0 10px; }
         .result-label {
-            font-size: 1.2rem;
+            font-size: 1rem;
             font-weight: 600;
         }
         .result-label.win { color: var(--positive); }
         .result-label.loss { color: var(--negative); }
         .matchup-info {
             color: var(--text-secondary);
-            margin-top: 10px;
+            margin-top: 5px;
+            font-size: 0.9rem;
+        }
+        .box-score-section {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .box-score-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Oswald', sans-serif;
+        }
+        .box-score-table th, .box-score-table td {
+            padding: 8px 12px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .box-score-table th {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .box-score-table td {
+            font-size: 1.1rem;
+        }
+        .box-score-table .team-name {
+            text-align: left;
+            font-weight: 600;
+        }
+        .box-score-table .nuggets-row { color: var(--nuggets-gold); }
+        .box-score-table .total-col {
+            font-weight: 700;
+            border-left: 2px solid var(--border);
         }
         .chart-section {
             background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 20px;
-            margin: 30px 0;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
         }
         .chart-title {
             font-family: 'Oswald', sans-serif;
-            font-size: 1.2rem;
+            font-size: 1rem;
             color: var(--text-primary);
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
         .chart-container {
             position: relative;
-            height: 400px;
+            height: 300px;
         }
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin: 30px 0;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 15px 0;
         }
         .stat-card {
             background: var(--bg-card);
             border-radius: 8px;
-            padding: 20px;
+            padding: 12px;
             text-align: center;
             border: 1px solid var(--border);
         }
         .stat-value {
             font-family: 'Oswald', sans-serif;
-            font-size: 2rem;
+            font-size: 1.5rem;
             color: var(--nuggets-gold);
         }
         .stat-label {
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             color: var(--text-muted);
             text-transform: uppercase;
-            margin-top: 5px;
+            margin-top: 3px;
         }
         .footer {
             text-align: center;
-            padding: 30px;
+            padding: 20px;
             color: var(--text-muted);
             font-size: 0.8rem;
             border-top: 1px solid var(--border);
-            margin-top: 40px;
+            margin-top: 20px;
         }
         .back-link {
             display: inline-block;
             color: var(--nuggets-gold);
             text-decoration: none;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
         }
         .back-link:hover { text-decoration: underline; }
+        @media (max-width: 600px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
     </style>
 </head>
 <body>
@@ -204,7 +243,7 @@
     </nav>
 
     <header>
-        <div class="page-title">Win Probability History <span style="background: #dc2626; color: white; font-size: 0.5em; padding: 3px 8px; border-radius: 4px; vertical-align: middle; margin-left: 10px;">BETA</span></div>
+        <div class="page-title">Game Recap</div>
         <div class="page-subtitle">{{ history.game_info.date }}</div>
     </header>
 
@@ -237,32 +276,78 @@
         </div>
 
         {% if history.snapshots %}
+        <!-- Box Score -->
+        <div class="box-score-section">
+            <table class="box-score-table" id="boxScoreTable">
+                <thead>
+                    <tr>
+                        <th class="team-name">Team</th>
+                        <th>Q1</th>
+                        <th>Q2</th>
+                        <th>Q3</th>
+                        <th>Q4</th>
+                        <th class="total-col">T</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="nuggets-row">
+                        <td class="team-name">DEN</td>
+                        <td id="den-q1">-</td>
+                        <td id="den-q2">-</td>
+                        <td id="den-q3">-</td>
+                        <td id="den-q4">-</td>
+                        <td class="total-col" id="den-total">{{ nuggets_score }}</td>
+                    </tr>
+                    <tr>
+                        <td class="team-name" id="opp-name">OPP</td>
+                        <td id="opp-q1">-</td>
+                        <td id="opp-q2">-</td>
+                        <td id="opp-q3">-</td>
+                        <td id="opp-q4">-</td>
+                        <td class="total-col" id="opp-total">{{ opponent_score }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Stats Grid -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-value">{{ history.snapshots|length }}</div>
                 <div class="stat-label">Data Points</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">{{ "%.1f"|format(history.snapshots[0].consensus_prob) }}%</div>
-                <div class="stat-label">Starting Probability</div>
+                {% set start_swing = (history.snapshots[0].consensus_prob - 50) * 2 %}
+                <div class="stat-value">{{ "%+.0f"|format(start_swing) }}%</div>
+                <div class="stat-label">Opening</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">{{ "%.1f"|format(history.snapshots[-1].consensus_prob) }}%</div>
-                <div class="stat-label">Final Probability</div>
+                {% set end_swing = (history.snapshots[-1].consensus_prob - 50) * 2 %}
+                <div class="stat-value">{{ "%+.0f"|format(end_swing) }}%</div>
+                <div class="stat-label">Final</div>
             </div>
             <div class="stat-card">
                 {% set probs = history.snapshots|map(attribute='consensus_prob')|list %}
                 {% set max_prob = probs|max %}
                 {% set min_prob = probs|min %}
-                <div class="stat-value">{{ "%.1f"|format(max_prob - min_prob) }}%</div>
-                <div class="stat-label">Probability Swing</div>
+                <div class="stat-value">{{ "%.0f"|format((max_prob - min_prob) * 2) }}%</div>
+                <div class="stat-label">Max Swing</div>
             </div>
         </div>
 
+        <!-- Probability Chart -->
         <div class="chart-section">
-            <div class="chart-title">Win Probability Throughout Game</div>
+            <div class="chart-title">Win Probability Swing</div>
             <div class="chart-container">
                 <canvas id="probChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Score Chart -->
+        <div class="chart-section">
+            <div class="chart-title">Score Progression</div>
+            <div class="chart-container">
+                <canvas id="scoreChart"></canvas>
             </div>
         </div>
         {% else %}
@@ -277,29 +362,99 @@
     {% if history.snapshots %}
     <script>
         const snapshots = {{ history.snapshots|tojson }};
+        const opponentName = "{{ history.game_info.opponent_name }}";
+
+        // Set opponent name in box score
+        const oppAbbrev = opponentName.split(' ').pop().substring(0, 3).toUpperCase();
+        document.getElementById('opp-name').textContent = oppAbbrev;
 
         const labels = snapshots.map(s => {
             const d = new Date(s.timestamp);
             return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
         });
 
-        const probs = snapshots.map(s => s.consensus_prob);
+        // Convert to swing scale: 50% -> 0, 100% -> +100%, 0% -> -100%
+        const swingData = snapshots.map(s => (s.consensus_prob - 50) * 2);
+        const nuggetsScores = snapshots.map(s => s.nuggets_score || 0);
+        const opponentScores = snapshots.map(s => s.opponent_score || 0);
+        const periods = snapshots.map(s => s.period || 0);
 
-        const ctx = document.getElementById('probChart').getContext('2d');
-        new Chart(ctx, {
+        // Calculate box score from period transitions
+        function calculateBoxScore() {
+            const quarterEndScores = { nuggets: [0,0,0,0], opponent: [0,0,0,0] };
+
+            for (let i = 0; i < periods.length - 1; i++) {
+                if (periods[i] >= 1 && periods[i] <= 4 && periods[i+1] > periods[i]) {
+                    quarterEndScores.nuggets[periods[i] - 1] = nuggetsScores[i];
+                    quarterEndScores.opponent[periods[i] - 1] = opponentScores[i];
+                }
+            }
+
+            // Use final scores for last quarter
+            const lastPeriod = periods[periods.length - 1] || 4;
+            if (lastPeriod >= 1 && lastPeriod <= 4) {
+                quarterEndScores.nuggets[lastPeriod - 1] = nuggetsScores[nuggetsScores.length - 1];
+                quarterEndScores.opponent[lastPeriod - 1] = opponentScores[opponentScores.length - 1];
+            }
+
+            // Calculate per-quarter scores
+            for (let q = 1; q <= 4; q++) {
+                const prevN = q > 1 ? quarterEndScores.nuggets[q-2] : 0;
+                const prevO = q > 1 ? quarterEndScores.opponent[q-2] : 0;
+                const qScoreN = quarterEndScores.nuggets[q-1] - prevN;
+                const qScoreO = quarterEndScores.opponent[q-1] - prevO;
+
+                if (quarterEndScores.nuggets[q-1] > 0 || qScoreN > 0) {
+                    document.getElementById(`den-q${q}`).textContent = qScoreN;
+                    document.getElementById(`opp-q${q}`).textContent = qScoreO;
+                }
+            }
+        }
+        calculateBoxScore();
+
+        // Find quarter transitions for annotations
+        const quarterAnnotations = {};
+        for (let i = 0; i < periods.length - 1; i++) {
+            if (periods[i] >= 1 && periods[i] <= 4 && periods[i+1] > periods[i]) {
+                quarterAnnotations[`endQ${periods[i]}`] = {
+                    type: 'line',
+                    xMin: i,
+                    xMax: i,
+                    borderColor: 'rgba(255, 255, 255, 0.4)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    label: {
+                        display: true,
+                        content: `End Q${periods[i]}`,
+                        position: 'start',
+                        yAdjust: -30,
+                        backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                        color: '#fec524',
+                        font: { size: 10, weight: 'bold' },
+                        padding: 4
+                    }
+                };
+            }
+        }
+
+        // Probability Chart with swing scale
+        const probCtx = document.getElementById('probChart').getContext('2d');
+        new Chart(probCtx, {
             type: 'line',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Nuggets Win %',
-                    data: probs,
+                    label: 'Nuggets Win Swing',
+                    data: swingData,
                     borderColor: '#fec524',
-                    backgroundColor: 'rgba(254, 197, 36, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
+                    borderWidth: 2,
+                    fill: {
+                        target: { value: 0 },
+                        above: 'rgba(254, 197, 36, 0.4)',
+                        below: 'rgba(107, 114, 128, 0.4)',
+                    },
                     tension: 0.3,
-                    pointRadius: 3,
-                    pointBackgroundColor: '#fec524',
+                    pointRadius: 0,
                 }]
             },
             options: {
@@ -307,35 +462,110 @@
                 maintainAspectRatio: false,
                 scales: {
                     y: {
-                        min: 0,
+                        min: -100,
                         max: 100,
+                        afterFit: (axis) => { axis.width = 55; },
                         ticks: {
-                            callback: value => value + '%',
+                            callback: value => {
+                                if (value === 0) return 'EVEN';
+                                return (value > 0 ? '+' : '') + value + '%';
+                            },
                             color: '#6b7280',
+                            stepSize: 25,
                         },
-                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        grid: {
+                            color: ctx => ctx.tick.value === 0 ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.1)',
+                            lineWidth: ctx => ctx.tick.value === 0 ? 2 : 1,
+                        },
                     },
                     x: {
-                        ticks: {
-                            color: '#6b7280',
-                            maxTicksLimit: 15,
-                        },
+                        ticks: { color: '#6b7280', maxTicksLimit: 10 },
                         grid: { color: 'rgba(255,255,255,0.05)' },
                     }
                 },
                 plugins: {
                     legend: { display: false },
+                    annotation: {
+                        annotations: {
+                            ...quarterAnnotations,
+                            zeroLine: {
+                                type: 'line',
+                                yMin: 0,
+                                yMax: 0,
+                                borderColor: 'rgba(255, 255, 255, 0.3)',
+                                borderWidth: 1,
+                            }
+                        }
+                    },
                     tooltip: {
                         callbacks: {
                             label: ctx => {
                                 const snap = snapshots[ctx.dataIndex];
-                                let label = ctx.parsed.y.toFixed(1) + '%';
-                                if (snap.nuggets_score !== undefined) {
-                                    label += ` (DEN ${snap.nuggets_score} - ${snap.opponent_score})`;
+                                const value = ctx.parsed.y;
+                                const period = snap.period ? ` (Q${snap.period})` : '';
+                                if (value >= 0) {
+                                    return `Nuggets +${value.toFixed(0)}%${period}`;
+                                } else {
+                                    return `${oppAbbrev} ${value.toFixed(0)}%${period}`;
                                 }
-                                return label;
                             }
                         }
+                    }
+                }
+            }
+        });
+
+        // Score Chart
+        const scoreCtx = document.getElementById('scoreChart').getContext('2d');
+        new Chart(scoreCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Nuggets',
+                        data: nuggetsScores,
+                        borderColor: '#fec524',
+                        backgroundColor: 'rgba(254, 197, 36, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 0,
+                    },
+                    {
+                        label: oppAbbrev,
+                        data: opponentScores,
+                        borderColor: '#6b7280',
+                        backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 0,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        afterFit: (axis) => { axis.width = 55; },
+                        ticks: { color: '#6b7280' },
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                    },
+                    x: {
+                        ticks: { color: '#6b7280', maxTicksLimit: 10 },
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: { color: '#b0b8c1' }
+                    },
+                    annotation: {
+                        annotations: quarterAnnotations
                     }
                 }
             }
