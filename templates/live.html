@@ -670,7 +670,9 @@
 
         function updateQuarterLines() {
             // Find quarter transitions and add vertical lines at END of each quarter
-            Object.keys(quarterAnnotations).forEach(key => delete quarterAnnotations[key]);
+            Object.keys(quarterAnnotations).forEach(key => {
+                if (key !== 'zeroLine') delete quarterAnnotations[key];
+            });
             Object.keys(scoreQuarterAnnotations).forEach(key => delete scoreQuarterAnnotations[key]);
 
             for (let i = 0; i < periodHistory.length - 1; i++) {
@@ -699,6 +701,19 @@
                     scoreQuarterAnnotations[`endQ${currentPeriod}`] = { ...annotation };
                 }
             }
+
+            // Update chart annotation configs directly
+            chart.options.plugins.annotation.annotations = {
+                ...quarterAnnotations,
+                zeroLine: {
+                    type: 'line',
+                    yMin: 0,
+                    yMax: 0,
+                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                    borderWidth: 1,
+                }
+            };
+            scoreChart.options.plugins.annotation.annotations = scoreQuarterAnnotations;
         }
 
         async function loadHistory(gameId) {

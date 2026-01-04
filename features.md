@@ -106,3 +106,13 @@ Would it be possible to use the BallDontLie betting odds to report to build a li
 
 
 Is there a way to keep the contract data refresh in the scripts but make it refresh at a slower rate, like weekly?
+
+
+
+Is it possible to add the current game clock to the live page?  No guessing.  Get this accurately from somewhere.
+
+
+Let's work on the graph on the live page.   Can we have vertical lines marking each quarter?    Also, i noticed if you refresh the page you lose the history.  We want that to persist for the whole game.
+
+
+Can we make the dots on the graph smaller.   Can we fill in the graph on the probability graph between the line and EVEN line?   Yellow on the top (for nuggets), some other color for the opponent.  It would be great if we can dynamically find a color that matches the oponent.
