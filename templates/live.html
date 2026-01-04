@@ -904,10 +904,15 @@
             delete scoreQuarterAnnotations.maxOpponentLead;
             delete scoreQuarterAnnotations.currentGap;
 
-            // Add max Nuggets lead line (gold)
+            const lastIndex = nuggetsScoreHistory.length - 1;
+            const currentDiff = lastIndex >= 0 ? nuggetsScoreHistory[lastIndex] - opponentScoreHistory[lastIndex] : 0;
+
+            // Add max Nuggets lead line (gold) - combine with current if same
             if (maxNuggetsLeadIndex >= 0 && maxNuggetsLead > 0) {
                 const nuggets = nuggetsScoreHistory[maxNuggetsLeadIndex];
                 const opponent = opponentScoreHistory[maxNuggetsLeadIndex];
+                const isCurrent = maxNuggetsLeadIndex === lastIndex && currentDiff > 0;
+                const label = isCurrent ? `MAX/Current +${maxNuggetsLead}` : `MAX +${maxNuggetsLead} DEN`;
 
                 scoreQuarterAnnotations.maxNuggetsLead = {
                     type: 'line',
@@ -919,9 +924,9 @@
                     borderWidth: 3,
                     label: {
                         display: true,
-                        content: `MAX +${maxNuggetsLead} DEN`,
+                        content: label,
                         position: 'center',
-                        xAdjust: 25,
+                        xAdjust: isCurrent ? -25 : 25,
                         backgroundColor: '#fec524',
                         color: '#000000',
                         font: { size: 11, weight: 'bold' },
@@ -930,11 +935,13 @@
                 };
             }
 
-            // Add max opponent lead line (red)
+            // Add max opponent lead line (red) - combine with current if same
             if (maxOpponentLeadIndex >= 0 && maxOpponentLead > 0) {
                 const nuggets = nuggetsScoreHistory[maxOpponentLeadIndex];
                 const opponent = opponentScoreHistory[maxOpponentLeadIndex];
                 const oppAbbrev = opponentName.split(' ').pop().toUpperCase().slice(0, 3);
+                const isCurrent = maxOpponentLeadIndex === lastIndex && currentDiff < 0;
+                const label = isCurrent ? `MAX/Current +${maxOpponentLead}` : `MAX +${maxOpponentLead} ${oppAbbrev}`;
 
                 scoreQuarterAnnotations.maxOpponentLead = {
                     type: 'line',
@@ -946,9 +953,9 @@
                     borderWidth: 3,
                     label: {
                         display: true,
-                        content: `MAX +${maxOpponentLead} ${oppAbbrev}`,
+                        content: label,
                         position: 'center',
-                        xAdjust: 25,
+                        xAdjust: isCurrent ? -25 : 25,
                         backgroundColor: '#ef4444',
                         color: '#ffffff',
                         font: { size: 11, weight: 'bold' },
@@ -957,14 +964,14 @@
                 };
             }
 
-            // Add current gap line (yellow) at the rightmost point
-            const lastIndex = nuggetsScoreHistory.length - 1;
-            if (lastIndex >= 0) {
-                const currentNuggets = nuggetsScoreHistory[lastIndex];
-                const currentOpponent = opponentScoreHistory[lastIndex];
-                const currentDiff = currentNuggets - currentOpponent;
+            // Add current gap line (navy) only if not already shown as max
+            if (lastIndex >= 0 && currentDiff !== 0) {
+                const isMaxNuggets = maxNuggetsLeadIndex === lastIndex && currentDiff > 0;
+                const isMaxOpponent = maxOpponentLeadIndex === lastIndex && currentDiff < 0;
 
-                if (currentDiff !== 0) {
+                if (!isMaxNuggets && !isMaxOpponent) {
+                    const currentNuggets = nuggetsScoreHistory[lastIndex];
+                    const currentOpponent = opponentScoreHistory[lastIndex];
                     const label = currentDiff > 0
                         ? `Current +${currentDiff}`
                         : `Current ${currentDiff}`;
@@ -1020,8 +1027,16 @@
             delete quarterAnnotations.maxOpponentProb;
             delete quarterAnnotations.currentProb;
 
-            // Add max Nuggets probability line (gold)
+            const lastProbIndex = probDisplayHistory.length - 1;
+            const currentSwing = lastProbIndex >= 0 ? probDisplayHistory[lastProbIndex] : 0;
+
+            // Add max Nuggets probability line (gold) - combine with current if same
             if (maxNuggetsIndex >= 0 && maxNuggetsSwing > 0) {
+                const isCurrent = maxNuggetsIndex === lastProbIndex && currentSwing > 0;
+                const label = isCurrent
+                    ? `MAX/Current +${maxNuggetsSwing.toFixed(0)}%`
+                    : `MAX +${maxNuggetsSwing.toFixed(0)}% DEN`;
+
                 quarterAnnotations.maxNuggetsProb = {
                     type: 'line',
                     xMin: maxNuggetsIndex,
@@ -1032,9 +1047,9 @@
                     borderWidth: 3,
                     label: {
                         display: true,
-                        content: `MAX +${maxNuggetsSwing.toFixed(0)}% DEN`,
+                        content: label,
                         position: 'end',
-                        xAdjust: 25,
+                        xAdjust: isCurrent ? -25 : 25,
                         backgroundColor: '#fec524',
                         color: '#000000',
                         font: { size: 10, weight: 'bold' },
@@ -1043,9 +1058,14 @@
                 };
             }
 
-            // Add max opponent probability line (red)
+            // Add max opponent probability line (red) - combine with current if same
             if (maxOpponentIndex >= 0 && maxOpponentSwing > 0) {
                 const oppAbbrev = opponentName.split(' ').pop().toUpperCase().slice(0, 3);
+                const isCurrent = maxOpponentIndex === lastProbIndex && currentSwing < 0;
+                const label = isCurrent
+                    ? `MAX/Current +${maxOpponentSwing.toFixed(0)}%`
+                    : `MAX +${maxOpponentSwing.toFixed(0)}% ${oppAbbrev}`;
+
                 quarterAnnotations.maxOpponentProb = {
                     type: 'line',
                     xMin: maxOpponentIndex,
@@ -1056,9 +1076,9 @@
                     borderWidth: 3,
                     label: {
                         display: true,
-                        content: `MAX +${maxOpponentSwing.toFixed(0)}% ${oppAbbrev}`,
+                        content: label,
                         position: 'start',
-                        xAdjust: 25,
+                        xAdjust: isCurrent ? -25 : 25,
                         backgroundColor: '#ef4444',
                         color: '#ffffff',
                         font: { size: 10, weight: 'bold' },
@@ -1067,11 +1087,12 @@
                 };
             }
 
-            // Add current probability line (navy blue) at the rightmost point
-            const lastProbIndex = probDisplayHistory.length - 1;
-            if (lastProbIndex >= 0) {
-                const currentSwing = probDisplayHistory[lastProbIndex];
-                if (currentSwing !== 0) {
+            // Add current probability line (navy) only if not already shown as max
+            if (lastProbIndex >= 0 && currentSwing !== 0) {
+                const isMaxNuggets = maxNuggetsIndex === lastProbIndex && currentSwing > 0;
+                const isMaxOpponent = maxOpponentIndex === lastProbIndex && currentSwing < 0;
+
+                if (!isMaxNuggets && !isMaxOpponent) {
                     const label = currentSwing > 0
                         ? `Current +${currentSwing.toFixed(0)}%`
                         : `Current ${currentSwing.toFixed(0)}%`;
