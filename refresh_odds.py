@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 CACHE_DIR = Path(__file__).parent / 'cache'
+HISTORICAL_ODDS_FILE = CACHE_DIR / 'historical_odds.json'
 
 # Team name mappings for matching between providers
 TEAM_NAME_MAP = {
@@ -237,6 +238,121 @@ def fetch_balldontlie_odds(dates):
         return {}
 
 
+def load_historical_odds():
+    """Load historical odds data."""
+    if HISTORICAL_ODDS_FILE.exists():
+        with open(HISTORICAL_ODDS_FILE, 'r') as f:
+            return json.load(f)
+    return {'games': {}}
+
+
+def save_historical_odds(data):
+    """Save historical odds data."""
+    data['_updated_at'] = datetime.now().isoformat()
+    with open(HISTORICAL_ODDS_FILE, 'w') as f:
+        json.dump(data, f, indent=2)
+
+
+def archive_pregame_odds(game, odds_data):
+    """
+    Archive pre-game odds before a game starts.
+    Only archives if we don't already have odds for this game.
+    """
+    historical = load_historical_odds()
+    game_id = game.get('id')
+
+    if not game_id or game_id in historical['games']:
+        return  # Already archived or no game ID
+
+    # Only archive if game hasn't started and we have odds
+    if game.get('is_past') or game.get('game_status', 1) != 1:
+        return
+
+    if not odds_data.get('nuggets_spread') and not odds_data.get('nuggets_ml'):
+        return  # No useful odds to archive
+
+    historical['games'][game_id] = {
+        'game_id': game_id,
+        'date': game.get('local_date'),
+        'home_team': game.get('home_team'),
+        'away_team': game.get('away_team'),
+        'is_home': game.get('is_home'),
+        'archived_at': datetime.now().isoformat(),
+        # Odds at time of archive
+        'pregame_odds': {
+            'nuggets_spread': odds_data.get('nuggets_spread'),
+            'nuggets_spread_odds': odds_data.get('nuggets_spread_odds'),
+            'nuggets_ml': odds_data.get('nuggets_ml'),
+            'opponent_ml': odds_data.get('opponent_ml'),
+            'total': odds_data.get('total'),
+            'bookmaker': odds_data.get('bookmaker'),
+            'source': odds_data.get('source'),
+        }
+    }
+    save_historical_odds(historical)
+
+
+def evaluate_beat_odds(game, historical_odds):
+    """
+    Evaluate if Nuggets beat the odds for a completed game.
+    Returns dict with beat_spread, beat_moneyline, beat_total info.
+    """
+    if not historical_odds or not game.get('result'):
+        return None
+
+    pregame = historical_odds.get('pregame_odds', {})
+    spread = pregame.get('nuggets_spread')
+    total = pregame.get('total')
+    nuggets_ml = pregame.get('nuggets_ml')
+
+    # Get scores
+    is_home = game.get('is_home')
+    home_score = game.get('home_score', 0)
+    away_score = game.get('away_score', 0)
+
+    nuggets_score = home_score if is_home else away_score
+    opponent_score = away_score if is_home else home_score
+    actual_margin = nuggets_score - opponent_score
+
+    result = {
+        'nuggets_score': nuggets_score,
+        'opponent_score': opponent_score,
+        'actual_margin': actual_margin,
+    }
+
+    # Check if covered the spread
+    # Spread is negative if Nuggets favored (e.g., -5.5 means they need to win by 6+)
+    # Spread is positive if Nuggets underdog (e.g., +5.5 means they can lose by 5 and still cover)
+    if spread is not None:
+        result['spread'] = spread
+        # Nuggets cover if actual_margin > spread (accounting for the sign)
+        # e.g., spread=-5.5, margin=10 -> covered (10 > -5.5)
+        # e.g., spread=-5.5, margin=3 -> didn't cover (3 > -5.5 is True... wait)
+        # Actually: spread is points added to Nuggets score
+        # cover = (nuggets_score + spread) > opponent_score
+        adjusted_score = nuggets_score + spread
+        result['covered_spread'] = adjusted_score > opponent_score
+        result['spread_margin'] = actual_margin + spread  # How much they beat spread by
+
+    # Check if Nuggets won as underdog (positive moneyline = underdog)
+    if nuggets_ml is not None:
+        result['nuggets_ml'] = nuggets_ml
+        result['was_underdog'] = nuggets_ml > 0
+        result['was_favorite'] = nuggets_ml < 0
+        result['won'] = actual_margin > 0
+        result['upset_win'] = result['was_underdog'] and result['won']
+
+    # Check over/under
+    if total is not None:
+        actual_total = home_score + away_score
+        result['total_line'] = total
+        result['actual_total'] = actual_total
+        result['went_over'] = actual_total > total
+        result['went_under'] = actual_total < total
+
+    return result
+
+
 def refresh_odds():
     """Fetch latest odds from both providers and merge into schedule cache."""
     print(f"[Odds Refresh] {datetime.now().isoformat()}")
@@ -326,6 +442,31 @@ def refresh_odds():
     print(f"  Updated {games_with_odds} upcoming games with odds:")
     print(f"    the-odds-api: {theoddsapi_matched} Nuggets games matched")
     print(f"    balldontlie: {balldontlie_matched} Nuggets games matched")
+
+    # Archive pre-game odds for upcoming games (before they start)
+    archived_count = 0
+    for game in games:
+        if game.get('odds_providers') and not game.get('is_past'):
+            # Use best available odds source
+            odds = game.get('odds_providers', {}).get('theoddsapi') or \
+                   game.get('odds_providers', {}).get('balldontlie') or {}
+            if odds:
+                archive_pregame_odds(game, odds)
+                archived_count += 1
+    print(f"  Archived pre-game odds for {archived_count} upcoming games")
+
+    # Evaluate beat-odds for past games in calendar
+    historical = load_historical_odds()
+    evaluated_count = 0
+    for game in calendar_games:
+        if game.get('is_past') and game.get('result'):
+            game_id = game.get('id')
+            if game_id and game_id in historical.get('games', {}):
+                beat_odds = evaluate_beat_odds(game, historical['games'][game_id])
+                if beat_odds:
+                    game['beat_odds'] = beat_odds
+                    evaluated_count += 1
+    print(f"  Evaluated beat-odds for {evaluated_count} past games")
 
     # Save updated cache
     schedule_data['_odds_updated_at'] = datetime.now().isoformat()

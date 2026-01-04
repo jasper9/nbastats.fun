@@ -571,6 +571,12 @@ def main():
     refresh_nuggets_schedule()
     time.sleep(1)
 
+    # Refresh odds data (archives pre-game odds, evaluates beat-odds for past games)
+    print("\n[7/7] Refreshing odds data...")
+    from refresh_odds import refresh_odds
+    refresh_odds()
+    time.sleep(1)
+
     # Refresh BALLDONTLIE data (injuries, roster, contracts, etc.)
     print("\n" + "=" * 60)
     print("Refreshing BALLDONTLIE data...")

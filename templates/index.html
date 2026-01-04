@@ -1156,6 +1156,21 @@
             font-size: 0.7rem;
             font-weight: bold;
         }
+        .calendar-game .beat-odds-indicator {
+            position: absolute;
+            bottom: 1px;
+            right: 2px;
+            font-size: 0.5rem;
+            font-weight: bold;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+        .calendar-game .beat-odds-indicator.covered {
+            color: #4ade80;
+        }
+        .calendar-game .beat-odds-indicator.not-covered {
+            color: #f87171;
+        }
         .game-modal-special {
             background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
             color: #1a1a2e;
@@ -1665,7 +1680,8 @@
                                     {% set opp_city = opponent.split()[:-1]|join(' ') %}
                                     {% set special = special_events.get(day_str, {}) %}
                                     {% set jersey = jersey_schedule.get(day_str, {}) %}
-                                    <div class="calendar-game {{ 'home' if game.is_home else 'away' }} {{ 'win' if game.result == 'W' else 'loss' if game.result == 'L' else '' }} {{ 'has-special' if special else '' }}"
+                                    {% set beat_odds = game.beat_odds if game.beat_odds is defined else {} %}
+                                    <div class="calendar-game {{ 'home' if game.is_home else 'away' }} {{ 'win' if game.result == 'W' else 'loss' if game.result == 'L' else '' }} {{ 'has-special' if special or beat_odds else '' }}"
                                          data-matchup="{{ 'vs' if game.is_home else '@' }} {{ opponent }}"
                                          data-time="{{ game.commence_time|game_time }} MT"
                                          data-is-home="{{ 'true' if game.is_home else 'false' }}"
@@ -1690,6 +1706,12 @@
                                         {% endif %}
                                         {% if special %}
                                         <div class="special-indicator" title="{{ special.title }}">*</div>
+                                        {% endif %}
+                                        {% if beat_odds and beat_odds.covered_spread is defined %}
+                                        <div class="beat-odds-indicator {{ 'covered' if beat_odds.covered_spread else 'not-covered' }}"
+                                             title="{{ 'Covered ' ~ beat_odds.spread ~ ' spread' if beat_odds.covered_spread else 'Did not cover ' ~ beat_odds.spread ~ ' spread' }}">
+                                            {{ 'ATS✓' if beat_odds.covered_spread else 'ATS✗' }}
+                                        </div>
                                         {% endif %}
                                     </div>
                                     {% endfor %}
