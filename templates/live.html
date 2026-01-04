@@ -1032,15 +1032,15 @@
 
             // Add max Nuggets probability line (gold) - combine with current if same
             if (maxNuggetsIndex >= 0 && maxNuggetsSwing > 0) {
-                const isCurrent = maxNuggetsIndex === lastProbIndex && currentSwing > 0;
+                const isCurrent = currentSwing > 0 && Math.abs(currentSwing - maxNuggetsSwing) < 0.5;
                 const label = isCurrent
                     ? `MAX/Current +${maxNuggetsSwing.toFixed(0)}%`
                     : `MAX +${maxNuggetsSwing.toFixed(0)}% DEN`;
 
                 quarterAnnotations.maxNuggetsProb = {
                     type: 'line',
-                    xMin: maxNuggetsIndex,
-                    xMax: maxNuggetsIndex,
+                    xMin: isCurrent ? lastProbIndex : maxNuggetsIndex,
+                    xMax: isCurrent ? lastProbIndex : maxNuggetsIndex,
                     yMin: 0,
                     yMax: maxNuggetsSwing,
                     borderColor: '#fec524',
@@ -1061,15 +1061,15 @@
             // Add max opponent probability line (red) - combine with current if same
             if (maxOpponentIndex >= 0 && maxOpponentSwing > 0) {
                 const oppAbbrev = opponentName.split(' ').pop().toUpperCase().slice(0, 3);
-                const isCurrent = maxOpponentIndex === lastProbIndex && currentSwing < 0;
+                const isCurrent = currentSwing < 0 && Math.abs(Math.abs(currentSwing) - maxOpponentSwing) < 0.5;
                 const label = isCurrent
                     ? `MAX/Current +${maxOpponentSwing.toFixed(0)}%`
                     : `MAX +${maxOpponentSwing.toFixed(0)}% ${oppAbbrev}`;
 
                 quarterAnnotations.maxOpponentProb = {
                     type: 'line',
-                    xMin: maxOpponentIndex,
-                    xMax: maxOpponentIndex,
+                    xMin: isCurrent ? lastProbIndex : maxOpponentIndex,
+                    xMax: isCurrent ? lastProbIndex : maxOpponentIndex,
                     yMin: -maxOpponentSwing,
                     yMax: 0,
                     borderColor: '#ef4444',
@@ -1089,8 +1089,8 @@
 
             // Add current probability line (navy) only if not already shown as max
             if (lastProbIndex >= 0 && currentSwing !== 0) {
-                const isMaxNuggets = maxNuggetsIndex === lastProbIndex && currentSwing > 0;
-                const isMaxOpponent = maxOpponentIndex === lastProbIndex && currentSwing < 0;
+                const isMaxNuggets = currentSwing > 0 && Math.abs(currentSwing - maxNuggetsSwing) < 0.5;
+                const isMaxOpponent = currentSwing < 0 && Math.abs(Math.abs(currentSwing) - maxOpponentSwing) < 0.5;
 
                 if (!isMaxNuggets && !isMaxOpponent) {
                     const label = currentSwing > 0
