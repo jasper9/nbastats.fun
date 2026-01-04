@@ -166,6 +166,13 @@
             font-weight: 700;
             border-left: 2px solid var(--border);
         }
+        .box-score-table .quarter-win {
+            color: var(--positive);
+            font-weight: 700;
+        }
+        .box-score-table .quarter-loss {
+            color: var(--text-muted);
+        }
         .chart-section {
             background: var(--bg-secondary);
             border-radius: 8px;
@@ -405,8 +412,19 @@
                 const qScoreO = quarterEndScores.opponent[q-1] - prevO;
 
                 if (quarterEndScores.nuggets[q-1] > 0 || qScoreN > 0) {
-                    document.getElementById(`den-q${q}`).textContent = qScoreN;
-                    document.getElementById(`opp-q${q}`).textContent = qScoreO;
+                    const denCell = document.getElementById(`den-q${q}`);
+                    const oppCell = document.getElementById(`opp-q${q}`);
+                    denCell.textContent = qScoreN;
+                    oppCell.textContent = qScoreO;
+
+                    // Highlight winning score per quarter
+                    if (qScoreN > qScoreO) {
+                        denCell.classList.add('quarter-win');
+                        oppCell.classList.add('quarter-loss');
+                    } else if (qScoreO > qScoreN) {
+                        oppCell.classList.add('quarter-win');
+                        denCell.classList.add('quarter-loss');
+                    }
                 }
             }
         }
@@ -435,6 +453,143 @@
                     }
                 };
             }
+        }
+
+        // NBA team colors (matching live.html)
+        const teamColors = {
+            'Atlanta Hawks': '#E03A3E', 'Boston Celtics': '#007A33', 'Brooklyn Nets': '#FFFFFF',
+            'Charlotte Hornets': '#1D1160', 'Chicago Bulls': '#CE1141', 'Cleveland Cavaliers': '#860038',
+            'Dallas Mavericks': '#00538C', 'Denver Nuggets': '#FEC524', 'Detroit Pistons': '#C8102E',
+            'Golden State Warriors': '#1D428A', 'Houston Rockets': '#CE1141', 'Indiana Pacers': '#002D62',
+            'LA Clippers': '#C8102E', 'Los Angeles Clippers': '#C8102E', 'LA Lakers': '#552583',
+            'Los Angeles Lakers': '#552583', 'Memphis Grizzlies': '#5D76A9', 'Miami Heat': '#98002E',
+            'Milwaukee Bucks': '#00471B', 'Minnesota Timberwolves': '#78BE20', 'New Orleans Pelicans': '#C8102E',
+            'New York Knicks': '#F58426', 'Oklahoma City Thunder': '#007AC1', 'Orlando Magic': '#0077C0',
+            'Philadelphia 76ers': '#006BB6', 'Phoenix Suns': '#E56020', 'Portland Trail Blazers': '#E03A3E',
+            'Sacramento Kings': '#5A2D81', 'San Antonio Spurs': '#C4CED4', 'Toronto Raptors': '#CE1141',
+            'Utah Jazz': '#002B5C', 'Washington Wizards': '#002B5C',
+            'Hawks': '#E03A3E', 'Celtics': '#007A33', 'Nets': '#FFFFFF', 'Hornets': '#1D1160',
+            'Bulls': '#CE1141', 'Cavaliers': '#860038', 'Mavericks': '#00538C', 'Nuggets': '#FEC524',
+            'Pistons': '#C8102E', 'Warriors': '#1D428A', 'Rockets': '#CE1141', 'Pacers': '#002D62',
+            'Clippers': '#C8102E', 'Lakers': '#552583', 'Grizzlies': '#5D76A9', 'Heat': '#98002E',
+            'Bucks': '#00471B', 'Timberwolves': '#78BE20', 'Pelicans': '#C8102E', 'Knicks': '#F58426',
+            'Thunder': '#007AC1', 'Magic': '#0077C0', '76ers': '#006BB6', 'Suns': '#E56020',
+            'Trail Blazers': '#E03A3E', 'Blazers': '#E03A3E', 'Kings': '#5A2D81', 'Spurs': '#C4CED4',
+            'Raptors': '#CE1141', 'Jazz': '#002B5C', 'Wizards': '#002B5C',
+        };
+
+        function getTeamColor(teamName) {
+            if (!teamName) return '#6b7280';
+            if (teamColors[teamName]) return teamColors[teamName];
+            for (const [name, color] of Object.entries(teamColors)) {
+                if (teamName.includes(name) || name.includes(teamName)) return color;
+            }
+            return '#6b7280';
+        }
+
+        const opponentColor = getTeamColor(opponentName);
+
+        // Find max swings for both teams (probability chart)
+        let maxNuggetsSwing = 0, maxNuggetsSwingIdx = 0;
+        let maxOppSwing = 0, maxOppSwingIdx = 0;
+        swingData.forEach((val, idx) => {
+            if (val > maxNuggetsSwing) { maxNuggetsSwing = val; maxNuggetsSwingIdx = idx; }
+            if (val < maxOppSwing) { maxOppSwing = val; maxOppSwingIdx = idx; }
+        });
+
+        // Find max leads for both teams (score chart)
+        let maxNuggetsLead = 0, maxNuggetsLeadIdx = 0;
+        let maxOppLead = 0, maxOppLeadIdx = 0;
+        for (let i = 0; i < nuggetsScores.length; i++) {
+            const diff = nuggetsScores[i] - opponentScores[i];
+            if (diff > maxNuggetsLead) { maxNuggetsLead = diff; maxNuggetsLeadIdx = i; }
+            if (diff < maxOppLead) { maxOppLead = diff; maxOppLeadIdx = i; }
+        }
+
+        // Current/final values
+        const lastIdx = swingData.length - 1;
+        const currentSwing = swingData[lastIdx] || 0;
+        const currentDiff = nuggetsScores[lastIdx] - opponentScores[lastIdx];
+
+        // Build probability chart annotations (matching live.html style)
+        const probAnnotations = { ...quarterAnnotations };
+        probAnnotations.zeroLine = {
+            type: 'line',
+            yMin: 0,
+            yMax: 0,
+            borderColor: 'rgba(255, 255, 255, 0.3)',
+            borderWidth: 1,
+        };
+
+        // Max Nuggets probability - vertical line with gold label
+        if (maxNuggetsSwing > 0) {
+            probAnnotations.maxNuggetsProb = {
+                type: 'line',
+                xMin: maxNuggetsSwingIdx,
+                xMax: maxNuggetsSwingIdx,
+                yMin: 0,
+                yMax: maxNuggetsSwing,
+                borderColor: '#fec524',
+                borderWidth: 3,
+                label: {
+                    display: true,
+                    content: `MAX +${maxNuggetsSwing.toFixed(0)}% DEN`,
+                    position: 'end',
+                    xAdjust: 25,
+                    backgroundColor: '#fec524',
+                    color: '#000000',
+                    font: { size: 10, weight: 'bold' },
+                    padding: 3
+                }
+            };
+        }
+
+        // Max opponent probability - vertical line with red label
+        if (maxOppSwing < 0) {
+            probAnnotations.maxOppProb = {
+                type: 'line',
+                xMin: maxOppSwingIdx,
+                xMax: maxOppSwingIdx,
+                yMin: maxOppSwing,
+                yMax: 0,
+                borderColor: '#f87171',
+                borderWidth: 3,
+                label: {
+                    display: true,
+                    content: `MAX +${Math.abs(maxOppSwing).toFixed(0)}%`,
+                    position: 'start',
+                    xAdjust: maxOppSwingIdx > lastIdx - 10 ? -25 : 25,
+                    backgroundColor: '#f87171',
+                    color: '#000000',
+                    font: { size: 10, weight: 'bold' },
+                    padding: 3
+                }
+            };
+        }
+
+        // Final probability - vertical line with navy label (only if different from max)
+        const isFinalMaxNuggets = currentSwing > 0 && Math.abs(currentSwing - maxNuggetsSwing) < 0.5;
+        const isFinalMaxOpp = currentSwing < 0 && Math.abs(Math.abs(currentSwing) - Math.abs(maxOppSwing)) < 0.5;
+        if (!isFinalMaxNuggets && !isFinalMaxOpp && currentSwing !== 0) {
+            probAnnotations.finalProb = {
+                type: 'line',
+                xMin: lastIdx,
+                xMax: lastIdx,
+                yMin: currentSwing < 0 ? currentSwing : 0,
+                yMax: currentSwing > 0 ? currentSwing : 0,
+                borderColor: '#1e3a5f',
+                borderWidth: 3,
+                label: {
+                    display: true,
+                    content: currentSwing > 0 ? `Final +${currentSwing.toFixed(0)}%` : `Final ${currentSwing.toFixed(0)}%`,
+                    position: currentSwing > 0 ? 'end' : 'start',
+                    xAdjust: -20,
+                    backgroundColor: '#1e3a5f',
+                    color: '#ffffff',
+                    font: { size: 10, weight: 'bold' },
+                    padding: 3
+                }
+            };
         }
 
         // Probability Chart with swing scale
@@ -485,18 +640,7 @@
                 },
                 plugins: {
                     legend: { display: false },
-                    annotation: {
-                        annotations: {
-                            ...quarterAnnotations,
-                            zeroLine: {
-                                type: 'line',
-                                yMin: 0,
-                                yMax: 0,
-                                borderColor: 'rgba(255, 255, 255, 0.3)',
-                                borderWidth: 1,
-                            }
-                        }
-                    },
+                    annotation: { annotations: probAnnotations },
                     tooltip: {
                         callbacks: {
                             label: ctx => {
@@ -514,6 +658,82 @@
                 }
             }
         });
+
+        // Build score chart annotations (matching live.html style)
+        const scoreAnnotations = { ...quarterAnnotations };
+
+        // Max Nuggets lead - vertical line with gold label
+        if (maxNuggetsLead > 0) {
+            scoreAnnotations.maxNuggetsLead = {
+                type: 'line',
+                xMin: maxNuggetsLeadIdx,
+                xMax: maxNuggetsLeadIdx,
+                yMin: nuggetsScores[maxNuggetsLeadIdx] - maxNuggetsLead,
+                yMax: nuggetsScores[maxNuggetsLeadIdx],
+                borderColor: '#fec524',
+                borderWidth: 3,
+                label: {
+                    display: true,
+                    content: `MAX +${maxNuggetsLead} DEN`,
+                    position: 'start',
+                    xAdjust: 25,
+                    backgroundColor: '#fec524',
+                    color: '#000000',
+                    font: { size: 10, weight: 'bold' },
+                    padding: 3
+                }
+            };
+        }
+
+        // Max opponent lead - vertical line with red label
+        if (maxOppLead < 0) {
+            scoreAnnotations.maxOppLead = {
+                type: 'line',
+                xMin: maxOppLeadIdx,
+                xMax: maxOppLeadIdx,
+                yMin: opponentScores[maxOppLeadIdx] + maxOppLead,
+                yMax: opponentScores[maxOppLeadIdx],
+                borderColor: '#f87171',
+                borderWidth: 3,
+                label: {
+                    display: true,
+                    content: `MAX +${Math.abs(maxOppLead)} ${oppAbbrev}`,
+                    position: 'end',
+                    xAdjust: maxOppLeadIdx > lastIdx - 10 ? -25 : 25,
+                    backgroundColor: '#f87171',
+                    color: '#000000',
+                    font: { size: 10, weight: 'bold' },
+                    padding: 3
+                }
+            };
+        }
+
+        // Final score difference - vertical line with navy label
+        const isFinalMaxNuggetsLead = currentDiff > 0 && currentDiff === maxNuggetsLead;
+        const isFinalMaxOppLead = currentDiff < 0 && currentDiff === maxOppLead;
+        if (!isFinalMaxNuggetsLead && !isFinalMaxOppLead && currentDiff !== 0) {
+            const yTop = currentDiff > 0 ? nuggetsScores[lastIdx] : opponentScores[lastIdx];
+            const yBot = currentDiff > 0 ? opponentScores[lastIdx] : nuggetsScores[lastIdx];
+            scoreAnnotations.finalDiff = {
+                type: 'line',
+                xMin: lastIdx,
+                xMax: lastIdx,
+                yMin: yBot,
+                yMax: yTop,
+                borderColor: '#1e3a5f',
+                borderWidth: 3,
+                label: {
+                    display: true,
+                    content: `Final ${currentDiff > 0 ? '+' : ''}${currentDiff}`,
+                    position: 'end',
+                    xAdjust: -20,
+                    backgroundColor: '#1e3a5f',
+                    color: '#ffffff',
+                    font: { size: 10, weight: 'bold' },
+                    padding: 3
+                }
+            };
+        }
 
         // Score Chart
         const scoreCtx = document.getElementById('scoreChart').getContext('2d');
@@ -535,7 +755,7 @@
                     {
                         label: oppAbbrev,
                         data: opponentScores,
-                        borderColor: '#6b7280',
+                        borderColor: opponentColor,
                         backgroundColor: 'rgba(107, 114, 128, 0.1)',
                         borderWidth: 2,
                         fill: false,
@@ -565,7 +785,7 @@
                         labels: { color: '#b0b8c1' }
                     },
                     annotation: {
-                        annotations: quarterAnnotations
+                        annotations: scoreAnnotations
                     }
                 }
             }

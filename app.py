@@ -131,6 +131,57 @@ def update_schedule_with_final_score(game_date, home_team, away_team, home_score
     return updated
 
 
+def update_recent_games_with_final(game_date, opponent_name, opponent_abbrev, is_nuggets_home, nuggets_score, opponent_score, balldontlie_id):
+    """Update recent games cache with final game score."""
+    recent_games_cache = load_cache('recent_games.json')
+    if not recent_games_cache:
+        recent_games_cache = {'games': []}
+
+    games = recent_games_cache.get('games', [])
+
+    # Check if game already exists
+    for game in games:
+        if game.get('id') == balldontlie_id:
+            return False  # Already exists
+
+    result = 'W' if nuggets_score > opponent_score else 'L'
+
+    new_game = {
+        'id': balldontlie_id,
+        'date': game_date,
+        'opponent': opponent_name,
+        'opponent_abbrev': opponent_abbrev,
+        'is_home': is_nuggets_home,
+        'nuggets_score': nuggets_score,
+        'opponent_score': opponent_score,
+        'result': result,
+        'home_q1': None,
+        'home_q2': None,
+        'home_q3': None,
+        'home_q4': None,
+        'home_ot1': None,
+        'visitor_q1': None,
+        'visitor_q2': None,
+        'visitor_q3': None,
+        'visitor_q4': None,
+        'visitor_ot1': None
+    }
+
+    # Insert at beginning (most recent first)
+    games.insert(0, new_game)
+
+    # Keep only last 10 games
+    games = games[:10]
+
+    recent_games_cache['games'] = games
+    recent_games_cache['_cached_at'] = datetime.now().isoformat()
+
+    if save_cache('recent_games.json', recent_games_cache):
+        print(f"Updated recent games with: {opponent_name} - {nuggets_score}-{opponent_score}")
+        return True
+    return False
+
+
 def load_data(filename):
     """Load data from a static data file."""
     data_file = DATA_DIR / filename
@@ -563,6 +614,16 @@ def api_live():
                 away_score,
                 is_nuggets_home,
                 game_id  # Pass BALLDONTLIE game ID for history linking
+            )
+            # Update recent games cache
+            update_recent_games_with_final(
+                today,
+                opponent_team.get('full_name'),
+                opponent_team.get('abbreviation'),
+                is_nuggets_home,
+                nuggets_score,
+                opponent_score,
+                game_id
             )
         elif home_score > 0 or away_score > 0:
             game_state = 'live'
