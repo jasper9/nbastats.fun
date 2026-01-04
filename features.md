@@ -116,3 +116,5 @@ Let's work on the graph on the live page.   Can we have vertical lines marking e
 
 
 Can we make the dots on the graph smaller.   Can we fill in the graph on the probability graph between the line and EVEN line?   Yellow on the top (for nuggets), some other color for the opponent.  It would be great if we can dynamically find a color that matches the oponent.
+
+Can we also add red gap lines in the probablity line graph to illustrate the largest of each team's win probablity?

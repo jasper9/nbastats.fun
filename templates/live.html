@@ -189,17 +189,43 @@
             margin: 20px 0;
             position: relative;
         }
-        .prob-bar {
+        .prob-bar-center {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.5);
+            z-index: 2;
+        }
+        .prob-bar-nuggets {
+            position: absolute;
+            left: 50%;
+            top: 0;
             height: 100%;
             background: linear-gradient(90deg, var(--nuggets-gold), #ffdb70);
             transition: width 0.5s ease;
-            border-radius: 15px;
+            border-radius: 0 15px 15px 0;
+        }
+        .prob-bar-opponent {
+            position: absolute;
+            right: 50%;
+            top: 0;
+            height: 100%;
+            background: linear-gradient(270deg, #6b7280, #9ca3af);
+            transition: width 0.5s ease;
+            border-radius: 15px 0 0 15px;
         }
         .prob-bar-labels {
             display: flex;
             justify-content: space-between;
             font-size: 0.8rem;
             color: var(--text-muted);
+        }
+        .prob-bar-labels .even-label {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
         }
         /* Chart */
         .chart-section {
@@ -376,12 +402,17 @@
                 <div class="prob-label">Nuggets Win Probability</div>
                 <div class="prob-value" id="consensus-prob">--</div>
                 <div class="prob-bar-container">
-                    <div class="prob-bar" id="prob-bar" style="width: 50%"></div>
+                    <div class="prob-bar-opponent" id="prob-bar-opponent" style="width: 0%"></div>
+                    <div class="prob-bar-nuggets" id="prob-bar-nuggets" style="width: 0%"></div>
+                    <div class="prob-bar-center"></div>
                 </div>
-                <div class="prob-bar-labels">
-                    <span>0%</span>
-                    <span>Consensus from <span id="vendor-count">0</span> bookmakers</span>
-                    <span>100%</span>
+                <div class="prob-bar-labels" style="position: relative;">
+                    <span>-100%</span>
+                    <span class="even-label">EVEN</span>
+                    <span style="margin-left: auto;">+100%</span>
+                </div>
+                <div style="text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">
+                    Consensus from <span id="vendor-count">0</span> bookmakers
                 </div>
             </div>
 
@@ -764,6 +795,88 @@
             scoreChart.options.plugins.annotation.annotations = { ...scoreQuarterAnnotations };
         }
 
+        function updateMaxProbLines() {
+            // Find the largest probability swing for each team
+            let maxNuggetsSwing = 0;
+            let maxNuggetsIndex = -1;
+            let maxOpponentSwing = 0;
+            let maxOpponentIndex = -1;
+
+            for (let i = 0; i < probDisplayHistory.length; i++) {
+                const swing = probDisplayHistory[i]; // Already in swing scale (-100 to +100)
+
+                if (swing > maxNuggetsSwing) {
+                    maxNuggetsSwing = swing;
+                    maxNuggetsIndex = i;
+                }
+                if (swing < -maxOpponentSwing) {
+                    maxOpponentSwing = -swing; // Make positive for comparison
+                    maxOpponentIndex = i;
+                }
+            }
+
+            // Remove old max prob lines
+            delete quarterAnnotations.maxNuggetsProb;
+            delete quarterAnnotations.maxOpponentProb;
+
+            // Add max Nuggets probability line (gold)
+            if (maxNuggetsIndex >= 0 && maxNuggetsSwing > 0) {
+                quarterAnnotations.maxNuggetsProb = {
+                    type: 'line',
+                    xMin: maxNuggetsIndex,
+                    xMax: maxNuggetsIndex,
+                    yMin: 0,
+                    yMax: maxNuggetsSwing,
+                    borderColor: '#fec524',
+                    borderWidth: 3,
+                    label: {
+                        display: true,
+                        content: `+${maxNuggetsSwing.toFixed(0)}% DEN`,
+                        position: 'end',
+                        backgroundColor: '#fec524',
+                        color: '#000000',
+                        font: { size: 10, weight: 'bold' },
+                        padding: 3
+                    }
+                };
+            }
+
+            // Add max opponent probability line (red)
+            if (maxOpponentIndex >= 0 && maxOpponentSwing > 0) {
+                const oppAbbrev = opponentName.split(' ').pop().toUpperCase().slice(0, 3);
+                quarterAnnotations.maxOpponentProb = {
+                    type: 'line',
+                    xMin: maxOpponentIndex,
+                    xMax: maxOpponentIndex,
+                    yMin: -maxOpponentSwing,
+                    yMax: 0,
+                    borderColor: '#ef4444',
+                    borderWidth: 3,
+                    label: {
+                        display: true,
+                        content: `+${maxOpponentSwing.toFixed(0)}% ${oppAbbrev}`,
+                        position: 'start',
+                        backgroundColor: '#ef4444',
+                        color: '#ffffff',
+                        font: { size: 10, weight: 'bold' },
+                        padding: 3
+                    }
+                };
+            }
+
+            // Update chart annotations
+            chart.options.plugins.annotation.annotations = {
+                ...quarterAnnotations,
+                zeroLine: {
+                    type: 'line',
+                    yMin: 0,
+                    yMax: 0,
+                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                    borderWidth: 1,
+                }
+            };
+        }
+
         async function loadHistory(gameId) {
             if (!gameId || historyLoaded) return;
 
@@ -813,6 +926,7 @@
                 historyLoaded = true;
                 updateQuarterLines();
                 updateMaxLeadLine();
+                updateMaxProbLines();
                 chart.update();
                 scoreChart.update();
                 console.log(`Loaded ${history.snapshots.length} historical data points`);
@@ -922,7 +1036,13 @@
             // Update probability
             const prob = data.odds.consensus_prob;
             document.getElementById('consensus-prob').textContent = prob ? prob.toFixed(1) + '%' : '--';
-            document.getElementById('prob-bar').style.width = (prob || 50) + '%';
+
+            // Update swing bar - Nuggets bar grows right from center, opponent grows left
+            const nuggetsBarWidth = prob >= 50 ? (prob - 50) : 0;
+            const opponentBarWidth = prob < 50 ? (50 - prob) : 0;
+            document.getElementById('prob-bar-nuggets').style.width = nuggetsBarWidth + '%';
+            document.getElementById('prob-bar-opponent').style.width = opponentBarWidth + '%';
+
             document.getElementById('vendor-count').textContent = data.odds.vendor_count;
 
             // Update charts with new data point
@@ -962,8 +1082,9 @@
                         updateQuarterLines();
                     }
 
-                    // Update max lead indicator
+                    // Update max lead and probability indicators
                     updateMaxLeadLine();
+                    updateMaxProbLines();
 
                     chart.update();
                     scoreChart.update();
