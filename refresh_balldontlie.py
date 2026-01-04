@@ -239,6 +239,7 @@ def refresh_roster():
 
 def refresh_recent_games():
     """Fetch recent Nuggets games with detailed scores."""
+    from datetime import timedelta
     print(f"\n[Recent Games] {datetime.now().isoformat()}")
 
     api_key = get_api_key()
@@ -246,13 +247,18 @@ def refresh_recent_games():
         return None
 
     try:
-        print("  Fetching recent games...")
+        # Use date range to get recent games (last 30 days)
+        end_date = datetime.now().strftime('%Y-%m-%d')
+        start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+
+        print(f"  Fetching recent games ({start_date} to {end_date})...")
         response = requests.get(
             'https://api.balldontlie.io/nba/v1/games',
             params={
                 'team_ids[]': NUGGETS_BALLDONTLIE_ID,
-                'seasons[]': 2025,
-                'per_page': 15,
+                'start_date': start_date,
+                'end_date': end_date,
+                'per_page': 25,
             },
             headers={'Authorization': api_key},
             timeout=30
