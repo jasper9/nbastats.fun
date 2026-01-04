@@ -798,7 +798,7 @@
             // Find quarter transitions and add vertical lines at END of each quarter
             // Preserve max lead/prob annotations
             const preserveKeys = ['zeroLine', 'maxNuggetsProb', 'maxOpponentProb'];
-            const preserveScoreKeys = ['maxNuggetsLead', 'maxOpponentLead'];
+            const preserveScoreKeys = ['maxNuggetsLead', 'maxOpponentLead', 'currentGap'];
             Object.keys(quarterAnnotations).forEach(key => {
                 if (!preserveKeys.includes(key)) delete quarterAnnotations[key];
             });
@@ -902,6 +902,7 @@
             // Remove old annotations
             delete scoreQuarterAnnotations.maxNuggetsLead;
             delete scoreQuarterAnnotations.maxOpponentLead;
+            delete scoreQuarterAnnotations.currentGap;
 
             // Add max Nuggets lead line (gold)
             if (maxNuggetsLeadIndex >= 0 && maxNuggetsLead > 0) {
@@ -952,6 +953,40 @@
                         padding: 4
                     }
                 };
+            }
+
+            // Add current gap line (yellow) at the rightmost point
+            const lastIndex = nuggetsScoreHistory.length - 1;
+            if (lastIndex >= 0) {
+                const currentNuggets = nuggetsScoreHistory[lastIndex];
+                const currentOpponent = opponentScoreHistory[lastIndex];
+                const currentDiff = currentNuggets - currentOpponent;
+
+                if (currentDiff !== 0) {
+                    const oppAbbrev = opponentName.split(' ').pop().toUpperCase().slice(0, 3);
+                    const label = currentDiff > 0
+                        ? `+${currentDiff} DEN`
+                        : `+${Math.abs(currentDiff)} ${oppAbbrev}`;
+
+                    scoreQuarterAnnotations.currentGap = {
+                        type: 'line',
+                        xMin: lastIndex,
+                        xMax: lastIndex,
+                        yMin: Math.min(currentNuggets, currentOpponent),
+                        yMax: Math.max(currentNuggets, currentOpponent),
+                        borderColor: '#facc15',
+                        borderWidth: 3,
+                        label: {
+                            display: true,
+                            content: label,
+                            position: 'center',
+                            backgroundColor: '#facc15',
+                            color: '#000000',
+                            font: { size: 11, weight: 'bold' },
+                            padding: 4
+                        }
+                    };
+                }
             }
 
             scoreChart.options.plugins.annotation.annotations = { ...scoreQuarterAnnotations };
