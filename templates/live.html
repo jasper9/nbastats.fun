@@ -15,6 +15,7 @@
     {% endif %}
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23f85' stroke='%23333' stroke-width='3'/><path d='M50 5 v90 M5 50 h90 M15 20 Q50 50 15 80 M85 20 Q50 50 85 80' fill='none' stroke='%23333' stroke-width='3'/></svg>">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
         :root {
@@ -409,10 +410,12 @@
     </div>
 
     <script>
-        // Chart setup
+        // Chart setup with quarter markers
         const ctx = document.getElementById('probChart').getContext('2d');
         const probHistory = [];
         const timeLabels = [];
+        const periodHistory = [];  // Track period for each data point
+        const quarterAnnotations = {};  // Store quarter line annotations
 
         const chart = new Chart(ctx, {
             type: 'line',
@@ -426,7 +429,7 @@
                     borderWidth: 3,
                     fill: true,
                     tension: 0.3,
-                    pointRadius: 4,
+                    pointRadius: 3,
                     pointBackgroundColor: '#fec524',
                 }]
             },
@@ -444,7 +447,7 @@
                         grid: { color: 'rgba(255,255,255,0.1)' },
                     },
                     x: {
-                        ticks: { color: '#6b7280' },
+                        ticks: { color: '#6b7280', maxTicksLimit: 10 },
                         grid: { color: 'rgba(255,255,255,0.05)' },
                     }
                 },
@@ -452,8 +455,15 @@
                     legend: { display: false },
                     tooltip: {
                         callbacks: {
-                            label: ctx => ctx.parsed.y.toFixed(1) + '%'
+                            label: ctx => {
+                                const period = periodHistory[ctx.dataIndex];
+                                const periodStr = period ? ` (Q${period})` : '';
+                                return ctx.parsed.y.toFixed(1) + '%' + periodStr;
+                            }
                         }
+                    },
+                    annotation: {
+                        annotations: quarterAnnotations
                     }
                 }
             }
@@ -461,10 +471,75 @@
 
         let currentGameId = null;
         let currentGameData = null;
+        let historyLoaded = false;
 
         function formatOdds(ml) {
             if (ml === null || ml === undefined) return '--';
             return ml > 0 ? '+' + ml : ml.toString();
+        }
+
+        function updateQuarterLines() {
+            // Find quarter transitions and add vertical lines
+            const seenQuarters = new Set();
+            Object.keys(quarterAnnotations).forEach(key => delete quarterAnnotations[key]);
+
+            for (let i = 0; i < periodHistory.length; i++) {
+                const period = periodHistory[i];
+                if (period && period > 0 && !seenQuarters.has(period)) {
+                    seenQuarters.add(period);
+                    // Add vertical line at the start of each quarter
+                    quarterAnnotations[`quarter${period}`] = {
+                        type: 'line',
+                        xMin: i,
+                        xMax: i,
+                        borderColor: 'rgba(255, 255, 255, 0.3)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        label: {
+                            display: true,
+                            content: `Q${period}`,
+                            position: 'start',
+                            backgroundColor: 'rgba(30, 41, 59, 0.8)',
+                            color: '#fec524',
+                            font: { size: 11, weight: 'bold' },
+                            padding: 4
+                        }
+                    };
+                }
+            }
+        }
+
+        async function loadHistory(gameId) {
+            if (!gameId || historyLoaded) return;
+
+            try {
+                const response = await fetch(`/api/live/history/${gameId}`);
+                if (!response.ok) return;
+
+                const history = await response.json();
+                if (history.error || !history.snapshots || history.snapshots.length === 0) return;
+
+                // Clear existing data
+                probHistory.length = 0;
+                timeLabels.length = 0;
+                periodHistory.length = 0;
+
+                // Load historical snapshots
+                history.snapshots.forEach(snap => {
+                    const d = new Date(snap.timestamp);
+                    const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    timeLabels.push(timeStr);
+                    probHistory.push(snap.consensus_prob);
+                    periodHistory.push(snap.period || 0);
+                });
+
+                historyLoaded = true;
+                updateQuarterLines();
+                chart.update();
+                console.log(`Loaded ${history.snapshots.length} historical data points`);
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
         }
 
         async function saveSnapshot(data) {
@@ -556,20 +631,24 @@
             document.getElementById('prob-bar').style.width = (prob || 50) + '%';
             document.getElementById('vendor-count').textContent = data.odds.vendor_count;
 
-            // Update chart
+            // Update chart with new data point
             const now = new Date();
             const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            const currentPeriod = data.period || 0;
 
             if (prob !== null && prob !== undefined) {
                 // Only add if different from last value or first entry
-                if (probHistory.length === 0 || probHistory[probHistory.length - 1] !== prob) {
+                const lastProb = probHistory.length > 0 ? probHistory[probHistory.length - 1] : null;
+                const lastPeriod = periodHistory.length > 0 ? periodHistory[periodHistory.length - 1] : null;
+
+                if (probHistory.length === 0 || lastProb !== prob || lastPeriod !== currentPeriod) {
                     timeLabels.push(timeStr);
                     probHistory.push(prob);
+                    periodHistory.push(currentPeriod);
 
-                    // Keep last 60 data points (30 min at 30s intervals)
-                    if (probHistory.length > 60) {
-                        timeLabels.shift();
-                        probHistory.shift();
+                    // Update quarter lines if period changed
+                    if (lastPeriod !== currentPeriod) {
+                        updateQuarterLines();
                     }
 
                     chart.update();
@@ -595,6 +674,12 @@
             try {
                 const response = await fetch('/api/live');
                 const data = await response.json();
+
+                // Load history on first successful fetch with a game
+                if (!data.error && data.game_id && !historyLoaded) {
+                    await loadHistory(data.game_id);
+                }
+
                 updateUI(data);
 
                 // Auto-save snapshot to server for history

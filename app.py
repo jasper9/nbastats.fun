@@ -717,6 +717,15 @@ def api_live_history_list():
     return jsonify({'histories': histories})
 
 
+@app.route('/api/live/history/<game_id>')
+def api_live_history_game(game_id):
+    """Get history data for a specific game as JSON."""
+    history = load_live_history(game_id)
+    if not history:
+        return jsonify({'error': 'Game history not found'}), 404
+    return jsonify(history)
+
+
 @app.route('/live/<game_id>')
 def live_history(game_id):
     """View historical live data for a specific game."""
