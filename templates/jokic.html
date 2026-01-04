@@ -554,7 +554,8 @@
         </div>
         {% endif %}
 
-        <h2>Season Rankings (League-Wide)</h2>
+        {% if jokic_ranks %}
+        <h2>Per-Game Rankings (2025-26 Season)</h2>
         <div class="legend">
             <div class="legend-item"><div class="legend-color legend-gold"></div> 1st</div>
             <div class="legend-item"><div class="legend-color legend-silver"></div> 2nd</div>
@@ -566,70 +567,52 @@
             <table class="rankings-table">
                 <thead>
                     <tr>
-                        <th title="NBA Season">Season</th>
-                        <th title="Points">PTS</th>
-                        <th title="Rebounds">REB</th>
-                        <th title="Assists">AST</th>
-                        <th title="Steals">STL</th>
-                        <th title="Blocks">BLK</th>
+                        <th title="Points Per Game">PPG</th>
+                        <th title="Rebounds Per Game">RPG</th>
+                        <th title="Assists Per Game">APG</th>
+                        <th title="Steals Per Game">SPG</th>
+                        <th title="Blocks Per Game">BPG</th>
                         <th title="Field Goal %">FG%</th>
                         <th title="3-Point %">3P%</th>
                         <th title="Free Throw %">FT%</th>
-                        <th title="Field Goals Made">FGM</th>
-                        <th title="Field Goals Attempted">FGA</th>
-                        <th title="Free Throws Made">FTM</th>
-                        <th title="Free Throws Attempted">FTA</th>
-                        <th title="Offensive Rebounds">OREB</th>
-                        <th title="Defensive Rebounds">DREB</th>
-                        <th title="Minutes">MIN</th>
                         <th title="Efficiency">EFF</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in season_rankings %}
-                    <tr class="{% if row.SEASON_ID == '2025-26' %}current-season{% endif %}">
-                        <td class="season-col">{{ row.SEASON_ID }}{% if row.SEASON_ID == '2025-26' %} ⬅{% endif %}</td>
-                        {% if row.SEASON_ID == '2025-26' %}
-                        <td class="rank-cell {{ row.RANK_PTS|rank_class }}"><a href="/leaders/pts" class="rank-link">{{ row.RANK_PTS|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_REB|rank_class }}"><a href="/leaders/reb" class="rank-link">{{ row.RANK_REB|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_AST|rank_class }}"><a href="/leaders/ast" class="rank-link">{{ row.RANK_AST|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_STL|rank_class }}"><a href="/leaders/stl" class="rank-link">{{ row.RANK_STL|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_BLK|rank_class }}"><a href="/leaders/blk" class="rank-link">{{ row.RANK_BLK|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_FG_PCT|rank_class }}"><a href="/leaders/fg_pct" class="rank-link">{{ row.RANK_FG_PCT|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_FG3_PCT|rank_class }}"><a href="/leaders/fg3_pct" class="rank-link">{{ row.RANK_FG3_PCT|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_FT_PCT|rank_class }}"><a href="/leaders/ft_pct" class="rank-link">{{ row.RANK_FT_PCT|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_FGM|rank_class }}"><a href="/leaders/fgm" class="rank-link">{{ row.RANK_FGM|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_FGA|rank_class }}"><a href="/leaders/fga" class="rank-link">{{ row.RANK_FGA|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_FTM|rank_class }}"><a href="/leaders/ftm" class="rank-link">{{ row.RANK_FTM|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_FTA|rank_class }}"><a href="/leaders/fta" class="rank-link">{{ row.RANK_FTA|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_OREB|rank_class }}"><a href="/leaders/oreb" class="rank-link">{{ row.RANK_OREB|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_DREB|rank_class }}"><a href="/leaders/dreb" class="rank-link">{{ row.RANK_DREB|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_MIN|rank_class }}"><a href="/leaders/min" class="rank-link">{{ row.RANK_MIN|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_EFF|rank_class }}"><a href="/leaders/eff" class="rank-link">{{ row.RANK_EFF|safe_rank }}</a></td>
-                        {% else %}
-                        <td class="rank-cell {{ row.RANK_PTS|rank_class }}">{{ row.RANK_PTS|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_REB|rank_class }}">{{ row.RANK_REB|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_AST|rank_class }}">{{ row.RANK_AST|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_STL|rank_class }}">{{ row.RANK_STL|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_BLK|rank_class }}">{{ row.RANK_BLK|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_FG_PCT|rank_class }}">{{ row.RANK_FG_PCT|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_FG3_PCT|rank_class }}">{{ row.RANK_FG3_PCT|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_FT_PCT|rank_class }}">{{ row.RANK_FT_PCT|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_FGM|rank_class }}">{{ row.RANK_FGM|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_FGA|rank_class }}">{{ row.RANK_FGA|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_FTM|rank_class }}">{{ row.RANK_FTM|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_FTA|rank_class }}">{{ row.RANK_FTA|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_OREB|rank_class }}">{{ row.RANK_OREB|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_DREB|rank_class }}">{{ row.RANK_DREB|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_MIN|rank_class }}">{{ row.RANK_MIN|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_EFF|rank_class }}">{{ row.RANK_EFF|safe_rank }}</td>
-                        {% endif %}
+                    <tr class="current-season">
+                        <td class="rank-cell {{ jokic_ranks.PTS.rank|rank_class if jokic_ranks.PTS else '' }}">
+                            <a href="/leaders/pts" class="rank-link">{{ jokic_ranks.PTS.rank if jokic_ranks.PTS else '-' }}</a>
+                        </td>
+                        <td class="rank-cell {{ jokic_ranks.REB.rank|rank_class if jokic_ranks.REB else '' }}">
+                            <a href="/leaders/reb" class="rank-link">{{ jokic_ranks.REB.rank if jokic_ranks.REB else '-' }}</a>
+                        </td>
+                        <td class="rank-cell {{ jokic_ranks.AST.rank|rank_class if jokic_ranks.AST else '' }}">
+                            <a href="/leaders/ast" class="rank-link">{{ jokic_ranks.AST.rank if jokic_ranks.AST else '-' }}</a>
+                        </td>
+                        <td class="rank-cell {{ jokic_ranks.STL.rank|rank_class if jokic_ranks.STL else '' }}">
+                            <a href="/leaders/stl" class="rank-link">{{ jokic_ranks.STL.rank if jokic_ranks.STL else '-' }}</a>
+                        </td>
+                        <td class="rank-cell {{ jokic_ranks.BLK.rank|rank_class if jokic_ranks.BLK else '' }}">
+                            <a href="/leaders/blk" class="rank-link">{{ jokic_ranks.BLK.rank if jokic_ranks.BLK else '-' }}</a>
+                        </td>
+                        <td class="rank-cell {{ jokic_ranks.FG_PCT.rank|rank_class if jokic_ranks.FG_PCT else '' }}">
+                            <a href="/leaders/fg_pct" class="rank-link">{{ jokic_ranks.FG_PCT.rank if jokic_ranks.FG_PCT else '-' }}</a>
+                        </td>
+                        <td class="rank-cell {{ jokic_ranks.FG3_PCT.rank|rank_class if jokic_ranks.FG3_PCT else '' }}">
+                            <a href="/leaders/fg3_pct" class="rank-link">{{ jokic_ranks.FG3_PCT.rank if jokic_ranks.FG3_PCT else '-' }}</a>
+                        </td>
+                        <td class="rank-cell {{ jokic_ranks.FT_PCT.rank|rank_class if jokic_ranks.FT_PCT else '' }}">
+                            <a href="/leaders/ft_pct" class="rank-link">{{ jokic_ranks.FT_PCT.rank if jokic_ranks.FT_PCT else '-' }}</a>
+                        </td>
+                        <td class="rank-cell {{ jokic_ranks.EFF.rank|rank_class if jokic_ranks.EFF else '' }}">
+                            <a href="/leaders/eff" class="rank-link">{{ jokic_ranks.EFF.rank if jokic_ranks.EFF else '-' }}</a>
+                        </td>
                     </tr>
-                    {% endfor %}
                 </tbody>
             </table>
         </div>
-        <p class="clickable-hint">Click any stat in the 2025-26 row to see league leaders</p>
+        <p class="clickable-hint">Click any stat to see league leaders</p>
+        {% endif %}
 
         {% if records_watch %}
         <h2>All-Time Records Watch</h2>

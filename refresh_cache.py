@@ -372,10 +372,12 @@ def refresh_league_leaders():
     print("\n[5/6] Fetching league leaders...")
     from nba_api.stats.endpoints import leagueleaders
 
+    JOKIC_PLAYER_ID = 203999
     STAT_CATEGORIES = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'FG_PCT', 'FG3_PCT',
                        'FT_PCT', 'EFF', 'FGM', 'FGA', 'FTM', 'FTA', 'OREB', 'DREB', 'MIN']
 
     all_leaders = {}
+    jokic_ranks = {}  # Track Jokic's rank in each category
 
     for stat in STAT_CATEGORIES:
         try:
@@ -388,13 +390,21 @@ def refresh_league_leaders():
             )
             df = leaders.league_leaders.get_data_frame()
             all_leaders[stat] = df.head(50).to_dict('records')
+
+            # Find Jokic's rank and value in this category
+            jokic_row = df[df['PLAYER_ID'] == JOKIC_PLAYER_ID]
+            if not jokic_row.empty:
+                rank = int(jokic_row.iloc[0]['RANK'])
+                value = float(jokic_row.iloc[0][stat]) if stat in jokic_row.columns else None
+                jokic_ranks[stat] = {'rank': rank, 'value': value}
+
             print("OK")
             time.sleep(0.5)
         except Exception as e:
             print(f"Error: {e}")
             continue
 
-    save_cache('league_leaders.json', {'leaders': all_leaders})
+    save_cache('league_leaders.json', {'leaders': all_leaders, 'jokic_ranks': jokic_ranks})
     return all_leaders
 
 
