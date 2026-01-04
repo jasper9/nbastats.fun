@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 import calendar
 import json
 import math
@@ -192,6 +192,19 @@ def days_in_month_filter(year_month_tuple):
     return calendar.monthrange(year, month)[1]
 
 
+def get_live_history_game_ids():
+    """Get set of game IDs that have live history data."""
+    history_dir = CACHE_DIR / 'live_history'
+    if not history_dir.exists():
+        return set()
+    game_ids = set()
+    for f in history_dir.glob('game_*.json'):
+        # Extract game ID from filename like "game_18447310.json"
+        game_id = f.stem.replace('game_', '')
+        game_ids.add(game_id)
+    return game_ids
+
+
 @app.route('/')
 def index():
     # Load all data from cache
@@ -265,6 +278,9 @@ def index():
     mountain_tz = ZoneInfo('America/Denver')
     now_date = datetime.now(mountain_tz).strftime('%Y-%m-%d')
 
+    # Get game IDs with live history data
+    live_history_ids = get_live_history_game_ids()
+
     return render_template('index.html',
         regular_season=regular_season,
         career_totals=career_totals,
@@ -282,6 +298,7 @@ def index():
         injuries=injuries,
         injuries_updated=injuries_updated,
         now_date=now_date,
+        live_history_ids=live_history_ids,
         cache_time=cache_time
     )
 
@@ -558,6 +575,124 @@ def api_live():
         return jsonify({'error': f'API request failed: {str(e)}'}), 500
     except Exception as e:
         return jsonify({'error': f'Error: {str(e)}'}), 500
+
+
+# Live history storage
+LIVE_HISTORY_DIR = CACHE_DIR / 'live_history'
+
+
+def ensure_live_history_dir():
+    LIVE_HISTORY_DIR.mkdir(exist_ok=True)
+
+
+def load_live_history(game_id):
+    """Load history for a specific game."""
+    ensure_live_history_dir()
+    history_file = LIVE_HISTORY_DIR / f'game_{game_id}.json'
+    if history_file.exists():
+        with open(history_file, 'r') as f:
+            return json.load(f)
+    return None
+
+
+def save_live_history(game_id, data):
+    """Save history for a specific game."""
+    ensure_live_history_dir()
+    history_file = LIVE_HISTORY_DIR / f'game_{game_id}.json'
+    with open(history_file, 'w') as f:
+        json.dump(data, f, indent=2)
+
+
+@app.route('/api/live/snapshot', methods=['POST'])
+def api_live_snapshot():
+    """Save a probability snapshot for a game."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        game_id = data.get('game_id')
+        if not game_id:
+            return jsonify({'error': 'No game_id provided'}), 400
+
+        # Load existing history or create new
+        history = load_live_history(game_id)
+        if not history:
+            history = {
+                'game_id': game_id,
+                'snapshots': [],
+                'game_info': {
+                    'nuggets_name': data.get('nuggets_name', 'Denver Nuggets'),
+                    'opponent_name': data.get('opponent_name', ''),
+                    'is_nuggets_home': data.get('is_nuggets_home', False),
+                    'date': data.get('date', ''),
+                },
+                'created_at': datetime.now().isoformat(),
+            }
+
+        # Add new snapshot
+        snapshot = {
+            'timestamp': data.get('timestamp'),
+            'game_state': data.get('game_state'),
+            'period': data.get('period'),
+            'time_remaining': data.get('time_remaining'),
+            'nuggets_score': data.get('nuggets_score'),
+            'opponent_score': data.get('opponent_score'),
+            'consensus_prob': data.get('consensus_prob'),
+            'vendor_count': data.get('vendor_count'),
+        }
+
+        # Only add if different from last snapshot (avoid duplicates)
+        if not history['snapshots'] or history['snapshots'][-1].get('consensus_prob') != snapshot['consensus_prob']:
+            history['snapshots'].append(snapshot)
+
+        # Update final state info
+        history['final_state'] = data.get('game_state')
+        history['final_score'] = {
+            'nuggets': data.get('nuggets_score'),
+            'opponent': data.get('opponent_score'),
+        }
+        history['updated_at'] = datetime.now().isoformat()
+
+        save_live_history(game_id, history)
+
+        return jsonify({'success': True, 'snapshot_count': len(history['snapshots'])})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/live/history')
+def api_live_history_list():
+    """List all saved game histories."""
+    ensure_live_history_dir()
+    histories = []
+    for f in LIVE_HISTORY_DIR.glob('game_*.json'):
+        try:
+            with open(f, 'r') as file:
+                data = json.load(file)
+                histories.append({
+                    'game_id': data.get('game_id'),
+                    'date': data.get('game_info', {}).get('date'),
+                    'opponent': data.get('game_info', {}).get('opponent_name'),
+                    'final_state': data.get('final_state'),
+                    'final_score': data.get('final_score'),
+                    'snapshot_count': len(data.get('snapshots', [])),
+                })
+        except Exception:
+            continue
+    # Sort by date descending
+    histories.sort(key=lambda x: x.get('date', ''), reverse=True)
+    return jsonify({'histories': histories})
+
+
+@app.route('/live/<game_id>')
+def live_history(game_id):
+    """View historical live data for a specific game."""
+    history = load_live_history(game_id)
+    if not history:
+        return "Game history not found", 404
+    return render_template('live_history.html', history=history)
 
 
 if __name__ == '__main__':

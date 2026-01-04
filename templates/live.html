@@ -324,7 +324,7 @@
     </nav>
 
     <header>
-        <div class="page-title">Live Win Probability</div>
+        <div class="page-title">Live Win Probability <span style="background: #dc2626; color: white; font-size: 0.5em; padding: 3px 8px; border-radius: 4px; vertical-align: middle; margin-left: 10px;">BETA</span></div>
         <div class="page-subtitle">Powered by betting odds from 12+ bookmakers</div>
     </header>
 
@@ -446,9 +446,41 @@
             }
         });
 
+        let currentGameId = null;
+        let currentGameData = null;
+
         function formatOdds(ml) {
             if (ml === null || ml === undefined) return '--';
             return ml > 0 ? '+' + ml : ml.toString();
+        }
+
+        async function saveSnapshot(data) {
+            // Save snapshot to server for historical tracking
+            if (!data.game_id || !data.odds.consensus_prob) return;
+
+            try {
+                await fetch('/api/live/snapshot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        game_id: data.game_id,
+                        timestamp: data.timestamp,
+                        game_state: data.game_state,
+                        period: data.period,
+                        time_remaining: data.time_remaining,
+                        nuggets_score: data.nuggets.score,
+                        opponent_score: data.opponent.score,
+                        consensus_prob: data.odds.consensus_prob,
+                        vendor_count: data.odds.vendor_count,
+                        nuggets_name: data.nuggets.name,
+                        opponent_name: data.opponent.name,
+                        is_nuggets_home: data.nuggets.is_home,
+                        date: new Date().toISOString().split('T')[0],
+                    })
+                });
+            } catch (error) {
+                console.error('Error saving snapshot:', error);
+            }
         }
 
         function updateUI(data) {
@@ -551,6 +583,13 @@
                 const response = await fetch('/api/live');
                 const data = await response.json();
                 updateUI(data);
+
+                // Auto-save snapshot to server for history
+                if (!data.error) {
+                    currentGameId = data.game_id;
+                    currentGameData = data;
+                    saveSnapshot(data);
+                }
             } catch (error) {
                 console.error('Error fetching data:', error);
             }

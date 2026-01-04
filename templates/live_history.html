@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game History - NBA Stats Fun</title>
+    {% if ga_tracking_id %}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_tracking_id }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{ ga_tracking_id }}');
+    </script>
+    {% endif %}
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23f85' stroke='%23333' stroke-width='3'/><path d='M50 5 v90 M5 50 h90 M15 20 Q50 50 15 80 M85 20 Q50 50 85 80' fill='none' stroke='%23333' stroke-width='3'/></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: #1c2128;
+            --border: #30363d;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b8c1;
+            --text-muted: #6b7280;
+            --nuggets-gold: #fec524;
+            --nuggets-navy: #0d2240;
+            --positive: #34d399;
+            --negative: #f87171;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+        nav {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+        }
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .nav-brand {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--nuggets-gold);
+            text-decoration: none;
+            padding: 15px 0;
+        }
+        .nav-links {
+            display: flex;
+            gap: 5px;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 15px 15px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-links a:hover { color: var(--text-primary); }
+        .nav-links a.active {
+            color: var(--nuggets-gold);
+            border-bottom-color: var(--nuggets-gold);
+        }
+        header {
+            background: linear-gradient(135deg, var(--nuggets-navy) 0%, #1a3a5c 100%);
+            text-align: center;
+            padding: 20px 20px;
+            border-bottom: 3px solid var(--nuggets-gold);
+        }
+        .page-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-primary);
+        }
+        .page-subtitle {
+            color: var(--nuggets-gold);
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .result-banner {
+            text-align: center;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        .result-banner.win {
+            background: linear-gradient(135deg, rgba(52, 211, 153, 0.2), rgba(52, 211, 153, 0.05));
+            border: 1px solid var(--positive);
+        }
+        .result-banner.loss {
+            background: linear-gradient(135deg, rgba(248, 113, 113, 0.2), rgba(248, 113, 113, 0.05));
+            border: 1px solid var(--negative);
+        }
+        .final-score {
+            font-family: 'Oswald', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .final-score .nuggets { color: var(--nuggets-gold); }
+        .final-score .opponent { color: var(--text-primary); }
+        .final-score .separator { color: var(--text-muted); margin: 0 15px; }
+        .result-label {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        .result-label.win { color: var(--positive); }
+        .result-label.loss { color: var(--negative); }
+        .matchup-info {
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
+        .chart-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        .chart-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 30px 0;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        .stat-value {
+            font-family: 'Oswald', sans-serif;
+            font-size: 2rem;
+            color: var(--nuggets-gold);
+        }
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+        .back-link {
+            display: inline-block;
+            color: var(--nuggets-gold);
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="nav-brand">NBA Stats . Fun</a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/jokic">Jokic</a>
+                <a href="/more">Nuggets</a>
+                <a href="/live" class="active">Live</a>
+            </div>
+        </div>
+    </nav>
+
+    <header>
+        <div class="page-title">Win Probability History <span style="background: #dc2626; color: white; font-size: 0.5em; padding: 3px 8px; border-radius: 4px; vertical-align: middle; margin-left: 10px;">BETA</span></div>
+        <div class="page-subtitle">{{ history.game_info.date }}</div>
+    </header>
+
+    <div class="container">
+        <a href="/" class="back-link">&larr; Back to Calendar</a>
+
+        {% set nuggets_score = history.final_score.nuggets or 0 %}
+        {% set opponent_score = history.final_score.opponent or 0 %}
+        {% set is_win = nuggets_score > opponent_score %}
+        {% set is_final = history.final_state == 'final' %}
+
+        <div class="result-banner {{ 'win' if is_win else 'loss' }}">
+            <div class="final-score">
+                <span class="nuggets">{{ nuggets_score }}</span>
+                <span class="separator">-</span>
+                <span class="opponent">{{ opponent_score }}</span>
+            </div>
+            {% if is_final %}
+            <div class="result-label {{ 'win' if is_win else 'loss' }}">
+                {{ 'NUGGETS WIN' if is_win else 'NUGGETS LOSS' }}
+            </div>
+            {% else %}
+            <div class="result-label" style="color: var(--text-muted);">
+                {{ history.final_state|upper if history.final_state else 'IN PROGRESS' }}
+            </div>
+            {% endif %}
+            <div class="matchup-info">
+                Denver Nuggets {{ '@' if not history.game_info.is_nuggets_home else 'vs' }} {{ history.game_info.opponent_name }}
+            </div>
+        </div>
+
+        {% if history.snapshots %}
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ history.snapshots|length }}</div>
+                <div class="stat-label">Data Points</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ "%.1f"|format(history.snapshots[0].consensus_prob) }}%</div>
+                <div class="stat-label">Starting Probability</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ "%.1f"|format(history.snapshots[-1].consensus_prob) }}%</div>
+                <div class="stat-label">Final Probability</div>
+            </div>
+            <div class="stat-card">
+                {% set probs = history.snapshots|map(attribute='consensus_prob')|list %}
+                {% set max_prob = probs|max %}
+                {% set min_prob = probs|min %}
+                <div class="stat-value">{{ "%.1f"|format(max_prob - min_prob) }}%</div>
+                <div class="stat-label">Probability Swing</div>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <div class="chart-title">Win Probability Throughout Game</div>
+            <div class="chart-container">
+                <canvas id="probChart"></canvas>
+            </div>
+        </div>
+        {% else %}
+        <p style="text-align: center; color: var(--text-muted); padding: 40px;">No probability data recorded for this game.</p>
+        {% endif %}
+    </div>
+
+    <div class="footer">
+        <p>Win probability calculated from moneyline odds. Data from BALLDONTLIE API.</p>
+    </div>
+
+    {% if history.snapshots %}
+    <script>
+        const snapshots = {{ history.snapshots|tojson }};
+
+        const labels = snapshots.map(s => {
+            const d = new Date(s.timestamp);
+            return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        });
+
+        const probs = snapshots.map(s => s.consensus_prob);
+
+        const ctx = document.getElementById('probChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Nuggets Win %',
+                    data: probs,
+                    borderColor: '#fec524',
+                    backgroundColor: 'rgba(254, 197, 36, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#fec524',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100,
+                        ticks: {
+                            callback: value => value + '%',
+                            color: '#6b7280',
+                        },
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                    },
+                    x: {
+                        ticks: {
+                            color: '#6b7280',
+                            maxTicksLimit: 15,
+                        },
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => {
+                                const snap = snapshots[ctx.dataIndex];
+                                let label = ctx.parsed.y.toFixed(1) + '%';
+                                if (snap.nuggets_score !== undefined) {
+                                    label += ` (DEN ${snap.nuggets_score} - ${snap.opponent_score})`;
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

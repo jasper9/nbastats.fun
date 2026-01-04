@@ -99,10 +99,10 @@ Can we clean up the refresh_*.py scripts?  I think some are redundant now.  Can 
 
 --
 
-
+On a few of the pop up details from clicking on a game on the calendar is getting way too tall (usually when there is a lot of injuried players) because there is no way to scroll.   Maybe we should make it wider?
 
 
 Would it be possible to use the BallDontLie betting odds to report to build a live game perdiction when games are happening?  Maybe make a graph out of it?   Since they have so many bookmakers this should give a good overall prediction right?  Is there any other way to do a live game prediction?    Let's make a new "Live" page.  There is a Nuggets game starting soon that we can use as a test.
 
 
-
+Is there a way to keep the contract data refresh in the scripts but make it refresh at a slower rate, like weekly?

@@ -1171,6 +1171,26 @@
             font-size: 2.2rem;
             font-weight: bold;
         }
+        .live-history-link {
+            display: block;
+            text-align: center;
+            padding: 12px 20px;
+            margin: 15px 0;
+            background: var(--bg-card);
+            border: 1px solid var(--nuggets-gold);
+            border-radius: 8px;
+            color: var(--nuggets-gold);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .live-history-link:hover {
+            background: var(--nuggets-gold);
+            color: var(--bg-primary);
+        }
+        .live-history-link .chart-icon {
+            margin-right: 8px;
+        }
         .game-modal-odds {
             background: var(--bg-secondary);
             border-radius: 8px;
@@ -1836,6 +1856,7 @@
                                          data-special-desc="{{ special.description if special else '' }}"
                                          data-special-type="{{ special.type if special else '' }}"
                                          data-jersey="{{ jersey.jersey if jersey else '' }}"
+                                         data-game-id="{{ game.id or '' }}"
                                          onclick="showGameModal(this)">
                                         <div class="opponent">{{ '@' if not game.is_home else 'vs' }} {{ opp_name }}</div>
                                         {% if game.result %}
@@ -2021,6 +2042,11 @@
     </div>
 
     <script>
+    // Live history game IDs
+    const liveHistoryIds = new Set([
+        {% for game_id in live_history_ids %}'{{ game_id }}'{% if not loop.last %}, {% endif %}{% endfor %}
+    ]);
+
     // Injuries data for modal display
     const injuriesData = [
         {% for injury in injuries %}
@@ -2053,6 +2079,7 @@
         const specialDesc = el.dataset.specialDesc;
         const jersey = el.dataset.jersey;
         const gameDate = el.dataset.gameDate;
+        const gameId = el.dataset.gameId;
 
         // Extract opponent name for display
         const opponent = matchup.replace(/^(vs |@ )/, '');
@@ -2129,6 +2156,14 @@
                     <div class="score">${homeScore} - ${awayScore}</div>
                 </div>
             `;
+            // Add link to live history if available
+            if (gameId && liveHistoryIds.has(gameId)) {
+                content += `
+                    <a href="/live/${gameId}" class="live-history-link">
+                        <span class="chart-icon">📈</span> View Win Probability Chart
+                    </a>
+                `;
+            }
         } else {
             // Future game - show odds if available
             if (spread || ml) {
