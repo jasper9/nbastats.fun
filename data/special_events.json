@@ -1,10 +1,150 @@
 {
   "_comment": "Special events/promotions for Nuggets home games. Key is date in YYYY-MM-DD format.",
   "events": {
+    "2025-10-25": {
+      "title": "Opening Night",
+      "type": "theme-night",
+      "description": "vs. Phoenix, 7:00 PM tipoff"
+    },
+    "2025-10-29": {
+      "title": "Filipino History Month",
+      "type": "special",
+      "description": "vs. New Orleans, 7:00 PM, special ticket offer"
+    },
+    "2025-11-03": {
+      "title": "Grateful Dead Ticket Package",
+      "type": "ticket-offer",
+      "description": "vs. Sacramento, 7:00 PM"
+    },
+    "2025-11-07": {
+      "title": "NBA Cup Group Play",
+      "type": "nba-cup",
+      "description": "vs. Golden State, 8:00 PM"
+    },
+    "2025-11-08": {
+      "title": "Military Appreciation Night",
+      "type": "theme-night",
+      "description": "vs. Indiana, 7:00 PM"
+    },
+    "2025-11-17": {
+      "title": "City Edition Debut",
+      "type": "city-edition",
+      "description": "vs. Chicago, 7:00 PM"
+    },
+    "2025-11-22": {
+      "title": "Native American Heritage Night",
+      "type": "theme-night",
+      "description": "vs. Sacramento, 8:00 PM, Southwest-sponsored"
+    },
+    "2025-11-28": {
+      "title": "NBA Cup Group Play",
+      "type": "nba-cup",
+      "description": "vs. San Antonio, 7:30 PM"
+    },
+    "2025-12-01": {
+      "title": "Pride Night",
+      "type": "theme-night",
+      "description": "vs. Dallas, 7:00 PM, Southwest-sponsored"
+    },
+    "2025-12-18": {
+      "title": "Aaron Gordon Bobblehead Giveaway",
+      "type": "giveaway",
+      "description": "vs. Orlando, First 5,000 Fans in Attendance, 7:00 PM"
+    },
+    "2025-12-20": {
+      "title": "City Edition Night",
+      "type": "theme-night",
+      "description": "vs. Houston, 3:00 PM"
+    },
+    "2025-12-22": {
+      "title": "Hello Kitty Offer",
+      "type": "ticket-offer",
+      "description": "vs. Utah, 7:00 PM"
+    },
+    "2025-12-25": {
+      "title": "Christmas Day / City Edition",
+      "type": "city-edition",
+      "description": "vs. Minnesota, 8:30 PM"
+    },
     "2026-01-09": {
-      "title": "Bruce Brown Bobble Head Night",
-      "description": "First 10,000 fans receive a Bruce Brown bobblehead!",
-      "type": "giveaway"
+      "title": "Bruce Brown Bobblehead",
+      "type": "giveaway",
+      "description": "vs. Atlanta, First 5,000 Fans in Attendance, 7:00 PM"
+    },
+    "2026-01-17": {
+      "title": "CO Avalanche Crossover / City Edition",
+      "type": "city-edition",
+      "description": "vs. Washington, 7:00 PM"
+    },
+    "2026-01-18": {
+      "title": "Be A Good Person Offer",
+      "type": "ticket-offer",
+      "description": "vs. Charlotte, 6:00 PM"
+    },
+    "2026-01-27": {
+      "title": "CO Rockies Crossover",
+      "type": "crossover",
+      "description": "vs. Detroit, 7:00 PM"
+    },
+    "2026-01-30": {
+      "title": "Serbian Heritage Ticket Package",
+      "type": "theme-night",
+      "description": "vs. LA Clippers, 8:00 PM"
+    },
+    "2026-02-09": {
+      "title": "Black Excellence Night",
+      "type": "theme-night",
+      "description": "vs. Cleveland, 7:00 PM, Southwest-sponsored"
+    },
+    "2026-02-11": {
+      "title": "CO Rapids Crossover / City Edition",
+      "type": "city-edition",
+      "description": "vs. Memphis, 8:00 PM"
+    },
+    "2026-03-01": {
+      "title": "AANHPI Heritage Night",
+      "type": "theme-night",
+      "description": "vs. Minnesota, 1:30 PM, Southwest-sponsored"
+    },
+    "2026-03-06": {
+      "title": "City Edition Night",
+      "type": "theme-night",
+      "description": "vs. New York, 7:00 PM"
+    },
+    "2026-03-11": {
+      "title": "Women's Empowerment Night",
+      "type": "theme-night",
+      "description": "vs. Houston, 8:00 PM, Southwest-sponsored"
+    },
+    "2026-03-17": {
+      "title": "Christian Braun Bobblehead / City Edition",
+      "type": "giveaway",
+      "description": "vs. Philadelphia, First 5,000 Fans, 7:00 PM, Ball-presented"
+    },
+    "2026-03-20": {
+      "title": "Somos Los Nuggets Night",
+      "type": "theme-night",
+      "description": "vs. Toronto, 7:00 PM, Southwest-sponsored"
+    },
+    "2026-03-22": {
+      "title": "Rocky's Birthday",
+      "type": "special",
+      "description": "vs. Portland, 3:00 PM"
+    },
+    "2026-03-27": {
+      "title": "Special Olympics Colorado Night",
+      "type": "theme-night",
+      "description": "vs. Utah, 7:00 PM"
+    },
+    "2026-04-04": {
+      "title": "City Edition Night",
+      "type": "theme-night",
+      "description": "vs. San Antonio, 1:00 PM"
+    },
+    "2026-04-10": {
+      "title": "Nuggets Nation Appreciation / City Edition",
+      "type": "theme-night",
+      "description": "vs. OKC, 7:00 PM"
     }
   }
 }
