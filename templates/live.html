@@ -484,6 +484,7 @@
         });
 
         // Score chart
+        let opponentName = 'Opponent';  // Will be updated with real team name
         const scoreChart = new Chart(scoreCtx, {
             type: 'line',
             data: {
@@ -599,6 +600,12 @@
                 opponentScoreHistory.length = 0;
                 scoreTimeLabels.length = 0;
 
+                // Get opponent name from history
+                if (history.game_info && history.game_info.opponent_name) {
+                    opponentName = history.game_info.opponent_name.replace('Brooklyn ', '').replace('Los Angeles ', 'LA ');
+                    scoreChart.data.datasets[1].label = opponentName;
+                }
+
                 // Load historical snapshots
                 history.snapshots.forEach(snap => {
                     const d = new Date(snap.timestamp);
@@ -704,6 +711,12 @@
             // Game info
             document.getElementById('game-info').textContent =
                 `${data.opponent.name} ${isNuggetsHome ? '@' : 'vs'} ${data.nuggets.name}`;
+
+            // Update opponent name in score chart
+            if (data.opponent.name && scoreChart.data.datasets[1].label !== data.opponent.name) {
+                const shortName = data.opponent.name.replace('Brooklyn ', '').replace('Los Angeles ', 'LA ');
+                scoreChart.data.datasets[1].label = shortName;
+            }
 
             // Update probability
             const prob = data.odds.consensus_prob;
