@@ -1,0 +1,246 @@
+{
+  "_comment": "Nuggets jersey schedule from NBA LockerVision. Scraped 2026-01-03.",
+  "_source": "https://lockervision.nba.com/team/denver-nuggets",
+  "schedule": {
+    "2026-01-04": {
+      "opponent": "Brooklyn Nets",
+      "is_home": false,
+      "jersey": "Association"
+    },
+    "2026-01-05": {
+      "opponent": "Philadelphia 76ers",
+      "is_home": false,
+      "jersey": "Association"
+    },
+    "2026-01-07": {
+      "opponent": "Boston Celtics",
+      "is_home": false,
+      "jersey": "Icon"
+    },
+    "2026-01-09": {
+      "opponent": "Atlanta Hawks",
+      "is_home": true,
+      "jersey": "Icon"
+    },
+    "2026-01-11": {
+      "opponent": "Milwaukee Bucks",
+      "is_home": true,
+      "jersey": "Statement"
+    },
+    "2026-01-13": {
+      "opponent": "New Orleans Pelicans",
+      "is_home": false,
+      "jersey": "Statement"
+    },
+    "2026-01-14": {
+      "opponent": "Dallas Mavericks",
+      "is_home": false,
+      "jersey": "Association"
+    },
+    "2026-01-17": {
+      "opponent": "Washington Wizards",
+      "is_home": true,
+      "jersey": "City"
+    },
+    "2026-01-18": {
+      "opponent": "Charlotte Hornets",
+      "is_home": true,
+      "jersey": "Statement"
+    },
+    "2026-01-20": {
+      "opponent": "Los Angeles Lakers",
+      "is_home": true,
+      "jersey": "Icon"
+    },
+    "2026-01-22": {
+      "opponent": "Washington Wizards",
+      "is_home": false,
+      "jersey": "Association"
+    },
+    "2026-01-23": {
+      "opponent": "Milwaukee Bucks",
+      "is_home": false,
+      "jersey": "Association"
+    },
+    "2026-01-25": {
+      "opponent": "Memphis Grizzlies",
+      "is_home": false,
+      "jersey": "Statement"
+    },
+    "2026-01-27": {
+      "opponent": "Detroit Pistons",
+      "is_home": true,
+      "jersey": "Icon"
+    },
+    "2026-01-29": {
+      "opponent": "Brooklyn Nets",
+      "is_home": true,
+      "jersey": "Association"
+    },
+    "2026-01-30": {
+      "opponent": "Los Angeles Clippers",
+      "is_home": true,
+      "jersey": "City"
+    },
+    "2026-02-01": {
+      "opponent": "Oklahoma City Thunder",
+      "is_home": true,
+      "jersey": "Statement"
+    },
+    "2026-02-03": {
+      "opponent": "Detroit Pistons",
+      "is_home": false,
+      "jersey": "Association"
+    },
+    "2026-02-04": {
+      "opponent": "New York Knicks",
+      "is_home": false,
+      "jersey": "City"
+    },
+    "2026-02-07": {
+      "opponent": "Chicago Bulls",
+      "is_home": false,
+      "jersey": "City"
+    },
+    "2026-02-09": {
+      "opponent": "Cleveland Cavaliers",
+      "is_home": true,
+      "jersey": "Statement"
+    },
+    "2026-02-11": {
+      "opponent": "Memphis Grizzlies",
+      "is_home": true,
+      "jersey": "City"
+    },
+    "2026-02-19": {
+      "opponent": "Los Angeles Clippers",
+      "is_home": false,
+      "jersey": "Statement"
+    },
+    "2026-02-20": {
+      "opponent": "Portland Trail Blazers",
+      "is_home": false,
+      "jersey": "Association"
+    },
+    "2026-02-22": {
+      "opponent": "Golden State Warriors",
+      "is_home": false,
+      "jersey": "Association"
+    },
+    "2026-02-25": {
+      "opponent": "Boston Celtics",
+      "is_home": true,
+      "jersey": "Icon"
+    },
+    "2026-02-27": {
+      "opponent": "Oklahoma City Thunder",
+      "is_home": false,
+      "jersey": "Association"
+    },
+    "2026-03-01": {
+      "opponent": "Minnesota Timberwolves",
+      "is_home": true,
+      "jersey": "Statement"
+    },
+    "2026-03-02": {
+      "opponent": "Utah Jazz",
+      "is_home": false,
+      "jersey": "Association"
+    },
+    "2026-03-05": {
+      "opponent": "Los Angeles Lakers",
+      "is_home": true,
+      "jersey": "Icon"
+    },
+    "2026-03-06": {
+      "opponent": "New York Knicks",
+      "is_home": true,
+      "jersey": "City"
+    },
+    "2026-03-09": {
+      "opponent": "Oklahoma City Thunder",
+      "is_home": false,
+      "jersey": "Association"
+    },
+    "2026-03-11": {
+      "opponent": "Houston Rockets",
+      "is_home": true,
+      "jersey": "Statement"
+    },
+    "2026-03-12": {
+      "opponent": "San Antonio Spurs",
+      "is_home": false,
+      "jersey": "Association"
+    },
+    "2026-03-14": {
+      "opponent": "Los Angeles Lakers",
+      "is_home": false,
+      "jersey": "Association"
+    },
+    "2026-03-17": {
+      "opponent": "Philadelphia 76ers",
+      "is_home": true,
+      "jersey": "City"
+    },
+    "2026-03-20": {
+      "opponent": "Toronto Raptors",
+      "is_home": true,
+      "jersey": "Statement"
+    },
+    "2026-03-22": {
+      "opponent": "Portland Trail Blazers",
+      "is_home": true,
+      "jersey": "Statement"
+    },
+    "2026-03-24": {
+      "opponent": "Phoenix Suns",
+      "is_home": false,
+      "jersey": "Association"
+    },
+    "2026-03-25": {
+      "opponent": "Dallas Mavericks",
+      "is_home": true,
+      "jersey": "Icon"
+    },
+    "2026-03-27": {
+      "opponent": "Utah Jazz",
+      "is_home": true,
+      "jersey": "Icon"
+    },
+    "2026-03-29": {
+      "opponent": "Golden State Warriors",
+      "is_home": true,
+      "jersey": "Statement"
+    },
+    "2026-04-01": {
+      "opponent": "Utah Jazz",
+      "is_home": false,
+      "jersey": "Association"
+    },
+    "2026-04-04": {
+      "opponent": "San Antonio Spurs",
+      "is_home": true,
+      "jersey": "City"
+    },
+    "2026-04-06": {
+      "opponent": "Portland Trail Blazers",
+      "is_home": true,
+      "jersey": "Icon"
+    },
+    "2026-04-08": {
+      "opponent": "Memphis Grizzlies",
+      "is_home": true,
+      "jersey": "Icon"
+    },
+    "2026-04-10": {
+      "opponent": "Oklahoma City Thunder",
+      "is_home": true,
+      "jersey": "City"
+    },
+    "2026-04-12": {
+      "opponent": "San Antonio Spurs",
+      "is_home": false,
+      "jersey": "Statement"
+    }
+  }
+}

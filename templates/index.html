@@ -752,8 +752,15 @@
             font-size: 0.65rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 6px;
+            margin-bottom: 2px;
             text-align: center;
+        }
+        .odds-api-source {
+            color: var(--text-muted);
+            font-size: 0.55rem;
+            text-align: center;
+            margin-bottom: 6px;
+            opacity: 0.7;
         }
         .odds-row {
             display: flex;
@@ -1166,6 +1173,133 @@
             font-size: 0.85rem;
             opacity: 0.9;
         }
+        .game-modal-jersey {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .game-modal-jersey .jersey-img {
+            width: 60px;
+            height: 75px;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+        .game-modal-jersey .jersey-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .game-modal-jersey .jersey-label {
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+        }
+        .game-modal-jersey .jersey-type {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+        .game-modal-jersey.association .jersey-type { color: #ffffff; }
+        .game-modal-jersey.icon .jersey-type { color: var(--nuggets-gold); }
+        .game-modal-jersey.statement .jersey-type { color: var(--nuggets-red); }
+        .game-modal-jersey.city .jersey-type { color: #6ee7b7; }
+        /* Modal odds matchup styles */
+        .game-modal-odds-matchup {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 12px;
+        }
+        .odds-team-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+        }
+        .odds-team-line.favorite {
+            background: rgba(74, 222, 128, 0.15);
+        }
+        .odds-team-line .team-name {
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .odds-team-line .team-ml {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .odds-team-line.favorite .team-ml {
+            color: #4ade80;
+        }
+        .odds-team-line .fav-indicator {
+            font-size: 0.6rem;
+            background: #4ade80;
+            color: #000;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+        .game-modal-odds-source {
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+        /* Modal injuries styles */
+        .game-modal-injuries {
+            margin-top: 15px;
+            padding: 10px 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border-left: 3px solid #f87171;
+        }
+        .game-modal-injuries-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .modal-injury-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .modal-injury-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+        }
+        .modal-injury-row:not(:last-child) {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 6px;
+        }
+        .modal-injury-row .injury-player {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        .injury-badge {
+            display: inline-block;
+            font-size: 0.6rem;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .injury-badge.out { background: #dc2626; color: white; }
+        .injury-badge.questionable { background: #f59e0b; color: black; }
+        .injury-badge.probable { background: #22c55e; color: black; }
+        .injury-badge.doubtful { background: #ef4444; color: white; }
+        .injury-badge.day-to-day { background: #f59e0b; color: black; }
         /* Triple-Double Tracker styles */
         .td-tracker {
             background: linear-gradient(135deg, var(--nuggets-navy) 0%, #1a3a5c 100%);
@@ -1377,6 +1511,7 @@
                                 {% for pname, pdata in providers.items() %}
                                 <div class="odds-provider">
                                     <div class="odds-provider-name">{{ pdata.bookmaker or pname }}</div>
+                                    <div class="odds-api-source">via {{ 'the-odds-api' if pname == 'theoddsapi' else 'BALLDONTLIE' }}</div>
                                     <div class="odds-row">
                                         <span class="odds-row-label">ML</span>
                                         <span class="odds-row-value {{ 'favorite' if pdata.nuggets_ml and pdata.nuggets_ml < 0 else 'underdog' }}">
@@ -1436,6 +1571,7 @@
                                         {% endfor %}
                                     </tbody>
                                 </table>
+                                <div class="odds-source">via BALLDONTLIE</div>
                             </div>
                             {% else %}
                             {# Single bookmaker - show detailed view #}
@@ -1463,7 +1599,8 @@
                                 </div>
                                 {% endif %}
                             </div>
-                            <div class="odds-source">via {{ game.bookmaker }}</div>
+                            {% set api_source = 'the-odds-api' if providers.get('theoddsapi') else 'BALLDONTLIE' %}
+                            <div class="odds-source">{{ game.bookmaker }} via {{ api_source }}</div>
                             {% endif %}
                             {% endif %}
                         </div>
@@ -1527,6 +1664,7 @@
                                     {% set opp_name = opponent.split()[-1] %}
                                     {% set opp_city = opponent.split()[:-1]|join(' ') %}
                                     {% set special = special_events.get(day_str, {}) %}
+                                    {% set jersey = jersey_schedule.get(day_str, {}) %}
                                     <div class="calendar-game {{ 'home' if game.is_home else 'away' }} {{ 'win' if game.result == 'W' else 'loss' if game.result == 'L' else '' }} {{ 'has-special' if special else '' }}"
                                          data-matchup="{{ 'vs' if game.is_home else '@' }} {{ opponent }}"
                                          data-time="{{ game.commence_time|game_time }} MT"
@@ -1537,10 +1675,14 @@
                                          data-away-score="{{ game.away_score or '' }}"
                                          data-spread="{{ game.nuggets_spread|format_spread if game.nuggets_spread is defined else '' }}"
                                          data-ml="{{ game.nuggets_ml|format_odds if game.nuggets_ml is defined else '' }}"
+                                         data-opponent-ml="{{ game.opponent_ml|format_odds if game.opponent_ml is defined else '' }}"
                                          data-total="{{ game.total or '' }}"
+                                         data-bookmaker="{{ game.bookmaker or '' }}"
+                                         data-game-date="{{ day_str }}"
                                          data-special-title="{{ special.title if special else '' }}"
                                          data-special-desc="{{ special.description if special else '' }}"
                                          data-special-type="{{ special.type if special else '' }}"
+                                         data-jersey="{{ jersey.jersey if jersey else '' }}"
                                          onclick="showGameModal(this)">
                                         <div class="opponent">{{ '@' if not game.is_home else 'vs' }} {{ opp_name }}</div>
                                         {% if game.result %}
@@ -1720,6 +1862,20 @@
     </div>
 
     <script>
+    // Injuries data for modal display
+    const injuriesData = [
+        {% for injury in injuries %}
+        {
+            name: "{{ injury.name }}",
+            jersey: "{{ injury.jersey }}",
+            status: "{{ injury.status }}",
+            game_status: "{{ injury.game_status or '' }}",
+            injury_type: "{{ injury.injury_type or '' }}",
+            return_date: "{{ injury.return_date or '' }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
     function showGameModal(el) {
         const modal = document.getElementById('gameModal');
         const matchup = el.dataset.matchup;
@@ -1731,9 +1887,33 @@
         const awayScore = el.dataset.awayScore;
         const spread = el.dataset.spread;
         const ml = el.dataset.ml;
+        const opponentMl = el.dataset.opponentMl;
         const total = el.dataset.total;
+        const bookmaker = el.dataset.bookmaker;
         const specialTitle = el.dataset.specialTitle;
         const specialDesc = el.dataset.specialDesc;
+        const jersey = el.dataset.jersey;
+        const gameDate = el.dataset.gameDate;
+
+        // Extract opponent name for display
+        const opponent = matchup.replace(/^(vs |@ )/, '');
+
+        // Helper to parse return date like "Jan 4" or "Feb 1" to comparable date
+        function parseReturnDate(returnStr) {
+            if (!returnStr) return null;
+            const months = {
+                'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+                'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+            };
+            const parts = returnStr.split(' ');
+            if (parts.length !== 2) return null;
+            const month = months[parts[0]];
+            const day = parseInt(parts[1]);
+            if (month === undefined || isNaN(day)) return null;
+            // Assume current season year (2026 for Jan-Apr, 2025 for Oct-Dec)
+            const year = month < 6 ? 2026 : 2025;
+            return new Date(year, month, day);
+        }
 
         document.getElementById('modalMatchup').textContent = matchup;
         document.getElementById('modalTime').textContent = time;
@@ -1762,6 +1942,26 @@
             `;
         }
 
+        // Add jersey info for future games
+        if (jersey && !result) {
+            const jerseyImages = {
+                'Association': 'https://appimages.nba.com/p/tr:n-slnfre/2025/uniform/Denver%20Nuggets/DEN_AE.jpg',
+                'Icon': 'https://appimages.nba.com/p/tr:n-slnfre/2025/uniform/Denver%20Nuggets/DEN_IE.jpg',
+                'Statement': 'https://appimages.nba.com/p/tr:n-slnfre/2025/uniform/Denver%20Nuggets/DEN_SE.jpg',
+                'City': 'https://appimages.nba.com/p/tr:n-slnfre/2025/uniform/Denver%20Nuggets/DEN_CE.jpg'
+            };
+            const imgUrl = jerseyImages[jersey] || '';
+            content += `
+                <div class="game-modal-jersey ${jersey.toLowerCase()}">
+                    ${imgUrl ? `<img src="${imgUrl}" alt="${jersey} Edition" class="jersey-img">` : ''}
+                    <div class="jersey-info">
+                        <span class="jersey-label">Uniform</span>
+                        <span class="jersey-type">${jersey} Edition</span>
+                    </div>
+                </div>
+            `;
+        }
+
         if (result) {
             const isWin = result === 'W';
             content += `
@@ -1770,28 +1970,65 @@
                     <div class="score">${homeScore} - ${awayScore}</div>
                 </div>
             `;
-        } else if (spread) {
-            content += `
-                <div class="game-modal-odds">
-                    <div class="game-modal-odds-title">Betting Lines</div>
-                    <div class="game-modal-odds-grid">
-                        <div class="game-modal-odds-item">
-                            <div class="label">Spread</div>
-                            <div class="value">${spread}</div>
+        } else {
+            // Future game - show odds if available
+            if (spread || ml) {
+                const oppAbbrev = opponent.split(' ').pop().substring(0, 3).toUpperCase();
+                const denFav = ml && ml.startsWith('-');
+                const oppFav = opponentMl && opponentMl.startsWith('-');
+                content += `
+                    <div class="game-modal-odds">
+                        <div class="game-modal-odds-title">Betting Lines</div>
+                        <div class="game-modal-odds-matchup">
+                            <div class="odds-team-line ${denFav ? 'favorite' : ''}">
+                                <span class="team-name">DEN</span>
+                                <span class="team-ml">${ml || '-'}</span>
+                                ${denFav ? '<span class="fav-indicator">FAV</span>' : ''}
+                            </div>
+                            <div class="odds-team-line ${oppFav ? 'favorite' : ''}">
+                                <span class="team-name">${oppAbbrev}</span>
+                                <span class="team-ml">${opponentMl || '-'}</span>
+                                ${oppFav ? '<span class="fav-indicator">FAV</span>' : ''}
+                            </div>
                         </div>
-                        <div class="game-modal-odds-item">
-                            <div class="label">ML</div>
-                            <div class="value">${ml}</div>
+                        <div class="game-modal-odds-grid">
+                            ${spread ? `<div class="game-modal-odds-item"><div class="label">Spread</div><div class="value">${spread}</div></div>` : ''}
+                            ${total ? `<div class="game-modal-odds-item"><div class="label">O/U</div><div class="value">${total}</div></div>` : ''}
                         </div>
-                        <div class="game-modal-odds-item">
-                            <div class="label">O/U</div>
-                            <div class="value">${total}</div>
+                        ${bookmaker ? `<div class="game-modal-odds-source">via ${bookmaker}</div>` : ''}
+                    </div>
+                `;
+            }
+
+            // Show injuries for future games - only those expected to still be out
+            const gameDateObj = new Date(gameDate + 'T00:00:00');
+            const relevantInjuries = injuriesData.filter(inj => {
+                if (inj.status !== 'Out' && inj.status !== 'Day-To-Day') return false;
+                const returnDate = parseReturnDate(inj.return_date);
+                // Show injury if no return date, or game is before/on expected return
+                if (!returnDate) return true;
+                return gameDateObj <= returnDate;
+            });
+            if (relevantInjuries.length > 0) {
+                content += `
+                    <div class="game-modal-injuries">
+                        <div class="game-modal-injuries-title">Nuggets Injury Report</div>
+                        <div class="modal-injury-list">
+                            ${relevantInjuries.map(inj => `
+                                <div class="modal-injury-row">
+                                    <span class="injury-player">#${inj.jersey} ${inj.name}</span>
+                                    <span class="injury-badge ${(inj.game_status || inj.status).toLowerCase().replace(' ', '-')}">${inj.game_status || inj.status}</span>
+                                </div>
+                            `).join('')}
                         </div>
                     </div>
-                </div>
-            `;
-        } else if (!specialTitle) {
-            content = '<div style="text-align: center; color: var(--text-muted);">No additional details available</div>';
+                `;
+            }
+
+            // If nothing to show
+            if (!content && !specialTitle && !jersey) {
+                content = '<div style="text-align: center; color: var(--text-muted);">No additional details available</div>';
+            }
         }
 
         document.getElementById('modalContent').innerHTML = content;

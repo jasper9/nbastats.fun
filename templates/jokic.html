@@ -554,65 +554,7 @@
         </div>
         {% endif %}
 
-        {% if jokic_ranks %}
-        <h2>Per-Game Rankings (2025-26 Season)</h2>
-        <div class="legend">
-            <div class="legend-item"><div class="legend-color legend-gold"></div> 1st</div>
-            <div class="legend-item"><div class="legend-color legend-silver"></div> 2nd</div>
-            <div class="legend-item"><div class="legend-color legend-bronze"></div> 3rd</div>
-            <div class="legend-item"><div class="legend-color legend-top5"></div> Top 5</div>
-            <div class="legend-item"><div class="legend-color legend-top10"></div> Top 10</div>
-        </div>
-        <div class="table-container">
-            <table class="rankings-table">
-                <thead>
-                    <tr>
-                        <th title="Points Per Game">PPG</th>
-                        <th title="Rebounds Per Game">RPG</th>
-                        <th title="Assists Per Game">APG</th>
-                        <th title="Steals Per Game">SPG</th>
-                        <th title="Blocks Per Game">BPG</th>
-                        <th title="Field Goal %">FG%</th>
-                        <th title="3-Point %">3P%</th>
-                        <th title="Free Throw %">FT%</th>
-                        <th title="Efficiency">EFF</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr class="current-season">
-                        <td class="rank-cell {{ jokic_ranks.PTS.rank|rank_class if jokic_ranks.PTS else '' }}">
-                            <a href="/leaders/pts" class="rank-link">{{ jokic_ranks.PTS.rank if jokic_ranks.PTS else '-' }}</a>
-                        </td>
-                        <td class="rank-cell {{ jokic_ranks.REB.rank|rank_class if jokic_ranks.REB else '' }}">
-                            <a href="/leaders/reb" class="rank-link">{{ jokic_ranks.REB.rank if jokic_ranks.REB else '-' }}</a>
-                        </td>
-                        <td class="rank-cell {{ jokic_ranks.AST.rank|rank_class if jokic_ranks.AST else '' }}">
-                            <a href="/leaders/ast" class="rank-link">{{ jokic_ranks.AST.rank if jokic_ranks.AST else '-' }}</a>
-                        </td>
-                        <td class="rank-cell {{ jokic_ranks.STL.rank|rank_class if jokic_ranks.STL else '' }}">
-                            <a href="/leaders/stl" class="rank-link">{{ jokic_ranks.STL.rank if jokic_ranks.STL else '-' }}</a>
-                        </td>
-                        <td class="rank-cell {{ jokic_ranks.BLK.rank|rank_class if jokic_ranks.BLK else '' }}">
-                            <a href="/leaders/blk" class="rank-link">{{ jokic_ranks.BLK.rank if jokic_ranks.BLK else '-' }}</a>
-                        </td>
-                        <td class="rank-cell {{ jokic_ranks.FG_PCT.rank|rank_class if jokic_ranks.FG_PCT else '' }}">
-                            <a href="/leaders/fg_pct" class="rank-link">{{ jokic_ranks.FG_PCT.rank if jokic_ranks.FG_PCT else '-' }}</a>
-                        </td>
-                        <td class="rank-cell {{ jokic_ranks.FG3_PCT.rank|rank_class if jokic_ranks.FG3_PCT else '' }}">
-                            <a href="/leaders/fg3_pct" class="rank-link">{{ jokic_ranks.FG3_PCT.rank if jokic_ranks.FG3_PCT else '-' }}</a>
-                        </td>
-                        <td class="rank-cell {{ jokic_ranks.FT_PCT.rank|rank_class if jokic_ranks.FT_PCT else '' }}">
-                            <a href="/leaders/ft_pct" class="rank-link">{{ jokic_ranks.FT_PCT.rank if jokic_ranks.FT_PCT else '-' }}</a>
-                        </td>
-                        <td class="rank-cell {{ jokic_ranks.EFF.rank|rank_class if jokic_ranks.EFF else '' }}">
-                            <a href="/leaders/eff" class="rank-link">{{ jokic_ranks.EFF.rank if jokic_ranks.EFF else '-' }}</a>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <p class="clickable-hint">Click any stat to see league leaders</p>
-        {% endif %}
+        {# Per-Game Rankings section temporarily removed for troubleshooting #}
 
         {% if records_watch %}
         <h2>All-Time Records Watch</h2>

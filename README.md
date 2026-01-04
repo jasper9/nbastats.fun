@@ -6,11 +6,24 @@ A web dashboard tracking Nikola Jokic's NBA statistics, including career stats, 
 
 ## Features
 
-- Career statistics with highlight cards
-- Triple-double all-time leaderboard tracking
-- Season-by-season league rankings (clickable to see full leaderboards)
+### Main Dashboard
 - Conference standings for East and West
-- All-time records watch showing players Jokic is chasing
+- Injury report with return dates and game status
+- Interactive schedule calendar with game modals
+- Betting odds from multiple sources (FanDuel, DraftKings, Polymarket, Kalshi)
+- Special events/promotions displayed in game modals
+- Jersey schedule showing which uniform for each game (with images)
+
+### Jokić Page
+- Career statistics with highlight cards
+- Per-game league rankings (clickable to full leaderboards)
+- Triple-double all-time leaderboard tracking
+- All-time records watch showing players Jokić is chasing
+
+### Nuggets Page
+- Full roster with contract status and injury indicators
+- Recent game results
+- Team salary cap information
 
 ## Local Development
 
@@ -52,13 +65,28 @@ python refresh_cache.py
 ```
 
 This fetches:
-- Jokic career stats
-- Team standings
-- All-time records
+- Jokić career stats and per-game rankings
+- Team standings (East and West)
+- All-time records for Jokić to chase
 - Triple-double data for active players
 - League leaders for all stat categories
+- Nuggets roster, injuries, and contracts (via BALLDONTLIE)
+- Betting odds from multiple sources
+- Recent game results
 
 **Note:** The NBA API can be slow and occasionally times out. The script handles this gracefully.
+
+### One-Time Data Scrapes
+
+These scripts populate static data that doesn't need regular updates:
+
+```bash
+# Scrape promotional events (run once at start of season)
+python scrape_promotions.py
+
+# Scrape jersey schedule from NBA LockerVision (run once at start of season)
+python scrape_jerseys.py
+```
 
 ## Production Deployment (Ubuntu)
 
@@ -138,24 +166,43 @@ The cache automatically refreshes daily at 6am Mountain Time:
 
 ```
 nba_fun/
-├── app.py              # Flask application
-├── refresh_cache.py    # Cache refresh script
-├── requirements.txt    # Python dependencies
-├── setup_server.sh     # Production server setup
+├── app.py                    # Flask application
+├── refresh_cache.py          # Main cache refresh (run via cron)
+├── refresh_balldontlie.py    # BALLDONTLIE API data fetch
+├── refresh_odds.py           # Betting odds fetch
+├── scrape_promotions.py      # One-time: scrape promotional schedule
+├── scrape_jerseys.py         # One-time: scrape jersey schedule from LockerVision
+├── requirements.txt          # Python dependencies
+├── setup_server.sh           # Production server setup
 ├── templates/
-│   ├── index.html      # Main dashboard
-│   └── leaders.html    # League leaders page
-└── cache/              # Cached JSON data (gitignored)
-    ├── jokic_career.json
-    ├── standings.json
-    ├── alltime_records.json
-    ├── triple_doubles.json
-    └── league_leaders.json
+│   ├── index.html            # Main dashboard (schedule, injuries, standings)
+│   ├── jokic.html            # Jokić stats page
+│   ├── more.html             # Nuggets roster/contracts page
+│   └── leaders.html          # League leaders page
+├── cache/                    # Cached JSON data (gitignored, refreshed by cron)
+│   ├── jokic_career.json
+│   ├── nuggets_schedule.json
+│   ├── injuries.json
+│   ├── contracts.json
+│   ├── standings.json
+│   └── ...
+└── data/                     # Static data files (checked into git)
+    ├── special_events.json   # Promotional events for home games
+    └── jersey_schedule.json  # Uniform schedule (from NBA LockerVision)
 ```
 
 ## Tech Stack
 
 - **Backend:** Flask, Python
-- **Data Source:** [nba_api](https://github.com/swar/nba_api)
-- **Frontend:** Vanilla HTML/CSS (Oswald + Roboto fonts)
+- **Frontend:** Vanilla HTML/CSS/JS (Oswald + Roboto fonts)
 - **Production:** Nginx, Gunicorn, Let's Encrypt
+
+## Data Sources
+
+| Source | Data | Refresh |
+|--------|------|---------|
+| [nba_api](https://github.com/swar/nba_api) | Career stats, league leaders, standings | Daily cron |
+| [BALLDONTLIE API](https://balldontlie.io) | Injuries, roster, contracts, games, odds | Daily cron |
+| [the-odds-api](https://the-odds-api.com) | Traditional sportsbook odds | Daily cron |
+| [NBA LockerVision](https://lockervision.nba.com) | Jersey/uniform schedule | One-time per season |
+| [nuggets.com](https://nba.com/nuggets) | Promotional schedule | One-time per season |

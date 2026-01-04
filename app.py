@@ -248,6 +248,10 @@ def index():
     special_events_data = load_data('special_events.json')
     special_events = special_events_data.get('events', {}) if special_events_data else {}
 
+    # Load jersey schedule
+    jersey_data = load_data('jersey_schedule.json')
+    jersey_schedule = jersey_data.get('schedule', {}) if jersey_data else {}
+
     # Extract injuries and sort by return date
     injuries = injuries_cache.get('injuries', []) if injuries_cache else []
     injuries = sorted(injuries, key=lambda x: parse_return_date(x.get('return_date', '')))
@@ -273,6 +277,7 @@ def index():
         upcoming_games=upcoming_games,
         calendar_games=calendar_games,
         special_events=special_events,
+        jersey_schedule=jersey_schedule,
         injuries=injuries,
         injuries_updated=injuries_updated,
         now_date=now_date,

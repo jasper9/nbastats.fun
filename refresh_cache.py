@@ -375,17 +375,21 @@ def refresh_league_leaders():
     JOKIC_PLAYER_ID = 203999
     STAT_CATEGORIES = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'FG_PCT', 'FG3_PCT',
                        'FT_PCT', 'EFF', 'FGM', 'FGA', 'FTM', 'FTA', 'OREB', 'DREB', 'MIN']
+    # Percentage stats only work with Totals mode, not PerGame
+    PCT_STATS = {'FG_PCT', 'FG3_PCT', 'FT_PCT'}
 
     all_leaders = {}
     jokic_ranks = {}  # Track Jokic's rank in each category
 
     for stat in STAT_CATEGORIES:
         try:
-            print(f"  Fetching {stat}...", end=" ", flush=True)
+            # Use Totals mode for percentage stats, PerGame for everything else
+            per_mode = 'Totals' if stat in PCT_STATS else 'PerGame'
+            print(f"  Fetching {stat} ({per_mode})...", end=" ", flush=True)
             leaders = leagueleaders.LeagueLeaders(
                 season='2025-26',
                 stat_category_abbreviation=stat,
-                per_mode48='PerGame',  # Fetch per-game averages instead of totals
+                per_mode48=per_mode,
                 timeout=60
             )
             df = leaders.league_leaders.get_data_frame()

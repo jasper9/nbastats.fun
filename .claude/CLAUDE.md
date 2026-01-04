@@ -24,6 +24,14 @@ A Flask-based dashboard for tracking Nikola Jokić and Denver Nuggets stats, sta
 - `contracts.json` - Player contracts with extension info
 - `standings.json`, `roster.json`, `recent_games.json`, etc.
 
+### Static Data Files (in `data/`)
+- `special_events.json` - Promotional events/giveaways for home games
+- `jersey_schedule.json` - Uniform schedule for all remaining games
+
+### One-Time Scraper Scripts
+- `scrape_promotions.py` - Scrapes nuggets.com promotional schedule → `data/special_events.json`
+- `scrape_jerseys.py` - Scrapes NBA LockerVision jersey schedule → `data/jersey_schedule.json`
+
 ## Development Conventions
 
 ### Git Commits
@@ -82,6 +90,23 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 - Captures both CURRENT and UPCOMING EXTENSION status
 - Shows extension details with effective end year
 - Highlights expiring contracts (current year)
+- Shows "FREE AGENT" badge for players whose contracts have expired
+
+### Special Events (Promotions)
+- Static data in `data/special_events.json`
+- Shows in game modal when clicking calendar games
+- Types: giveaway, theme-night, city-edition, crossover, ticket-offer, nba-cup, special
+- Gold banner displays event title and description
+- One-time scrape from nuggets.com via `scrape_promotions.py`
+
+### Jersey Schedule
+- Static data in `data/jersey_schedule.json`
+- Scraped from NBA LockerVision (lockervision.nba.com)
+- Shows uniform type in game modal with official NBA jersey image
+- Four edition types: Association (white), Icon (navy), Statement (red), City (rainbow)
+- Images from NBA CDN: `appimages.nba.com/p/tr:n-slnfre/2025/uniform/Denver%20Nuggets/DEN_[AE|IE|SE|CE].jpg`
+- **No cron needed** - jerseys are assigned for entire season upfront
+- Re-run `scrape_jerseys.py` only at start of next season
 
 ## Testing Changes
 1. Run Flask: `source venv/bin/activate && python app.py`
