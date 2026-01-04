@@ -373,6 +373,9 @@ def more():
 
     cache_time = roster_cache.get('_cached_at', 'Unknown') if roster_cache else 'Unknown'
 
+    # Current year for contract status display
+    current_year = datetime.now().year
+
     return render_template('more.html',
         roster=roster,
         recent_games=recent_games,
@@ -380,6 +383,7 @@ def more():
         injuries=injuries,
         contracts=contracts,
         salary_cap=salary_cap,
+        current_year=current_year,
         cache_time=cache_time
     )
 
