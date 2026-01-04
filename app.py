@@ -438,9 +438,34 @@ def live():
     return render_template('live.html')
 
 
+# Cache for live data (refreshes every 20 seconds)
+_live_cache = {'data': None, 'timestamp': None}
+LIVE_CACHE_TTL = 20  # seconds
+
+
+def get_cached_live_data():
+    """Return cached live data if fresh, otherwise None."""
+    if _live_cache['data'] and _live_cache['timestamp']:
+        age = (datetime.now() - _live_cache['timestamp']).total_seconds()
+        if age < LIVE_CACHE_TTL:
+            return _live_cache['data']
+    return None
+
+
+def set_live_cache(data):
+    """Store data in live cache."""
+    _live_cache['data'] = data
+    _live_cache['timestamp'] = datetime.now()
+
+
 @app.route('/api/live')
 def api_live():
     """API endpoint for live game data - polls BALLDONTLIE for current odds and score."""
+    # Check cache first for fast response
+    cached = get_cached_live_data()
+    if cached:
+        return jsonify(cached)
+
     api_key = os.getenv('BALLDONTLIE_API_KEY')
     if not api_key:
         return jsonify({'error': 'API key not configured'}), 500
@@ -546,7 +571,8 @@ def api_live():
         # Sort vendors by name for consistent display
         vendors.sort(key=lambda x: x['name'])
 
-        return jsonify({
+        # Build response data
+        response_data = {
             'game_id': game_id,
             'game_state': game_state,
             'status': status,
@@ -569,7 +595,12 @@ def api_live():
                 'vendor_count': len(vendors),
             },
             'timestamp': now.isoformat(),
-        })
+        }
+
+        # Cache for fast subsequent requests
+        set_live_cache(response_data)
+
+        return jsonify(response_data)
 
     except requests.RequestException as e:
         return jsonify({'error': f'API request failed: {str(e)}'}), 500
