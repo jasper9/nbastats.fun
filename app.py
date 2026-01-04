@@ -45,22 +45,22 @@ def parse_return_date(date_str):
     return (99, 99)
 
 STAT_NAMES = {
-    'PTS': 'Points',
-    'REB': 'Rebounds',
-    'AST': 'Assists',
-    'STL': 'Steals',
-    'BLK': 'Blocks',
+    'PTS': 'Points Per Game',
+    'REB': 'Rebounds Per Game',
+    'AST': 'Assists Per Game',
+    'STL': 'Steals Per Game',
+    'BLK': 'Blocks Per Game',
     'FG_PCT': 'Field Goal %',
     'FG3_PCT': 'Three-Point %',
     'FT_PCT': 'Free Throw %',
     'EFF': 'Efficiency',
-    'FGM': 'Field Goals Made',
-    'FGA': 'Field Goals Attempted',
-    'FTM': 'Free Throws Made',
-    'FTA': 'Free Throws Attempted',
-    'OREB': 'Offensive Rebounds',
-    'DREB': 'Defensive Rebounds',
-    'MIN': 'Minutes Played'
+    'FGM': 'Field Goals Made Per Game',
+    'FGA': 'Field Goals Attempted Per Game',
+    'FTM': 'Free Throws Made Per Game',
+    'FTA': 'Free Throws Attempted Per Game',
+    'OREB': 'Offensive Rebounds Per Game',
+    'DREB': 'Defensive Rebounds Per Game',
+    'MIN': 'Minutes Per Game'
 }
 
 app = Flask(__name__)

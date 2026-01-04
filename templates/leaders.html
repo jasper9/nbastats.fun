@@ -197,10 +197,10 @@
                         <th>Player</th>
                         <th>Team</th>
                         <th>GP</th>
-                        <th class="stat-col">{{ stat }}</th>
+                        <th class="stat-col">{{ stat }}/G</th>
                         {% if stat in ['FG_PCT', 'FG3_PCT', 'FT_PCT'] %}
-                        <th class="stat-col">Made</th>
-                        <th class="stat-col">Att</th>
+                        <th class="stat-col">Made/G</th>
+                        <th class="stat-col">Att/G</th>
                         {% endif %}
                     </tr>
                 </thead>
@@ -224,20 +224,22 @@
                             {% elif stat == 'FT_PCT' %}
                                 {{ "%.1f"|format(player.FT_PCT * 100) }}%
                             {% elif stat == 'EFF' %}
-                                {{ player.EFF }}
+                                {{ "%.1f"|format(player.EFF) }}
+                            {% elif stat == 'MIN' %}
+                                {{ "%.1f"|format(player.MIN) }}
                             {% else %}
-                                {{ player[stat] }}
+                                {{ "%.1f"|format(player[stat]) }}
                             {% endif %}
                         </td>
                         {% if stat == 'FG_PCT' %}
-                        <td class="stat-value">{{ player.FGM }}</td>
-                        <td class="stat-value">{{ player.FGA }}</td>
+                        <td class="stat-value">{{ "%.1f"|format(player.FGM) }}</td>
+                        <td class="stat-value">{{ "%.1f"|format(player.FGA) }}</td>
                         {% elif stat == 'FG3_PCT' %}
-                        <td class="stat-value">{{ player.FG3M }}</td>
-                        <td class="stat-value">{{ player.FG3A }}</td>
+                        <td class="stat-value">{{ "%.1f"|format(player.FG3M) }}</td>
+                        <td class="stat-value">{{ "%.1f"|format(player.FG3A) }}</td>
                         {% elif stat == 'FT_PCT' %}
-                        <td class="stat-value">{{ player.FTM }}</td>
-                        <td class="stat-value">{{ player.FTA }}</td>
+                        <td class="stat-value">{{ "%.1f"|format(player.FTM) }}</td>
+                        <td class="stat-value">{{ "%.1f"|format(player.FTA) }}</td>
                         {% endif %}
                     </tr>
                     {% endfor %}

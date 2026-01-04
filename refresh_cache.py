@@ -368,7 +368,7 @@ def refresh_triple_doubles():
 
 
 def refresh_league_leaders():
-    """Cache league leaders for all stat categories."""
+    """Cache league leaders for all stat categories (per-game averages)."""
     print("\n[5/6] Fetching league leaders...")
     from nba_api.stats.endpoints import leagueleaders
 
@@ -383,6 +383,7 @@ def refresh_league_leaders():
             leaders = leagueleaders.LeagueLeaders(
                 season='2025-26',
                 stat_category_abbreviation=stat,
+                per_mode48='PerGame',  # Fetch per-game averages instead of totals
                 timeout=60
             )
             df = leaders.league_leaders.get_data_frame()
