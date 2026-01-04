@@ -97,7 +97,7 @@ def save_cache(filename, data):
         return False
 
 
-def update_schedule_with_final_score(game_date, home_team, away_team, home_score, away_score, is_nuggets_home):
+def update_schedule_with_final_score(game_date, home_team, away_team, home_score, away_score, is_nuggets_home, balldontlie_id=None):
     """Update schedule cache with final game score."""
     schedule = load_cache('nuggets_schedule.json')
     if not schedule:
@@ -120,6 +120,8 @@ def update_schedule_with_final_score(game_date, home_team, away_team, home_score
                 game['home_score'] = home_score
                 game['away_score'] = away_score
                 game['result'] = result
+                if balldontlie_id:
+                    game['balldontlie_id'] = balldontlie_id
                 updated = True
 
     if updated:
@@ -559,7 +561,8 @@ def api_live():
                 away_team.get('full_name'),
                 home_score,
                 away_score,
-                is_nuggets_home
+                is_nuggets_home,
+                game_id  # Pass BALLDONTLIE game ID for history linking
             )
         elif home_score > 0 or away_score > 0:
             game_state = 'live'

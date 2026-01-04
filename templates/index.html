@@ -1856,7 +1856,7 @@
                                          data-special-desc="{{ special.description if special else '' }}"
                                          data-special-type="{{ special.type if special else '' }}"
                                          data-jersey="{{ jersey.jersey if jersey else '' }}"
-                                         data-game-id="{{ game.id or '' }}"
+                                         data-game-id="{{ game.balldontlie_id or game.id or '' }}"
                                          onclick="showGameModal(this)">
                                         <div class="opponent">{{ '@' if not game.is_home else 'vs' }} {{ opp_name }}</div>
                                         {% if game.result %}
