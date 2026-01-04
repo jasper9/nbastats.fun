@@ -593,7 +593,7 @@
             statusBadge.className = 'status-badge';
             if (data.game_state === 'live') {
                 statusBadge.classList.add('status-live');
-                statusBadge.textContent = data.period ? `Q${data.period} ${data.time_remaining || ''}` : 'LIVE';
+                statusBadge.textContent = data.time_remaining || 'LIVE';
             } else if (data.game_state === 'final') {
                 statusBadge.classList.add('status-final');
                 statusBadge.textContent = 'FINAL';
