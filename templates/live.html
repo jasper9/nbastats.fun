@@ -716,6 +716,54 @@
             scoreChart.options.plugins.annotation.annotations = scoreQuarterAnnotations;
         }
 
+        function updateMaxLeadLine() {
+            // Find the largest lead at any point in the game
+            let maxLead = 0;
+            let maxLeadIndex = -1;
+            let maxLeadTeam = null;
+
+            for (let i = 0; i < nuggetsScoreHistory.length; i++) {
+                const nuggets = nuggetsScoreHistory[i];
+                const opponent = opponentScoreHistory[i];
+                const lead = Math.abs(nuggets - opponent);
+
+                if (lead > maxLead) {
+                    maxLead = lead;
+                    maxLeadIndex = i;
+                    maxLeadTeam = nuggets > opponent ? 'DEN' : (opponent > nuggets ? opponentName.split(' ').pop().toUpperCase().slice(0, 3) : null);
+                }
+            }
+
+            // Update the annotation on the score chart
+            if (maxLeadIndex >= 0 && maxLead > 0) {
+                const nuggets = nuggetsScoreHistory[maxLeadIndex];
+                const opponent = opponentScoreHistory[maxLeadIndex];
+
+                scoreQuarterAnnotations.maxLead = {
+                    type: 'line',
+                    xMin: maxLeadIndex,
+                    xMax: maxLeadIndex,
+                    yMin: Math.min(nuggets, opponent),
+                    yMax: Math.max(nuggets, opponent),
+                    borderColor: '#ef4444',
+                    borderWidth: 3,
+                    label: {
+                        display: true,
+                        content: `+${maxLead} ${maxLeadTeam}`,
+                        position: 'center',
+                        backgroundColor: '#ef4444',
+                        color: '#ffffff',
+                        font: { size: 11, weight: 'bold' },
+                        padding: 4
+                    }
+                };
+            } else {
+                delete scoreQuarterAnnotations.maxLead;
+            }
+
+            scoreChart.options.plugins.annotation.annotations = { ...scoreQuarterAnnotations };
+        }
+
         async function loadHistory(gameId) {
             if (!gameId || historyLoaded) return;
 
@@ -764,6 +812,7 @@
 
                 historyLoaded = true;
                 updateQuarterLines();
+                updateMaxLeadLine();
                 chart.update();
                 scoreChart.update();
                 console.log(`Loaded ${history.snapshots.length} historical data points`);
@@ -912,6 +961,9 @@
                     if (lastPeriod !== currentPeriod) {
                         updateQuarterLines();
                     }
+
+                    // Update max lead indicator
+                    updateMaxLeadLine();
 
                     chart.update();
                     scoreChart.update();
