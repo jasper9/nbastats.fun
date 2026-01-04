@@ -966,8 +966,8 @@
 
                 if (currentDiff !== 0) {
                     const label = currentDiff > 0
-                        ? `+${currentDiff}`
-                        : `-${Math.abs(currentDiff)}`;
+                        ? `Current +${currentDiff}`
+                        : `Current ${currentDiff}`;
 
                     scoreQuarterAnnotations.currentGap = {
                         type: 'line',
@@ -981,7 +981,8 @@
                             display: true,
                             content: label,
                             position: 'center',
-                            xAdjust: -25,
+                            xAdjust: -35,
+                            yAdjust: -15,
                             backgroundColor: '#1e3a5f',
                             color: '#ffffff',
                             font: { size: 11, weight: 'bold' },
@@ -1072,8 +1073,8 @@
                 const currentSwing = probDisplayHistory[lastProbIndex];
                 if (currentSwing !== 0) {
                     const label = currentSwing > 0
-                        ? `+${currentSwing.toFixed(0)}%`
-                        : `${currentSwing.toFixed(0)}%`;
+                        ? `Current +${currentSwing.toFixed(0)}%`
+                        : `Current ${currentSwing.toFixed(0)}%`;
 
                     quarterAnnotations.currentProb = {
                         type: 'line',
@@ -1087,7 +1088,8 @@
                             display: true,
                             content: label,
                             position: currentSwing > 0 ? 'end' : 'start',
-                            xAdjust: -25,
+                            xAdjust: -40,
+                            yAdjust: currentSwing > 0 ? -10 : 10,
                             backgroundColor: '#1e3a5f',
                             color: '#ffffff',
                             font: { size: 10, weight: 'bold' },
