@@ -81,30 +81,30 @@
         header {
             background: linear-gradient(135deg, var(--nuggets-navy) 0%, #1a3a5c 100%);
             text-align: center;
-            padding: 20px 20px;
+            padding: 12px 20px;
             border-bottom: 3px solid var(--nuggets-gold);
         }
         .page-title {
             font-family: 'Oswald', sans-serif;
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: 700;
             text-transform: uppercase;
             color: var(--text-primary);
         }
         .page-subtitle {
             color: var(--nuggets-gold);
-            font-size: 0.85rem;
-            margin-top: 5px;
+            font-size: 0.8rem;
+            margin-top: 3px;
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 15px;
         }
         /* Game Status */
         .game-status {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 8px;
         }
         .status-badge {
             display: inline-block;
@@ -126,24 +126,24 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 30px;
-            margin: 30px 0;
+            gap: 25px;
+            margin: 15px 0;
             flex-wrap: wrap;
         }
         .team-score {
             text-align: center;
-            min-width: 150px;
+            min-width: 120px;
         }
         .team-name {
             font-family: 'Oswald', sans-serif;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: var(--text-secondary);
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
         .team-name.nuggets { color: var(--nuggets-gold); }
         .score {
             font-family: 'Oswald', sans-serif;
-            font-size: 4rem;
+            font-size: 3.5rem;
             font-weight: 700;
             line-height: 1;
         }
@@ -163,20 +163,20 @@
         .probability-section {
             background: var(--bg-secondary);
             border-radius: 12px;
-            padding: 30px;
-            margin: 30px 0;
+            padding: 20px;
+            margin: 15px 0;
             text-align: center;
         }
         .prob-label {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 2px;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
         .prob-value {
             font-family: 'Oswald', sans-serif;
-            font-size: 5rem;
+            font-size: 4rem;
             font-weight: 700;
             color: var(--nuggets-gold);
             line-height: 1;
@@ -231,8 +231,8 @@
         .chart-section {
             background: var(--bg-secondary);
             border-radius: 12px;
-            padding: 20px;
-            margin: 30px 0;
+            padding: 15px;
+            margin: 15px 0;
         }
         .chart-title {
             font-family: 'Oswald', sans-serif;
@@ -284,6 +284,60 @@
             font-size: 0.85rem;
             color: var(--text-secondary);
             margin-top: 5px;
+        }
+        /* Box Score */
+        .box-score-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .box-score-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .box-score-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .box-score-table th,
+        .box-score-table td {
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .box-score-table th {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        .box-score-table th:first-child,
+        .box-score-table td:first-child {
+            text-align: left;
+            font-weight: 600;
+        }
+        .box-score-table td {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.1rem;
+        }
+        .box-score-table .team-nuggets {
+            color: var(--nuggets-gold);
+        }
+        .box-score-table .team-opponent {
+            color: var(--text-primary);
+        }
+        .box-score-table .total-col {
+            font-weight: 700;
+            font-size: 1.3rem;
+            border-left: 2px solid var(--border);
+        }
+        .box-score-table .quarter-winner {
+            background: rgba(254, 197, 36, 0.15);
         }
         /* No Game State */
         .no-game {
@@ -414,6 +468,43 @@
                 <div style="text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">
                     Consensus from <span id="vendor-count">0</span> bookmakers
                 </div>
+            </div>
+
+            <div class="box-score-section">
+                <div class="box-score-title">Box Score</div>
+                <table class="box-score-table">
+                    <thead>
+                        <tr>
+                            <th>Team</th>
+                            <th>Q1</th>
+                            <th>Q2</th>
+                            <th>Q3</th>
+                            <th>Q4</th>
+                            <th id="ot-header" style="display: none;">OT</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="box-score-body">
+                        <tr class="team-nuggets">
+                            <td id="box-nuggets-name">DEN</td>
+                            <td id="box-nuggets-q1">-</td>
+                            <td id="box-nuggets-q2">-</td>
+                            <td id="box-nuggets-q3">-</td>
+                            <td id="box-nuggets-q4">-</td>
+                            <td id="box-nuggets-ot" style="display: none;">-</td>
+                            <td id="box-nuggets-total" class="total-col">-</td>
+                        </tr>
+                        <tr class="team-opponent">
+                            <td id="box-opponent-name">OPP</td>
+                            <td id="box-opponent-q1">-</td>
+                            <td id="box-opponent-q2">-</td>
+                            <td id="box-opponent-q3">-</td>
+                            <td id="box-opponent-q4">-</td>
+                            <td id="box-opponent-ot" style="display: none;">-</td>
+                            <td id="box-opponent-total" class="total-col">-</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
             <div class="chart-section">
@@ -580,6 +671,7 @@
                     y: {
                         min: -100,
                         max: 100,
+                        afterFit: (axis) => { axis.width = 55; },  // Fixed width for alignment
                         ticks: {
                             callback: value => {
                                 if (value === 0) return 'EVEN';
@@ -670,6 +762,7 @@
                 scales: {
                     y: {
                         beginAtZero: true,
+                        afterFit: (axis) => { axis.width = 55; },  // Fixed width for alignment
                         ticks: { color: '#6b7280' },
                         grid: { color: 'rgba(255,255,255,0.1)' },
                     },
@@ -699,12 +792,19 @@
             return ml > 0 ? '+' + ml : ml.toString();
         }
 
+        let currentTimeRemaining = '';  // Track game state for quarter markers
+
         function updateQuarterLines() {
             // Find quarter transitions and add vertical lines at END of each quarter
+            // Preserve max lead/prob annotations
+            const preserveKeys = ['zeroLine', 'maxNuggetsProb', 'maxOpponentProb'];
+            const preserveScoreKeys = ['maxNuggetsLead', 'maxOpponentLead'];
             Object.keys(quarterAnnotations).forEach(key => {
-                if (key !== 'zeroLine') delete quarterAnnotations[key];
+                if (!preserveKeys.includes(key)) delete quarterAnnotations[key];
             });
-            Object.keys(scoreQuarterAnnotations).forEach(key => delete scoreQuarterAnnotations[key]);
+            Object.keys(scoreQuarterAnnotations).forEach(key => {
+                if (!preserveScoreKeys.includes(key)) delete scoreQuarterAnnotations[key];
+            });
 
             for (let i = 0; i < periodHistory.length - 1; i++) {
                 const currentPeriod = periodHistory[i];
@@ -730,6 +830,36 @@
                     };
                     quarterAnnotations[`endQ${currentPeriod}`] = annotation;
                     scoreQuarterAnnotations[`endQ${currentPeriod}`] = { ...annotation };
+                }
+            }
+
+            // Add marker for current quarter end if we're at halftime or between quarters
+            const lastPeriod = periodHistory.length > 0 ? periodHistory[periodHistory.length - 1] : 0;
+            const isHalftime = currentTimeRemaining && currentTimeRemaining.toLowerCase().includes('half');
+            const isEndOfQuarter = currentTimeRemaining && currentTimeRemaining.includes('End');
+
+            if ((isHalftime && lastPeriod === 2) || isEndOfQuarter) {
+                const quarterNum = isHalftime ? 2 : lastPeriod;
+                if (!quarterAnnotations[`endQ${quarterNum}`]) {
+                    const annotation = {
+                        type: 'line',
+                        xMin: periodHistory.length - 1,
+                        xMax: periodHistory.length - 1,
+                        borderColor: 'rgba(255, 255, 255, 0.4)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        label: {
+                            display: true,
+                            content: isHalftime ? 'HALF' : `End Q${quarterNum}`,
+                            position: 'start',
+                            backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                            color: '#fec524',
+                            font: { size: 10, weight: 'bold' },
+                            padding: 4
+                        }
+                    };
+                    quarterAnnotations[`endQ${quarterNum}`] = annotation;
+                    scoreQuarterAnnotations[`endQ${quarterNum}`] = { ...annotation };
                 }
             }
 
@@ -909,6 +1039,82 @@
             };
         }
 
+        // Track quarter end scores
+        const quarterScores = {
+            nuggets: [0, 0, 0, 0, 0], // Q1, Q2, Q3, Q4, OT
+            opponent: [0, 0, 0, 0, 0]
+        };
+
+        function updateBoxScore(currentPeriod, nuggetsTotal, opponentTotal) {
+            // Calculate quarter scores by finding the cumulative score at end of each quarter
+            // Quarter ends are detected when period transitions in the history
+            const quarterEndScores = {
+                nuggets: [0, 0, 0, 0, 0],
+                opponent: [0, 0, 0, 0, 0]
+            };
+
+            // Find the score at the END of each quarter (last data point before period changes)
+            for (let i = 0; i < periodHistory.length - 1; i++) {
+                const period = periodHistory[i];
+                const nextPeriod = periodHistory[i + 1];
+                if (period >= 1 && period <= 4 && nextPeriod > period) {
+                    // This is the last data point of this quarter
+                    quarterEndScores.nuggets[period - 1] = nuggetsScoreHistory[i];
+                    quarterEndScores.opponent[period - 1] = opponentScoreHistory[i];
+                }
+            }
+
+            // For the current/latest quarter, use current totals
+            // This handles halftime, between quarters, and in-progress quarters
+            if (currentPeriod >= 1 && currentPeriod <= 4) {
+                quarterEndScores.nuggets[currentPeriod - 1] = nuggetsTotal;
+                quarterEndScores.opponent[currentPeriod - 1] = opponentTotal;
+            } else if (currentPeriod > 4) {
+                // Overtime - Q4 should have its end score, OT gets current
+                quarterEndScores.nuggets[4] = nuggetsTotal;
+                quarterEndScores.opponent[4] = opponentTotal;
+                document.getElementById('ot-header').style.display = '';
+                document.getElementById('box-nuggets-ot').style.display = '';
+                document.getElementById('box-opponent-ot').style.display = '';
+            }
+
+            // Calculate per-quarter scores (this quarter minus previous quarter's cumulative)
+            for (let q = 1; q <= 4; q++) {
+                const prevNuggets = q > 1 ? quarterEndScores.nuggets[q - 2] : 0;
+                const prevOpponent = q > 1 ? quarterEndScores.opponent[q - 2] : 0;
+                quarterScores.nuggets[q - 1] = quarterEndScores.nuggets[q - 1] - prevNuggets;
+                quarterScores.opponent[q - 1] = quarterEndScores.opponent[q - 1] - prevOpponent;
+            }
+
+            // Update the table
+            for (let q = 1; q <= 4; q++) {
+                const nScore = quarterScores.nuggets[q - 1];
+                const oScore = quarterScores.opponent[q - 1];
+                const nEl = document.getElementById(`box-nuggets-q${q}`);
+                const oEl = document.getElementById(`box-opponent-q${q}`);
+
+                nEl.textContent = nScore > 0 ? nScore : '-';
+                oEl.textContent = oScore > 0 ? oScore : '-';
+
+                // Highlight quarter winner
+                nEl.classList.remove('quarter-winner');
+                oEl.classList.remove('quarter-winner');
+                if (nScore > oScore && nScore > 0) {
+                    nEl.classList.add('quarter-winner');
+                } else if (oScore > nScore && oScore > 0) {
+                    oEl.classList.add('quarter-winner');
+                }
+            }
+
+            // Update totals
+            document.getElementById('box-nuggets-total').textContent = nuggetsTotal || '-';
+            document.getElementById('box-opponent-total').textContent = opponentTotal || '-';
+
+            // Update team names
+            document.getElementById('box-opponent-name').textContent =
+                opponentName.split(' ').pop().toUpperCase().slice(0, 3) || 'OPP';
+        }
+
         async function loadHistory(gameId) {
             if (!gameId || historyLoaded) return;
 
@@ -959,6 +1165,13 @@
                 updateQuarterLines();
                 updateMaxLeadLine();
                 updateMaxProbLines();
+
+                // Update box score with last known values
+                const lastPeriod = periodHistory[periodHistory.length - 1] || 0;
+                const lastNuggets = nuggetsScoreHistory[nuggetsScoreHistory.length - 1] || 0;
+                const lastOpponent = opponentScoreHistory[opponentScoreHistory.length - 1] || 0;
+                updateBoxScore(lastPeriod, lastNuggets, lastOpponent);
+
                 chart.update();
                 scoreChart.update();
                 console.log(`Loaded ${history.snapshots.length} historical data points`);
@@ -1014,12 +1227,15 @@
             document.getElementById('no-game').style.display = 'none';
             document.getElementById('game-content').style.display = 'block';
 
-            // Update status badge
+            // Update status badge and track time state for quarter markers
+            currentTimeRemaining = data.time_remaining || '';
             const statusBadge = document.getElementById('status-badge');
             statusBadge.className = 'status-badge';
             if (data.game_state === 'live') {
                 statusBadge.classList.add('status-live');
                 statusBadge.textContent = data.time_remaining || 'LIVE';
+                // Update quarter markers (handles halftime detection)
+                updateQuarterLines();
             } else if (data.game_state === 'final') {
                 statusBadge.classList.add('status-final');
                 statusBadge.textContent = 'FINAL';
@@ -1118,10 +1334,16 @@
                     updateMaxLeadLine();
                     updateMaxProbLines();
 
+                    // Update box score
+                    updateBoxScore(currentPeriod, nuggetsScore, opponentScore);
+
                     chart.update();
                     scoreChart.update();
                 }
             }
+
+            // Always update box score with current totals
+            updateBoxScore(currentPeriod, nuggetsScore, opponentScore);
 
             // Update vendors grid
             const vendorsGrid = document.getElementById('vendors-grid');
