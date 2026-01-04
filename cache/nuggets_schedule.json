@@ -1,0 +1,1454 @@
+{
+  "games": [
+    {
+      "id": "0022500496",
+      "commence_time": "2026-01-04T20:30:00Z",
+      "local_date": "2026-01-04",
+      "home_team": "Brooklyn Nets",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 10,
+        "losses": 22
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": true,
+      "game_status": 3,
+      "odds_providers": {
+        "theoddsapi": {
+          "source": "the-odds-api",
+          "bookmaker": "FanDuel",
+          "opponent_ml": 114,
+          "nuggets_ml": -134,
+          "nuggets_spread": -2.5,
+          "nuggets_spread_odds": -106,
+          "total": 225.5,
+          "over_odds": -106,
+          "under_odds": -114
+        },
+        "balldontlie": {
+          "source": "balldontlie",
+          "vendors": {
+            "polymarket": {
+              "bookmaker": "polymarket",
+              "updated_at": "2026-01-04T20:10:01.458Z",
+              "nuggets_ml": -135,
+              "opponent_ml": 135,
+              "nuggets_spread": -2.5,
+              "nuggets_spread_odds": 102,
+              "total": 224.5,
+              "over_odds": -102,
+              "under_odds": 102
+            },
+            "kalshi": {
+              "bookmaker": "kalshi",
+              "updated_at": "2026-01-04T20:08:44.564Z",
+              "nuggets_ml": -135,
+              "opponent_ml": 135,
+              "nuggets_spread": -3.5,
+              "nuggets_spread_odds": 115,
+              "total": 226.5,
+              "over_odds": 111,
+              "under_odds": -111
+            },
+            "betway": {
+              "bookmaker": "betway",
+              "updated_at": "2026-01-04T20:09:28.316Z",
+              "nuggets_ml": -140,
+              "opponent_ml": 120,
+              "nuggets_spread": -2.5,
+              "nuggets_spread_odds": -110,
+              "total": 224.5,
+              "over_odds": -110,
+              "under_odds": -110
+            },
+            "fanduel": {
+              "bookmaker": "fanduel",
+              "updated_at": "2026-01-04T20:10:20.124Z",
+              "nuggets_ml": -136,
+              "opponent_ml": 116,
+              "nuggets_spread": -2.5,
+              "nuggets_spread_odds": -106,
+              "total": 225.5,
+              "over_odds": -108,
+              "under_odds": -112
+            },
+            "rebet": {
+              "bookmaker": "rebet",
+              "updated_at": "2026-01-04T20:09:45.799Z",
+              "nuggets_ml": -139,
+              "opponent_ml": 115,
+              "nuggets_spread": -2.5,
+              "nuggets_spread_odds": -110,
+              "total": 224.5,
+              "over_odds": -115,
+              "under_odds": -109
+            },
+            "draftkings": {
+              "bookmaker": "draftkings",
+              "updated_at": "2026-01-04T20:08:00.529Z",
+              "nuggets_ml": -148,
+              "opponent_ml": 124,
+              "nuggets_spread": -2.5,
+              "nuggets_spread_odds": -108,
+              "total": 224.5,
+              "over_odds": -110,
+              "under_odds": -110
+            },
+            "caesars": {
+              "bookmaker": "caesars",
+              "updated_at": "2026-01-04T20:09:30.720Z",
+              "nuggets_ml": -140,
+              "opponent_ml": 118,
+              "nuggets_spread": -2.5,
+              "nuggets_spread_odds": -110,
+              "total": 224.5,
+              "over_odds": -110,
+              "under_odds": -110
+            },
+            "betmgm": {
+              "bookmaker": "betmgm",
+              "updated_at": "2026-01-04T20:10:17.696Z",
+              "nuggets_ml": -145,
+              "opponent_ml": 118,
+              "nuggets_spread": -2.5,
+              "nuggets_spread_odds": -102,
+              "total": 224.5,
+              "over_odds": -110,
+              "under_odds": -110
+            },
+            "betparx": {
+              "bookmaker": "betparx",
+              "updated_at": "2026-01-04T20:09:35.181Z",
+              "nuggets_ml": -141,
+              "opponent_ml": 117,
+              "nuggets_spread": -3.0,
+              "nuggets_spread_odds": -107
+            },
+            "betrivers": {
+              "bookmaker": "betrivers",
+              "updated_at": "2026-01-04T20:10:05.186Z",
+              "nuggets_ml": -141,
+              "opponent_ml": 117,
+              "nuggets_spread": -3.0,
+              "nuggets_spread_odds": -108,
+              "total": 225.5,
+              "over_odds": -112,
+              "under_odds": -112
+            },
+            "ballybet": {
+              "bookmaker": "ballybet",
+              "updated_at": "2026-01-04T20:10:15.197Z",
+              "nuggets_ml": -141,
+              "opponent_ml": 118,
+              "nuggets_spread": -3.0,
+              "nuggets_spread_odds": -107,
+              "total": 225.5,
+              "over_odds": -110,
+              "under_odds": -110
+            }
+          },
+          "bookmaker": "polymarket",
+          "updated_at": "2026-01-04T20:10:01.458Z",
+          "nuggets_ml": -135,
+          "opponent_ml": 135,
+          "nuggets_spread": -2.5,
+          "nuggets_spread_odds": 102,
+          "total": 224.5,
+          "over_odds": -102,
+          "under_odds": 102
+        }
+      },
+      "bookmaker": "FanDuel",
+      "opponent_ml": 114,
+      "nuggets_ml": -134,
+      "nuggets_spread": -2.5,
+      "nuggets_spread_odds": -106,
+      "total": 225.5,
+      "over_odds": -106,
+      "under_odds": -114,
+      "home_score": 127,
+      "away_score": 115,
+      "result": "L",
+      "balldontlie_id": 18447310
+    },
+    {
+      "id": "0022500507",
+      "commence_time": "2026-01-06T01:30:00Z",
+      "local_date": "2026-01-05",
+      "home_team": "Philadelphia 76ers",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 19,
+        "losses": 14
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {
+        "balldontlie": {
+          "source": "balldontlie",
+          "vendors": {
+            "polymarket": {
+              "bookmaker": "polymarket",
+              "updated_at": "2026-01-04T20:10:01.458Z",
+              "nuggets_ml": 376,
+              "opponent_ml": -376
+            },
+            "kalshi": {
+              "bookmaker": "kalshi",
+              "updated_at": "2026-01-04T20:08:44.564Z",
+              "nuggets_ml": 400,
+              "opponent_ml": -365
+            }
+          },
+          "bookmaker": "polymarket",
+          "updated_at": "2026-01-04T20:10:01.458Z",
+          "nuggets_ml": 376,
+          "opponent_ml": -376
+        }
+      },
+      "vendors": {
+        "polymarket": {
+          "bookmaker": "polymarket",
+          "updated_at": "2026-01-04T20:10:01.458Z",
+          "nuggets_ml": 376,
+          "opponent_ml": -376
+        },
+        "kalshi": {
+          "bookmaker": "kalshi",
+          "updated_at": "2026-01-04T20:08:44.564Z",
+          "nuggets_ml": 400,
+          "opponent_ml": -365
+        }
+      },
+      "bookmaker": "polymarket",
+      "nuggets_ml": 376,
+      "opponent_ml": -376
+    },
+    {
+      "id": "0022500520",
+      "commence_time": "2026-01-08T00:00:00Z",
+      "local_date": "2026-01-07",
+      "home_team": "Boston Celtics",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 21,
+        "losses": 12
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500537",
+      "commence_time": "2026-01-10T02:00:00Z",
+      "local_date": "2026-01-09",
+      "home_team": "Denver Nuggets",
+      "away_team": "Atlanta Hawks",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 17,
+        "losses": 20
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500554",
+      "commence_time": "2026-01-12T01:00:00Z",
+      "local_date": "2026-01-11",
+      "home_team": "Denver Nuggets",
+      "away_team": "Milwaukee Bucks",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 15,
+        "losses": 20
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500567",
+      "commence_time": "2026-01-14T01:00:00Z",
+      "local_date": "2026-01-13",
+      "home_team": "New Orleans Pelicans",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 8,
+        "losses": 28
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500575",
+      "commence_time": "2026-01-15T02:30:00Z",
+      "local_date": "2026-01-14",
+      "home_team": "Dallas Mavericks",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 13,
+        "losses": 23
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500600",
+      "commence_time": "2026-01-18T02:00:00Z",
+      "local_date": "2026-01-17",
+      "home_team": "Denver Nuggets",
+      "away_team": "Washington Wizards",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 9,
+        "losses": 24
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500605",
+      "commence_time": "2026-01-19T01:00:00Z",
+      "local_date": "2026-01-18",
+      "home_team": "Denver Nuggets",
+      "away_team": "Charlotte Hornets",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 12,
+        "losses": 23
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500617",
+      "commence_time": "2026-01-21T03:00:00Z",
+      "local_date": "2026-01-20",
+      "home_team": "Denver Nuggets",
+      "away_team": "Los Angeles Lakers",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 21,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    }
+  ],
+  "calendar_games": [
+    {
+      "id": "0022500315",
+      "commence_time": "2025-12-02T02:00:00Z",
+      "local_date": "2025-12-01",
+      "home_team": "Denver Nuggets",
+      "away_team": "Dallas Mavericks",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 13,
+        "losses": 23
+      },
+      "is_past": true,
+      "game_status": 3,
+      "home_score": 121,
+      "away_score": 131,
+      "result": "L",
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500325",
+      "commence_time": "2025-12-04T00:00:00Z",
+      "local_date": "2025-12-03",
+      "home_team": "Indiana Pacers",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 6,
+        "losses": 29
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": true,
+      "game_status": 3,
+      "home_score": 120,
+      "away_score": 135,
+      "result": "W",
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500340",
+      "commence_time": "2025-12-06T00:30:00Z",
+      "local_date": "2025-12-05",
+      "home_team": "Atlanta Hawks",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 17,
+        "losses": 20
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": true,
+      "game_status": 3,
+      "home_score": 133,
+      "away_score": 134,
+      "result": "W",
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500359",
+      "commence_time": "2025-12-07T23:00:00Z",
+      "local_date": "2025-12-07",
+      "home_team": "Charlotte Hornets",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 12,
+        "losses": 23
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": true,
+      "game_status": 3,
+      "home_score": 106,
+      "away_score": 115,
+      "result": "W",
+      "odds_providers": {}
+    },
+    {
+      "id": "0022501208",
+      "commence_time": "2025-12-12T03:00:00Z",
+      "local_date": "2025-12-11",
+      "home_team": "Sacramento Kings",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 8,
+        "losses": 27
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": true,
+      "game_status": 3,
+      "home_score": 105,
+      "away_score": 136,
+      "result": "W",
+      "odds_providers": {}
+    },
+    {
+      "id": "0022501225",
+      "commence_time": "2025-12-16T02:30:00Z",
+      "local_date": "2025-12-15",
+      "home_team": "Denver Nuggets",
+      "away_team": "Houston Rockets",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 21,
+        "losses": 11
+      },
+      "is_past": true,
+      "game_status": 3,
+      "home_score": 128,
+      "away_score": 125,
+      "result": "W",
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500377",
+      "commence_time": "2025-12-19T02:00:00Z",
+      "local_date": "2025-12-18",
+      "home_team": "Denver Nuggets",
+      "away_team": "Orlando Magic",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 19,
+        "losses": 16
+      },
+      "is_past": true,
+      "game_status": 3,
+      "home_score": 126,
+      "away_score": 115,
+      "result": "W",
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500386",
+      "commence_time": "2025-12-20T22:00:00Z",
+      "local_date": "2025-12-20",
+      "home_team": "Denver Nuggets",
+      "away_team": "Houston Rockets",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 21,
+        "losses": 11
+      },
+      "is_past": true,
+      "game_status": 3,
+      "home_score": 101,
+      "away_score": 115,
+      "result": "L",
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500405",
+      "commence_time": "2025-12-23T02:00:00Z",
+      "local_date": "2025-12-22",
+      "home_team": "Denver Nuggets",
+      "away_team": "Utah Jazz",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 12,
+        "losses": 21
+      },
+      "is_past": true,
+      "game_status": 3,
+      "home_score": 135,
+      "away_score": 112,
+      "result": "W",
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500415",
+      "commence_time": "2025-12-24T01:00:00Z",
+      "local_date": "2025-12-23",
+      "home_team": "Dallas Mavericks",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 13,
+        "losses": 23
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": true,
+      "game_status": 3,
+      "home_score": 131,
+      "away_score": 130,
+      "result": "L",
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500013",
+      "commence_time": "2025-12-26T03:30:00Z",
+      "local_date": "2025-12-25",
+      "home_team": "Denver Nuggets",
+      "away_team": "Minnesota Timberwolves",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 22,
+        "losses": 13
+      },
+      "is_past": true,
+      "game_status": 3,
+      "home_score": 142,
+      "away_score": 138,
+      "result": "W",
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500433",
+      "commence_time": "2025-12-28T00:00:00Z",
+      "local_date": "2025-12-27",
+      "home_team": "Orlando Magic",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 19,
+        "losses": 16
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": true,
+      "game_status": 3,
+      "home_score": 127,
+      "away_score": 126,
+      "result": "L",
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500450",
+      "commence_time": "2025-12-30T00:30:00Z",
+      "local_date": "2025-12-29",
+      "home_team": "Miami Heat",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 19,
+        "losses": 16
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": true,
+      "game_status": 3,
+      "home_score": 147,
+      "away_score": 123,
+      "result": "L",
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500468",
+      "commence_time": "2026-01-01T00:30:00Z",
+      "local_date": "2025-12-31",
+      "home_team": "Toronto Raptors",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 21,
+        "losses": 15
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": true,
+      "game_status": 3,
+      "home_score": 103,
+      "away_score": 106,
+      "result": "W",
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500478",
+      "commence_time": "2026-01-03T00:30:00Z",
+      "local_date": "2026-01-02",
+      "home_team": "Cleveland Cavaliers",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 20,
+        "losses": 16
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": true,
+      "game_status": 3,
+      "home_score": 113,
+      "away_score": 108,
+      "result": "L",
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500496",
+      "commence_time": "2026-01-04T20:30:00Z",
+      "local_date": "2026-01-04",
+      "home_team": "Brooklyn Nets",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 10,
+        "losses": 22
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": true,
+      "game_status": 3,
+      "odds_providers": {
+        "theoddsapi": {
+          "source": "the-odds-api",
+          "bookmaker": "FanDuel",
+          "opponent_ml": 114,
+          "nuggets_ml": -134,
+          "nuggets_spread": -2.5,
+          "nuggets_spread_odds": -106,
+          "total": 225.5,
+          "over_odds": -106,
+          "under_odds": -114
+        },
+        "balldontlie": {
+          "source": "balldontlie",
+          "vendors": {
+            "polymarket": {
+              "bookmaker": "polymarket",
+              "updated_at": "2026-01-04T20:10:01.458Z",
+              "nuggets_ml": -135,
+              "opponent_ml": 135,
+              "nuggets_spread": -2.5,
+              "nuggets_spread_odds": 102,
+              "total": 224.5,
+              "over_odds": -102,
+              "under_odds": 102
+            },
+            "kalshi": {
+              "bookmaker": "kalshi",
+              "updated_at": "2026-01-04T20:08:44.564Z",
+              "nuggets_ml": -135,
+              "opponent_ml": 135,
+              "nuggets_spread": -3.5,
+              "nuggets_spread_odds": 115,
+              "total": 226.5,
+              "over_odds": 111,
+              "under_odds": -111
+            },
+            "betway": {
+              "bookmaker": "betway",
+              "updated_at": "2026-01-04T20:09:28.316Z",
+              "nuggets_ml": -140,
+              "opponent_ml": 120,
+              "nuggets_spread": -2.5,
+              "nuggets_spread_odds": -110,
+              "total": 224.5,
+              "over_odds": -110,
+              "under_odds": -110
+            },
+            "fanduel": {
+              "bookmaker": "fanduel",
+              "updated_at": "2026-01-04T20:10:20.124Z",
+              "nuggets_ml": -136,
+              "opponent_ml": 116,
+              "nuggets_spread": -2.5,
+              "nuggets_spread_odds": -106,
+              "total": 225.5,
+              "over_odds": -108,
+              "under_odds": -112
+            },
+            "rebet": {
+              "bookmaker": "rebet",
+              "updated_at": "2026-01-04T20:09:45.799Z",
+              "nuggets_ml": -139,
+              "opponent_ml": 115,
+              "nuggets_spread": -2.5,
+              "nuggets_spread_odds": -110,
+              "total": 224.5,
+              "over_odds": -115,
+              "under_odds": -109
+            },
+            "draftkings": {
+              "bookmaker": "draftkings",
+              "updated_at": "2026-01-04T20:08:00.529Z",
+              "nuggets_ml": -148,
+              "opponent_ml": 124,
+              "nuggets_spread": -2.5,
+              "nuggets_spread_odds": -108,
+              "total": 224.5,
+              "over_odds": -110,
+              "under_odds": -110
+            },
+            "caesars": {
+              "bookmaker": "caesars",
+              "updated_at": "2026-01-04T20:09:30.720Z",
+              "nuggets_ml": -140,
+              "opponent_ml": 118,
+              "nuggets_spread": -2.5,
+              "nuggets_spread_odds": -110,
+              "total": 224.5,
+              "over_odds": -110,
+              "under_odds": -110
+            },
+            "betmgm": {
+              "bookmaker": "betmgm",
+              "updated_at": "2026-01-04T20:10:17.696Z",
+              "nuggets_ml": -145,
+              "opponent_ml": 118,
+              "nuggets_spread": -2.5,
+              "nuggets_spread_odds": -102,
+              "total": 224.5,
+              "over_odds": -110,
+              "under_odds": -110
+            },
+            "betparx": {
+              "bookmaker": "betparx",
+              "updated_at": "2026-01-04T20:09:35.181Z",
+              "nuggets_ml": -141,
+              "opponent_ml": 117,
+              "nuggets_spread": -3.0,
+              "nuggets_spread_odds": -107
+            },
+            "betrivers": {
+              "bookmaker": "betrivers",
+              "updated_at": "2026-01-04T20:10:05.186Z",
+              "nuggets_ml": -141,
+              "opponent_ml": 117,
+              "nuggets_spread": -3.0,
+              "nuggets_spread_odds": -108,
+              "total": 225.5,
+              "over_odds": -112,
+              "under_odds": -112
+            },
+            "ballybet": {
+              "bookmaker": "ballybet",
+              "updated_at": "2026-01-04T20:10:15.197Z",
+              "nuggets_ml": -141,
+              "opponent_ml": 118,
+              "nuggets_spread": -3.0,
+              "nuggets_spread_odds": -107,
+              "total": 225.5,
+              "over_odds": -110,
+              "under_odds": -110
+            }
+          },
+          "bookmaker": "polymarket",
+          "updated_at": "2026-01-04T20:10:01.458Z",
+          "nuggets_ml": -135,
+          "opponent_ml": 135,
+          "nuggets_spread": -2.5,
+          "nuggets_spread_odds": 102,
+          "total": 224.5,
+          "over_odds": -102,
+          "under_odds": 102
+        }
+      },
+      "bookmaker": "FanDuel",
+      "opponent_ml": 114,
+      "nuggets_ml": -134,
+      "nuggets_spread": -2.5,
+      "nuggets_spread_odds": -106,
+      "total": 225.5,
+      "over_odds": -106,
+      "under_odds": -114,
+      "home_score": 127,
+      "away_score": 115,
+      "result": "L",
+      "balldontlie_id": 18447310
+    },
+    {
+      "id": "0022500507",
+      "commence_time": "2026-01-06T01:30:00Z",
+      "local_date": "2026-01-05",
+      "home_team": "Philadelphia 76ers",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 19,
+        "losses": 14
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {
+        "balldontlie": {
+          "source": "balldontlie",
+          "vendors": {
+            "polymarket": {
+              "bookmaker": "polymarket",
+              "updated_at": "2026-01-04T20:10:01.458Z",
+              "nuggets_ml": 376,
+              "opponent_ml": -376
+            },
+            "kalshi": {
+              "bookmaker": "kalshi",
+              "updated_at": "2026-01-04T20:08:44.564Z",
+              "nuggets_ml": 400,
+              "opponent_ml": -365
+            }
+          },
+          "bookmaker": "polymarket",
+          "updated_at": "2026-01-04T20:10:01.458Z",
+          "nuggets_ml": 376,
+          "opponent_ml": -376
+        }
+      },
+      "vendors": {
+        "polymarket": {
+          "bookmaker": "polymarket",
+          "updated_at": "2026-01-04T20:10:01.458Z",
+          "nuggets_ml": 376,
+          "opponent_ml": -376
+        },
+        "kalshi": {
+          "bookmaker": "kalshi",
+          "updated_at": "2026-01-04T20:08:44.564Z",
+          "nuggets_ml": 400,
+          "opponent_ml": -365
+        }
+      },
+      "bookmaker": "polymarket",
+      "nuggets_ml": 376,
+      "opponent_ml": -376
+    },
+    {
+      "id": "0022500520",
+      "commence_time": "2026-01-08T00:00:00Z",
+      "local_date": "2026-01-07",
+      "home_team": "Boston Celtics",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 21,
+        "losses": 12
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500537",
+      "commence_time": "2026-01-10T02:00:00Z",
+      "local_date": "2026-01-09",
+      "home_team": "Denver Nuggets",
+      "away_team": "Atlanta Hawks",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 17,
+        "losses": 20
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500554",
+      "commence_time": "2026-01-12T01:00:00Z",
+      "local_date": "2026-01-11",
+      "home_team": "Denver Nuggets",
+      "away_team": "Milwaukee Bucks",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 15,
+        "losses": 20
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500567",
+      "commence_time": "2026-01-14T01:00:00Z",
+      "local_date": "2026-01-13",
+      "home_team": "New Orleans Pelicans",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 8,
+        "losses": 28
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500575",
+      "commence_time": "2026-01-15T02:30:00Z",
+      "local_date": "2026-01-14",
+      "home_team": "Dallas Mavericks",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 13,
+        "losses": 23
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500600",
+      "commence_time": "2026-01-18T02:00:00Z",
+      "local_date": "2026-01-17",
+      "home_team": "Denver Nuggets",
+      "away_team": "Washington Wizards",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 9,
+        "losses": 24
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500605",
+      "commence_time": "2026-01-19T01:00:00Z",
+      "local_date": "2026-01-18",
+      "home_team": "Denver Nuggets",
+      "away_team": "Charlotte Hornets",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 12,
+        "losses": 23
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500617",
+      "commence_time": "2026-01-21T03:00:00Z",
+      "local_date": "2026-01-20",
+      "home_team": "Denver Nuggets",
+      "away_team": "Los Angeles Lakers",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 21,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500629",
+      "commence_time": "2026-01-23T00:00:00Z",
+      "local_date": "2026-01-22",
+      "home_team": "Washington Wizards",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 9,
+        "losses": 24
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500640",
+      "commence_time": "2026-01-24T01:00:00Z",
+      "local_date": "2026-01-23",
+      "home_team": "Milwaukee Bucks",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 15,
+        "losses": 20
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500651",
+      "commence_time": "2026-01-25T20:30:00Z",
+      "local_date": "2026-01-25",
+      "home_team": "Memphis Grizzlies",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 15,
+        "losses": 19
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500668",
+      "commence_time": "2026-01-28T02:00:00Z",
+      "local_date": "2026-01-27",
+      "home_team": "Denver Nuggets",
+      "away_team": "Detroit Pistons",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 25,
+        "losses": 9
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500684",
+      "commence_time": "2026-01-30T02:00:00Z",
+      "local_date": "2026-01-29",
+      "home_team": "Denver Nuggets",
+      "away_team": "Brooklyn Nets",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 10,
+        "losses": 22
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500695",
+      "commence_time": "2026-01-31T03:00:00Z",
+      "local_date": "2026-01-30",
+      "home_team": "Denver Nuggets",
+      "away_team": "LA Clippers",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 12,
+        "losses": 21
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500711",
+      "commence_time": "2026-02-02T02:30:00Z",
+      "local_date": "2026-02-01",
+      "home_team": "Denver Nuggets",
+      "away_team": "Oklahoma City Thunder",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 30,
+        "losses": 5
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500716",
+      "commence_time": "2026-02-04T00:00:00Z",
+      "local_date": "2026-02-03",
+      "home_team": "Detroit Pistons",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 25,
+        "losses": 9
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500726",
+      "commence_time": "2026-02-05T00:00:00Z",
+      "local_date": "2026-02-04",
+      "home_team": "New York Knicks",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 23,
+        "losses": 12
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500752",
+      "commence_time": "2026-02-08T01:00:00Z",
+      "local_date": "2026-02-07",
+      "home_team": "Chicago Bulls",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 17,
+        "losses": 18
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500767",
+      "commence_time": "2026-02-10T02:00:00Z",
+      "local_date": "2026-02-09",
+      "home_team": "Denver Nuggets",
+      "away_team": "Cleveland Cavaliers",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 20,
+        "losses": 16
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500787",
+      "commence_time": "2026-02-12T03:00:00Z",
+      "local_date": "2026-02-11",
+      "home_team": "Denver Nuggets",
+      "away_team": "Memphis Grizzlies",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 15,
+        "losses": 19
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500801",
+      "commence_time": "2026-02-20T03:30:00Z",
+      "local_date": "2026-02-19",
+      "home_team": "LA Clippers",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 12,
+        "losses": 21
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500810",
+      "commence_time": "2026-02-21T03:00:00Z",
+      "local_date": "2026-02-20",
+      "home_team": "Portland Trail Blazers",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 16,
+        "losses": 20
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500820",
+      "commence_time": "2026-02-22T20:30:00Z",
+      "local_date": "2026-02-22",
+      "home_team": "Golden State Warriors",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 18,
+        "losses": 17
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500847",
+      "commence_time": "2026-02-26T03:00:00Z",
+      "local_date": "2026-02-25",
+      "home_team": "Denver Nuggets",
+      "away_team": "Boston Celtics",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 21,
+        "losses": 12
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500862",
+      "commence_time": "2026-02-28T02:30:00Z",
+      "local_date": "2026-02-27",
+      "home_team": "Oklahoma City Thunder",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "home_record": {
+        "wins": 30,
+        "losses": 5
+      },
+      "away_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    },
+    {
+      "id": "0022500871",
+      "commence_time": "2026-03-01T20:30:00Z",
+      "local_date": "2026-03-01",
+      "home_team": "Denver Nuggets",
+      "away_team": "Minnesota Timberwolves",
+      "is_home": true,
+      "home_record": {
+        "wins": 23,
+        "losses": 11
+      },
+      "away_record": {
+        "wins": 22,
+        "losses": 13
+      },
+      "is_past": false,
+      "game_status": 1,
+      "odds_providers": {}
+    }
+  ],
+  "_cached_at": "2026-01-03T22:34:34.098997",
+  "_odds_updated_at": "2026-01-04T13:10:37.068225",
+  "_odds_providers": {
+    "theoddsapi": 8,
+    "balldontlie": 2
+  }
+}

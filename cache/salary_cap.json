@@ -1,0 +1,130 @@
+{
+  "team_total_cap_hit": 188297059,
+  "team_total_base_salary": 189905998,
+  "roster_count": 14,
+  "players": [
+    {
+      "name": "Nikola Jokic",
+      "jersey": "15",
+      "position": "C",
+      "cap_hit": 55224526,
+      "base_salary": 55224526
+    },
+    {
+      "name": "Jamal Murray",
+      "jersey": "27",
+      "position": "G",
+      "cap_hit": 46394100,
+      "base_salary": 46394100
+    },
+    {
+      "name": "Aaron Gordon",
+      "jersey": "32",
+      "position": "F",
+      "cap_hit": 22841455,
+      "base_salary": 22841455
+    },
+    {
+      "name": "Cameron Johnson",
+      "jersey": "23",
+      "position": "F",
+      "cap_hit": 21057065,
+      "base_salary": 20543478
+    },
+    {
+      "name": "Jonas Valanciunas",
+      "jersey": "17",
+      "position": "C",
+      "cap_hit": 10395000,
+      "base_salary": 10395000
+    },
+    {
+      "name": "Zeke Nnaji",
+      "jersey": "22",
+      "position": "F-C",
+      "cap_hit": 8177778,
+      "base_salary": 8177778
+    },
+    {
+      "name": "Christian Braun",
+      "jersey": "0",
+      "position": "G",
+      "cap_hit": 4921797,
+      "base_salary": 4921797
+    },
+    {
+      "name": "Peyton Watson",
+      "jersey": "8",
+      "position": "G",
+      "cap_hit": 4356476,
+      "base_salary": 4356476
+    },
+    {
+      "name": "DaRon Holmes II",
+      "jersey": "14",
+      "position": "F",
+      "cap_hit": 3218760,
+      "base_salary": 3218760
+    },
+    {
+      "name": "Julian Strawther",
+      "jersey": "3",
+      "position": "G",
+      "cap_hit": 2674200,
+      "base_salary": 2674200
+    },
+    {
+      "name": "Bruce Brown",
+      "jersey": "11",
+      "position": "G",
+      "cap_hit": 2296274,
+      "base_salary": 3080921
+    },
+    {
+      "name": "Tim Hardaway Jr.",
+      "jersey": "10",
+      "position": "G",
+      "cap_hit": 2296274,
+      "base_salary": 3634153
+    },
+    {
+      "name": "Jalen Pickett",
+      "jersey": "24",
+      "position": "G",
+      "cap_hit": 2221677,
+      "base_salary": 2221677
+    },
+    {
+      "name": "Hunter Tyson",
+      "jersey": "5",
+      "position": "F",
+      "cap_hit": 2221677,
+      "base_salary": 2221677
+    }
+  ],
+  "thresholds": {
+    "salary_cap": 154647000,
+    "luxury_tax_line": 187895000,
+    "first_apron": 195945000,
+    "second_apron": 207824000,
+    "minimum_team_salary": 139182000,
+    "taxpayer_mle": 5685000,
+    "non_taxpayer_mle": 14104000,
+    "cap_thresholds_season": "2025-26",
+    "cap_thresholds_source": "NBA.com official announcement",
+    "cap_thresholds_retrieved": "2026-01-03"
+  },
+  "over_cap": true,
+  "over_cap_amount": 33650059,
+  "cap_space": 0,
+  "over_tax": true,
+  "over_tax_amount": 402059,
+  "tax_space": 0,
+  "over_first_apron": false,
+  "first_apron_amount": 0,
+  "first_apron_space": 7647941,
+  "over_second_apron": false,
+  "second_apron_amount": 0,
+  "second_apron_space": 19526941,
+  "_cached_at": "2026-01-03T22:35:39.798088"
+}

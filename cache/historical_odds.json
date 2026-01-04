@@ -1,0 +1,39 @@
+{
+  "games": {
+    "0022500496": {
+      "game_id": "0022500496",
+      "date": "2026-01-04",
+      "home_team": "Brooklyn Nets",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "archived_at": "2026-01-03T22:44:40.916486",
+      "pregame_odds": {
+        "nuggets_spread": -3.0,
+        "nuggets_spread_odds": -114,
+        "nuggets_ml": -162,
+        "opponent_ml": 136,
+        "total": 221.5,
+        "bookmaker": "FanDuel",
+        "source": "the-odds-api"
+      }
+    },
+    "0022500507": {
+      "game_id": "0022500507",
+      "date": "2026-01-05",
+      "home_team": "Philadelphia 76ers",
+      "away_team": "Denver Nuggets",
+      "is_home": false,
+      "archived_at": "2026-01-04T13:10:37.065468",
+      "pregame_odds": {
+        "nuggets_spread": null,
+        "nuggets_spread_odds": null,
+        "nuggets_ml": 376,
+        "opponent_ml": -376,
+        "total": null,
+        "bookmaker": "polymarket",
+        "source": "balldontlie"
+      }
+    }
+  },
+  "_updated_at": "2026-01-04T13:10:37.065484"
+}

@@ -1,8 +1,6 @@
 venv/
 __pycache__/
 *.pyc
-cache/*
-!cache/live_history/
 .env
 .DS_Store
 *.swp
