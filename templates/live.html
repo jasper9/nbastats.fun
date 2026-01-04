@@ -797,7 +797,7 @@
         function updateQuarterLines() {
             // Find quarter transitions and add vertical lines at END of each quarter
             // Preserve max lead/prob annotations
-            const preserveKeys = ['zeroLine', 'maxNuggetsProb', 'maxOpponentProb'];
+            const preserveKeys = ['zeroLine', 'maxNuggetsProb', 'maxOpponentProb', 'currentProb'];
             const preserveScoreKeys = ['maxNuggetsLead', 'maxOpponentLead', 'currentGap'];
             Object.keys(quarterAnnotations).forEach(key => {
                 if (!preserveKeys.includes(key)) delete quarterAnnotations[key];
@@ -976,15 +976,15 @@
                         xMax: lastIndex,
                         yMin: Math.min(currentNuggets, currentOpponent),
                         yMax: Math.max(currentNuggets, currentOpponent),
-                        borderColor: '#22d3ee',
+                        borderColor: '#1e3a5f',
                         borderWidth: 3,
                         label: {
                             display: true,
                             content: label,
                             position: 'center',
                             xAdjust: -25,
-                            backgroundColor: '#22d3ee',
-                            color: '#000000',
+                            backgroundColor: '#1e3a5f',
+                            color: '#ffffff',
                             font: { size: 11, weight: 'bold' },
                             padding: 4
                         }
@@ -1018,6 +1018,7 @@
             // Remove old max prob lines
             delete quarterAnnotations.maxNuggetsProb;
             delete quarterAnnotations.maxOpponentProb;
+            delete quarterAnnotations.currentProb;
 
             // Add max Nuggets probability line (gold)
             if (maxNuggetsIndex >= 0 && maxNuggetsSwing > 0) {
@@ -1064,6 +1065,38 @@
                         padding: 3
                     }
                 };
+            }
+
+            // Add current probability line (navy blue) at the rightmost point
+            const lastProbIndex = probDisplayHistory.length - 1;
+            if (lastProbIndex >= 0) {
+                const currentSwing = probDisplayHistory[lastProbIndex];
+                if (currentSwing !== 0) {
+                    const oppAbbrev = opponentName.split(' ').pop().toUpperCase().slice(0, 3);
+                    const label = currentSwing > 0
+                        ? `+${currentSwing.toFixed(0)}% DEN`
+                        : `+${Math.abs(currentSwing).toFixed(0)}% ${oppAbbrev}`;
+
+                    quarterAnnotations.currentProb = {
+                        type: 'line',
+                        xMin: lastProbIndex,
+                        xMax: lastProbIndex,
+                        yMin: 0,
+                        yMax: currentSwing,
+                        borderColor: '#1e3a5f',
+                        borderWidth: 3,
+                        label: {
+                            display: true,
+                            content: label,
+                            position: currentSwing > 0 ? 'end' : 'start',
+                            xAdjust: -25,
+                            backgroundColor: '#1e3a5f',
+                            color: '#ffffff',
+                            font: { size: 10, weight: 'bold' },
+                            padding: 3
+                        }
+                    };
+                }
             }
 
             // Update chart annotations
