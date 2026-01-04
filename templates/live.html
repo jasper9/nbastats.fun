@@ -392,6 +392,13 @@
                 </div>
             </div>
 
+            <div class="chart-section">
+                <div class="chart-title">Score Over Time</div>
+                <div class="chart-container">
+                    <canvas id="scoreChart"></canvas>
+                </div>
+            </div>
+
             <div class="vendors-section">
                 <div class="vendors-title">All Bookmaker Odds</div>
                 <div class="vendors-grid" id="vendors-grid"></div>
@@ -416,6 +423,13 @@
         const timeLabels = [];
         const periodHistory = [];  // Track period for each data point
         const quarterAnnotations = {};  // Store quarter line annotations
+
+        // Score chart data
+        const scoreCtx = document.getElementById('scoreChart').getContext('2d');
+        const nuggetsScoreHistory = [];
+        const opponentScoreHistory = [];
+        const scoreTimeLabels = [];
+        const scoreQuarterAnnotations = {};
 
         const chart = new Chart(ctx, {
             type: 'line',
@@ -469,6 +483,62 @@
             }
         });
 
+        // Score chart
+        const scoreChart = new Chart(scoreCtx, {
+            type: 'line',
+            data: {
+                labels: scoreTimeLabels,
+                datasets: [
+                    {
+                        label: 'Nuggets',
+                        data: nuggetsScoreHistory,
+                        borderColor: '#fec524',
+                        backgroundColor: 'rgba(254, 197, 36, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#fec524',
+                    },
+                    {
+                        label: 'Opponent',
+                        data: opponentScoreHistory,
+                        borderColor: '#6b7280',
+                        backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#6b7280',
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#6b7280' },
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                    },
+                    x: {
+                        ticks: { color: '#6b7280', maxTicksLimit: 10 },
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: { color: '#b0b8c1' }
+                    },
+                    annotation: {
+                        annotations: scoreQuarterAnnotations
+                    }
+                }
+            }
+        });
+
         let currentGameId = null;
         let currentGameData = null;
         let historyLoaded = false;
@@ -481,13 +551,14 @@
         function updateQuarterLines() {
             // Find quarter transitions and add vertical lines at END of each quarter
             Object.keys(quarterAnnotations).forEach(key => delete quarterAnnotations[key]);
+            Object.keys(scoreQuarterAnnotations).forEach(key => delete scoreQuarterAnnotations[key]);
 
             for (let i = 0; i < periodHistory.length - 1; i++) {
                 const currentPeriod = periodHistory[i];
                 const nextPeriod = periodHistory[i + 1];
                 // When period changes, mark the END of the current period
                 if (currentPeriod && currentPeriod > 0 && nextPeriod > currentPeriod) {
-                    quarterAnnotations[`endQ${currentPeriod}`] = {
+                    const annotation = {
                         type: 'line',
                         xMin: i,
                         xMax: i,
@@ -504,6 +575,8 @@
                             padding: 4
                         }
                     };
+                    quarterAnnotations[`endQ${currentPeriod}`] = annotation;
+                    scoreQuarterAnnotations[`endQ${currentPeriod}`] = { ...annotation };
                 }
             }
         }
@@ -522,6 +595,9 @@
                 probHistory.length = 0;
                 timeLabels.length = 0;
                 periodHistory.length = 0;
+                nuggetsScoreHistory.length = 0;
+                opponentScoreHistory.length = 0;
+                scoreTimeLabels.length = 0;
 
                 // Load historical snapshots
                 history.snapshots.forEach(snap => {
@@ -530,11 +606,16 @@
                     timeLabels.push(timeStr);
                     probHistory.push(snap.consensus_prob);
                     periodHistory.push(snap.period || 0);
+                    // Score data
+                    scoreTimeLabels.push(timeStr);
+                    nuggetsScoreHistory.push(snap.nuggets_score || 0);
+                    opponentScoreHistory.push(snap.opponent_score || 0);
                 });
 
                 historyLoaded = true;
                 updateQuarterLines();
                 chart.update();
+                scoreChart.update();
                 console.log(`Loaded ${history.snapshots.length} historical data points`);
             } catch (error) {
                 console.error('Error loading history:', error);
@@ -630,20 +711,36 @@
             document.getElementById('prob-bar').style.width = (prob || 50) + '%';
             document.getElementById('vendor-count').textContent = data.odds.vendor_count;
 
-            // Update chart with new data point
+            // Update charts with new data point
             const now = new Date();
             const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
             const currentPeriod = data.period || 0;
+            const nuggetsScore = data.nuggets.score || 0;
+            const opponentScore = data.opponent.score || 0;
 
             if (prob !== null && prob !== undefined) {
-                // Only add if different from last value or first entry
+                // Only add if something changed
                 const lastProb = probHistory.length > 0 ? probHistory[probHistory.length - 1] : null;
                 const lastPeriod = periodHistory.length > 0 ? periodHistory[periodHistory.length - 1] : null;
+                const lastNuggetsScore = nuggetsScoreHistory.length > 0 ? nuggetsScoreHistory[nuggetsScoreHistory.length - 1] : null;
+                const lastOpponentScore = opponentScoreHistory.length > 0 ? opponentScoreHistory[opponentScoreHistory.length - 1] : null;
 
-                if (probHistory.length === 0 || lastProb !== prob || lastPeriod !== currentPeriod) {
+                const hasChange = probHistory.length === 0 ||
+                    lastProb !== prob ||
+                    lastPeriod !== currentPeriod ||
+                    lastNuggetsScore !== nuggetsScore ||
+                    lastOpponentScore !== opponentScore;
+
+                if (hasChange) {
+                    // Probability chart
                     timeLabels.push(timeStr);
                     probHistory.push(prob);
                     periodHistory.push(currentPeriod);
+
+                    // Score chart
+                    scoreTimeLabels.push(timeStr);
+                    nuggetsScoreHistory.push(nuggetsScore);
+                    opponentScoreHistory.push(opponentScore);
 
                     // Update quarter lines if period changed
                     if (lastPeriod !== currentPeriod) {
@@ -651,6 +748,7 @@
                     }
 
                     chart.update();
+                    scoreChart.update();
                 }
             }
 
