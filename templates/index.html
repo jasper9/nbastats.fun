@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nikola Jokić Stats</title>
+    <title>NBA Stats Fun - Denver Nuggets Dashboard</title>
     {% if ga_tracking_id %}
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_tracking_id }}"></script>
@@ -50,6 +50,46 @@
             max-width: 1400px;
             margin: 0 auto;
             padding: 0 20px;
+        }
+        /* Navigation */
+        nav {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+        }
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .nav-brand {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--nuggets-gold);
+            text-decoration: none;
+            padding: 15px 0;
+        }
+        .nav-links {
+            display: flex;
+            gap: 5px;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 15px 15px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+        .nav-links a.active {
+            color: var(--nuggets-gold);
+            border-bottom-color: var(--nuggets-gold);
         }
         header {
             background: linear-gradient(135deg, var(--nuggets-navy) 0%, #1a3a5c 100%);
@@ -1258,40 +1298,23 @@
     </style>
 </head>
 <body>
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="nav-brand">NBA Stats . Fun</a>
+            <div class="nav-links">
+                <a href="/" class="active">Home</a>
+                <a href="/jokic">Jokić</a>
+                <a href="/more">Nuggets</a>
+            </div>
+        </div>
+    </nav>
+
     <header>
-        <h1 class="player-name">Nikola Jokić</h1>
-        <p class="team-info">Denver Nuggets | #15 | Center</p>
-        <a href="/more" class="more-link">More Stats &rarr;</a>
+        <h1 class="player-name">NBA Stats . Fun</h1>
+        <p class="team-info">Denver Nuggets Dashboard</p>
     </header>
 
     <div class="container">
-        <div class="career-highlights">
-            <div class="stat-card">
-                <div class="stat-value">{{ "{:,}".format(career_totals.PTS) }}</div>
-                <div class="stat-label">Career Points</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">{{ "{:,}".format(career_totals.REB) }}</div>
-                <div class="stat-label">Career Rebounds</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">{{ "{:,}".format(career_totals.AST) }}</div>
-                <div class="stat-label">Career Assists</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">{{ "%.1f"|format(career_totals.FG_PCT * 100) }}%</div>
-                <div class="stat-label">Career FG%</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">{{ career_totals.GP }}</div>
-                <div class="stat-label">Games Played</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">{{ "%.1f"|format(career_totals.PTS / career_totals.GP) }}</div>
-                <div class="stat-label">PPG Career Avg</div>
-            </div>
-        </div>
-
         {% if upcoming_games or calendar_games %}
         <h2>Upcoming Games</h2>
         <div class="schedule-container">
@@ -1545,129 +1568,6 @@
         </div>
         {% endif %}
 
-        {% if triple_doubles %}
-        <h2>Triple-Double Record Watch</h2>
-        <div class="td-tracker">
-            <div class="td-headline">Career Triple-Doubles (Regular Season)</div>
-            {% if triple_doubles.to_next <= 5 and triple_doubles.next_player %}
-            <div class="td-record-alert">{{ triple_doubles.to_next }} AWAY FROM PASSING {{ triple_doubles.next_player|upper }}!</div>
-            {% endif %}
-            <div class="td-count">{{ triple_doubles.total }}</div>
-            <div class="td-label">Career Triple-Doubles</div>
-            <div class="td-rank-badge">#{{ triple_doubles.rank }} All-Time</div>
-
-            <div class="td-comparison">
-                {% for player in triple_doubles.all_time_leaders[:6] %}
-                <div class="td-vs">
-                    <div class="td-vs-name">{{ player.name }}{% if player.active %}*{% endif %}</div>
-                    <div class="td-vs-count {% if player.player_id == 203999 %}jokic{% endif %}">{{ player.total }}</div>
-                </div>
-                {% endfor %}
-            </div>
-
-            <div class="td-season-grid">
-                {% for season in triple_doubles.season_breakdown %}
-                <div class="td-season-item">
-                    <div class="td-season-year">{{ season.season[:4] }}</div>
-                    <div class="td-season-count">{{ season.count }}</div>
-                </div>
-                {% endfor %}
-            </div>
-
-            {% if triple_doubles.current_season %}
-            <div class="td-recent-games">
-                <div class="td-recent-title">Recent Triple-Doubles (2025-26)</div>
-                {% for game in triple_doubles.current_season[:5] %}
-                <div class="td-game">
-                    <span class="td-game-matchup">{{ game.date }} {{ game.matchup }}</span>
-                    <span class="td-game-stats">{{ game.pts }}/{{ game.reb }}/{{ game.ast }}</span>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-            <p class="clickable-hint" style="margin-top: 20px;">
-                * Active player
-            </p>
-        </div>
-        {% endif %}
-
-        <h2>Season Rankings (League-Wide)</h2>
-        <div class="legend">
-            <div class="legend-item"><div class="legend-color legend-gold"></div> 1st</div>
-            <div class="legend-item"><div class="legend-color legend-silver"></div> 2nd</div>
-            <div class="legend-item"><div class="legend-color legend-bronze"></div> 3rd</div>
-            <div class="legend-item"><div class="legend-color legend-top5"></div> Top 5</div>
-            <div class="legend-item"><div class="legend-color legend-top10"></div> Top 10</div>
-        </div>
-        <div class="table-container">
-            <table class="rankings-table">
-                <thead>
-                    <tr>
-                        <th title="NBA Season">Season</th>
-                        <th title="Points - Total points scored">PTS</th>
-                        <th title="Rebounds - Total rebounds (offensive + defensive)">REB</th>
-                        <th title="Assists - Passes leading directly to a made basket">AST</th>
-                        <th title="Steals - Taking the ball from an opponent">STL</th>
-                        <th title="Blocks - Deflecting an opponent's shot attempt">BLK</th>
-                        <th title="Field Goal Percentage - Shots made / shots attempted">FG%</th>
-                        <th title="Three-Point Percentage - 3-pointers made / 3-pointers attempted">3P%</th>
-                        <th title="Free Throw Percentage - Free throws made / free throws attempted">FT%</th>
-                        <th title="Field Goals Made - Total successful shots">FGM</th>
-                        <th title="Field Goals Attempted - Total shot attempts">FGA</th>
-                        <th title="Free Throws Made - Total successful free throws">FTM</th>
-                        <th title="Free Throws Attempted - Total free throw attempts">FTA</th>
-                        <th title="Offensive Rebounds - Rebounds on your team's missed shots">OREB</th>
-                        <th title="Defensive Rebounds - Rebounds on opponent's missed shots">DREB</th>
-                        <th title="Minutes Played - Total time on court">MIN</th>
-                        <th title="Efficiency - (PTS + REB + AST + STL + BLK) - (FGA - FGM) - (FTA - FTM) - TOV">EFF</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in season_rankings %}
-                    <tr class="{% if row.SEASON_ID == '2025-26' %}current-season{% endif %}">
-                        <td class="season-col">{{ row.SEASON_ID }}{% if row.SEASON_ID == '2025-26' %} ⬅{% endif %}</td>
-                        {% if row.SEASON_ID == '2025-26' %}
-                        <td class="rank-cell {{ row.RANK_PTS|rank_class }}"><a href="/leaders/pts" class="rank-link">{{ row.RANK_PTS|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_REB|rank_class }}"><a href="/leaders/reb" class="rank-link">{{ row.RANK_REB|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_AST|rank_class }}"><a href="/leaders/ast" class="rank-link">{{ row.RANK_AST|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_STL|rank_class }}"><a href="/leaders/stl" class="rank-link">{{ row.RANK_STL|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_BLK|rank_class }}"><a href="/leaders/blk" class="rank-link">{{ row.RANK_BLK|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_FG_PCT|rank_class }}"><a href="/leaders/fg_pct" class="rank-link">{{ row.RANK_FG_PCT|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_FG3_PCT|rank_class }}"><a href="/leaders/fg3_pct" class="rank-link">{{ row.RANK_FG3_PCT|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_FT_PCT|rank_class }}"><a href="/leaders/ft_pct" class="rank-link">{{ row.RANK_FT_PCT|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_FGM|rank_class }}"><a href="/leaders/fgm" class="rank-link">{{ row.RANK_FGM|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_FGA|rank_class }}"><a href="/leaders/fga" class="rank-link">{{ row.RANK_FGA|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_FTM|rank_class }}"><a href="/leaders/ftm" class="rank-link">{{ row.RANK_FTM|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_FTA|rank_class }}"><a href="/leaders/fta" class="rank-link">{{ row.RANK_FTA|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_OREB|rank_class }}"><a href="/leaders/oreb" class="rank-link">{{ row.RANK_OREB|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_DREB|rank_class }}"><a href="/leaders/dreb" class="rank-link">{{ row.RANK_DREB|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_MIN|rank_class }}"><a href="/leaders/min" class="rank-link">{{ row.RANK_MIN|safe_rank }}</a></td>
-                        <td class="rank-cell {{ row.RANK_EFF|rank_class }}"><a href="/leaders/eff" class="rank-link">{{ row.RANK_EFF|safe_rank }}</a></td>
-                        {% else %}
-                        <td class="rank-cell {{ row.RANK_PTS|rank_class }}">{{ row.RANK_PTS|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_REB|rank_class }}">{{ row.RANK_REB|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_AST|rank_class }}">{{ row.RANK_AST|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_STL|rank_class }}">{{ row.RANK_STL|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_BLK|rank_class }}">{{ row.RANK_BLK|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_FG_PCT|rank_class }}">{{ row.RANK_FG_PCT|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_FG3_PCT|rank_class }}">{{ row.RANK_FG3_PCT|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_FT_PCT|rank_class }}">{{ row.RANK_FT_PCT|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_FGM|rank_class }}">{{ row.RANK_FGM|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_FGA|rank_class }}">{{ row.RANK_FGA|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_FTM|rank_class }}">{{ row.RANK_FTM|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_FTA|rank_class }}">{{ row.RANK_FTA|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_OREB|rank_class }}">{{ row.RANK_OREB|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_DREB|rank_class }}">{{ row.RANK_DREB|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_MIN|rank_class }}">{{ row.RANK_MIN|safe_rank }}</td>
-                        <td class="rank-cell {{ row.RANK_EFF|rank_class }}">{{ row.RANK_EFF|safe_rank }}</td>
-                        {% endif %}
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <p class="clickable-hint">Click any stat in the 2025-26 row to see league leaders</p>
-
         <h2>2025-26 Conference Standings</h2>
         <div class="standings-container">
             <!-- Western Conference -->
@@ -1765,68 +1665,6 @@
             <span><div class="legend-bar playin"></div> Play-In (7-10)</span>
         </div>
 
-        {% if records_watch %}
-        <h2>All-Time Records Watch</h2>
-        <div class="records-watch">
-            {% for record in records_watch %}
-            <div class="record-card {% if record.ahead and record.ahead[0].gap <= 20 %}hot{% endif %}">
-                <div class="record-header">
-                    <span class="record-stat-name">
-                        {{ record.stat }}
-                        {% if record.ahead and record.ahead[0].gap <= 20 %}<span class="hot-badge">HOT</span>{% endif %}
-                    </span>
-                    <span class="record-current-rank">#{{ record.rank }} All-Time</span>
-                </div>
-                <ul class="chase-list">
-                    {% for player in record.ahead|reverse %}
-                    <li class="chase-item">
-                        <div class="chase-player">
-                            <span class="chase-rank">#{{ player.rank }}</span>
-                            <span class="chase-name {% if player.active %}active{% endif %}">
-                                {{ player.name }}{% if player.active %} *{% endif %}
-                            </span>
-                        </div>
-                        <div style="text-align: right;">
-                            <span style="color: #ccd6f6; font-weight: 600;">{{ "{:,}".format(player.value) }}</span>
-                            <span class="chase-gap {% if player.gap <= 20 %}close{% elif player.gap <= 100 %}medium{% else %}far{% endif %}" style="margin-left: 8px;">
-                                +{{ player.gap }}
-                            </span>
-                        </div>
-                    </li>
-                    {% endfor %}
-                    <li class="chase-item" style="background: linear-gradient(90deg, rgba(255,215,0,0.2), transparent); border-radius: 6px; margin-top: 5px;">
-                        <div class="chase-player">
-                            <span class="chase-rank" style="color: #ffd700;">#{{ record.rank }}</span>
-                            <span class="chase-name" style="color: #ffd700; font-weight: 700;">
-                                Nikola Jokić *
-                            </span>
-                        </div>
-                        <span style="color: #ffd700; font-weight: 700; font-size: 1.1rem;">
-                            {{ "{:,}".format(record.value) }}
-                        </span>
-                    </li>
-                    {% for player in record.behind %}
-                    <li class="chase-item">
-                        <div class="chase-player">
-                            <span class="chase-rank">#{{ player.rank }}</span>
-                            <span class="chase-name {% if player.active %}active{% endif %}">
-                                {{ player.name }}{% if player.active %} *{% endif %}
-                            </span>
-                        </div>
-                        <div style="text-align: right;">
-                            <span style="color: #ccd6f6; font-weight: 600;">{{ "{:,}".format(player.value) }}</span>
-                            <span class="chase-gap far" style="margin-left: 8px;">
-                                -{{ player.gap }}
-                            </span>
-                        </div>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endfor %}
-        </div>
-        <p class="clickable-hint">* Active player</p>
-        {% endif %}
 
         <div class="footer">
             Data from NBA API | Contact <a href="https://twitter.com/jasper9890" target="_blank" style="color: #ffd700;">@jasper9890</a>

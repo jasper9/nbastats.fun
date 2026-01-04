@@ -262,6 +262,54 @@ def index():
     )
 
 
+@app.route('/jokic')
+def jokic():
+    """Dedicated Jokić stats page."""
+    career_cache = load_cache('jokic_career.json')
+    records_cache = load_cache('alltime_records.json')
+    triple_doubles_cache = load_cache('triple_doubles.json')
+
+    if not career_cache:
+        return """
+        <h1>Cache not found!</h1>
+        <p>Run <code>python refresh_cache.py</code> to generate the cache.</p>
+        """, 500
+
+    career_totals = career_cache.get('career_totals', [{}])[0]
+    season_rankings = career_cache.get('season_rankings', [])
+
+    # Extract all-time records
+    records_watch = records_cache.get('records', []) if records_cache else []
+    records_watch = sorted(records_watch, key=lambda x: x.get('rank', 999))
+
+    # Extract triple-doubles
+    triple_doubles = None
+    if triple_doubles_cache:
+        players = triple_doubles_cache.get('players', [])
+        jokic_data = triple_doubles_cache.get('jokic', {})
+        triple_doubles = {
+            'total': jokic_data.get('total', 0),
+            'rank': jokic_data.get('rank', 0),
+            'season_breakdown': jokic_data.get('season_breakdown', []),
+            'current_season': jokic_data.get('recent_games', []),
+            'all_time_leaders': players[:10],
+            'to_next': jokic_data.get('to_next', 0),
+            'next_player': jokic_data.get('next_player'),
+            'to_record': jokic_data.get('to_record', 0),
+            'updated_at': triple_doubles_cache.get('_cached_at', 'Unknown'),
+        }
+
+    cache_time = career_cache.get('_cached_at', 'Unknown')
+
+    return render_template('jokic.html',
+        career_totals=career_totals,
+        season_rankings=season_rankings,
+        records_watch=records_watch,
+        triple_doubles=triple_doubles,
+        cache_time=cache_time
+    )
+
+
 @app.route('/leaders/<stat>')
 def leaders(stat):
     """Show league leaders for a specific stat (from cache)"""

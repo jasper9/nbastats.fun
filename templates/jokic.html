@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nikola Jokić Stats - NBA Stats Fun</title>
+    {% if ga_tracking_id %}
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_tracking_id }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{ ga_tracking_id }}');
+    </script>
+    {% endif %}
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23f85' stroke='%23333' stroke-width='3'/><path d='M50 5 v90 M5 50 h90 M15 20 Q50 50 15 80 M85 20 Q50 50 85 80' fill='none' stroke='%23333' stroke-width='3'/></svg>">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: #1c2128;
+            --border: #30363d;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b8c1;
+            --text-muted: #6b7280;
+            --nuggets-gold: #fec524;
+            --nuggets-navy: #0d2240;
+            --nuggets-red: #c4122e;
+            --accent: var(--nuggets-gold);
+            --accent-dim: rgba(254, 197, 36, 0.15);
+            --positive: #34d399;
+            --negative: #f87171;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 0;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        /* Navigation */
+        nav {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+        }
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .nav-brand {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--nuggets-gold);
+            text-decoration: none;
+            padding: 15px 0;
+        }
+        .nav-links {
+            display: flex;
+            gap: 5px;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 15px 15px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+        .nav-links a.active {
+            color: var(--nuggets-gold);
+            border-bottom-color: var(--nuggets-gold);
+        }
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--nuggets-navy) 0%, #1a3a5c 100%);
+            text-align: center;
+            padding: 50px 20px;
+            margin-bottom: 0;
+            border-bottom: 4px solid var(--nuggets-gold);
+            position: relative;
+            overflow: hidden;
+        }
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -50px;
+            width: 300px;
+            height: 100%;
+            background: linear-gradient(135deg, transparent 0%, rgba(254,197,36,0.1) 100%);
+            transform: skewX(-15deg);
+        }
+        .player-name {
+            font-family: 'Oswald', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-primary);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .team-info {
+            color: var(--nuggets-gold);
+            font-family: 'Oswald', sans-serif;
+            font-size: 1rem;
+            margin-top: 10px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        /* Career highlights */
+        .career-highlights {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 2px;
+            background: var(--bg-primary);
+            margin: 0;
+        }
+        .stat-card {
+            background: var(--bg-secondary);
+            padding: 28px 15px;
+            text-align: center;
+            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+        }
+        .stat-card:hover {
+            border-bottom-color: var(--nuggets-gold);
+            background: var(--bg-card);
+        }
+        .stat-value {
+            font-family: 'Oswald', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--nuggets-gold);
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+        /* Section styling */
+        h2 {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            margin: 40px 0 25px 0;
+            padding-left: 15px;
+            border-left: 4px solid var(--nuggets-gold);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        /* Rankings table */
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .legend-color {
+            width: 18px;
+            height: 18px;
+            border-radius: 3px;
+        }
+        .legend-gold { background: linear-gradient(135deg, #ffd700, #ffb347); }
+        .legend-silver { background: linear-gradient(135deg, #c0c0c0, #a8a8a8); }
+        .legend-bronze { background: linear-gradient(135deg, #cd7f32, #a0522d); }
+        .legend-top5 { background: rgba(78, 205, 196, 0.6); }
+        .legend-top10 { background: rgba(78, 205, 196, 0.25); }
+        .table-container {
+            overflow-x: auto;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+        .rankings-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .rankings-table th {
+            background: var(--bg-card);
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: help;
+            white-space: nowrap;
+        }
+        .rankings-table td {
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .rankings-table tr:last-child td { border-bottom: none; }
+        .season-col {
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: left !important;
+            padding-left: 15px !important;
+            white-space: nowrap;
+        }
+        .rank-cell { font-weight: 500; color: var(--text-secondary); }
+        .rank-1 { background: linear-gradient(135deg, rgba(255,215,0,0.3), rgba(255,179,71,0.2)); color: #ffd700; font-weight: 700; }
+        .rank-2 { background: linear-gradient(135deg, rgba(192,192,192,0.25), rgba(168,168,168,0.15)); color: #e0e0e0; font-weight: 600; }
+        .rank-3 { background: linear-gradient(135deg, rgba(205,127,50,0.25), rgba(160,82,45,0.15)); color: #daa520; font-weight: 600; }
+        .rank-top5 { background: rgba(78, 205, 196, 0.15); color: #4ecdc4; }
+        .rank-top10 { background: rgba(78, 205, 196, 0.08); color: #6ee7de; }
+        .current-season { background: var(--accent-dim); }
+        .rank-link { color: inherit; text-decoration: none; display: block; width: 100%; }
+        .rank-link:hover { text-decoration: underline; }
+        .clickable-hint {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 15px;
+            font-style: italic;
+        }
+        /* Records watch */
+        .records-watch {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        .record-card {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .record-card.hot { border-color: var(--nuggets-gold); box-shadow: 0 0 20px rgba(254, 197, 36, 0.2); }
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+        }
+        .record-stat-name {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            text-transform: uppercase;
+        }
+        .hot-badge {
+            background: linear-gradient(90deg, #ff6b6b, #feca57);
+            color: #000;
+            font-size: 0.6rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 10px;
+            font-weight: 700;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .record-current-rank {
+            color: var(--nuggets-gold);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .chase-list {
+            list-style: none;
+            padding: 15px 20px;
+        }
+        .chase-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .chase-item:last-child { border-bottom: none; }
+        .chase-player { display: flex; align-items: center; gap: 10px; }
+        .chase-rank {
+            background: var(--bg-card);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            min-width: 35px;
+            text-align: center;
+        }
+        .chase-name { color: var(--text-secondary); font-size: 0.9rem; }
+        .chase-name.active { color: var(--positive); }
+        .chase-gap {
+            font-size: 0.8rem;
+            padding: 3px 10px;
+            border-radius: 12px;
+        }
+        .chase-gap.close { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; }
+        .chase-gap.medium { background: rgba(254, 202, 87, 0.2); color: #feca57; }
+        .chase-gap.far { background: rgba(78, 205, 196, 0.2); color: #4ecdc4; }
+        .jokic-value {
+            color: var(--nuggets-gold);
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        /* Triple-double tracker */
+        .td-tracker {
+            background: linear-gradient(135deg, var(--nuggets-navy) 0%, #1a3a5c 100%);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(254, 197, 36, 0.3);
+        }
+        .td-headline {
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+        }
+        .td-record-alert {
+            background: linear-gradient(90deg, #ff6b6b, #feca57);
+            color: #000;
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            animation: pulse 2s infinite;
+        }
+        .td-count {
+            font-family: 'Oswald', sans-serif;
+            font-size: 6rem;
+            font-weight: 700;
+            color: var(--nuggets-gold);
+            line-height: 1;
+            text-shadow: 0 0 40px rgba(254, 197, 36, 0.4);
+        }
+        .td-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
+        .td-rank-badge {
+            display: inline-block;
+            background: rgba(254, 197, 36, 0.2);
+            color: var(--nuggets-gold);
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 1rem;
+            margin-top: 20px;
+            border: 1px solid rgba(254, 197, 36, 0.4);
+        }
+        .td-comparison {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 35px;
+            flex-wrap: wrap;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .td-vs { text-align: center; }
+        .td-vs-name {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .td-vs-count {
+            font-family: 'Oswald', sans-serif;
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        .td-vs-count.jokic { color: var(--nuggets-gold); }
+        .td-season-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(65px, 1fr));
+            gap: 8px;
+            margin-top: 35px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .td-season-item {
+            background: rgba(0,0,0,0.3);
+            border-radius: 4px;
+            padding: 12px 8px;
+            text-align: center;
+        }
+        .td-season-year { font-size: 0.7rem; color: var(--text-muted); }
+        .td-season-count {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--nuggets-gold);
+            margin-top: 3px;
+        }
+        .td-recent-games {
+            margin-top: 35px;
+            text-align: left;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .td-recent-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .td-game {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 3px;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+        }
+        .td-game-matchup { color: var(--text-secondary); }
+        .td-game-stats { color: var(--nuggets-gold); font-weight: 600; }
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border);
+            margin-top: 60px;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="nav-brand">NBA Stats . Fun</a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/jokic" class="active">Jokić</a>
+                <a href="/more">Nuggets</a>
+            </div>
+        </div>
+    </nav>
+
+    <header>
+        <h1 class="player-name">Nikola Jokić</h1>
+        <p class="team-info">Denver Nuggets | #15 | Center</p>
+    </header>
+
+    <div class="career-highlights">
+        <div class="stat-card">
+            <div class="stat-value">{{ "{:,}".format(career_totals.PTS|int) }}</div>
+            <div class="stat-label">Career Points</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ "{:,}".format(career_totals.REB|int) }}</div>
+            <div class="stat-label">Career Rebounds</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ "{:,}".format(career_totals.AST|int) }}</div>
+            <div class="stat-label">Career Assists</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ "%.1f%%"|format(career_totals.FG_PCT * 100) }}</div>
+            <div class="stat-label">Career FG%</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ career_totals.GP }}</div>
+            <div class="stat-label">Games Played</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ "%.1f"|format(career_totals.PTS / career_totals.GP) }}</div>
+            <div class="stat-label">PPG Career Avg</div>
+        </div>
+    </div>
+
+    <div class="container">
+        {% if triple_doubles %}
+        <h2>Triple-Double Record Watch</h2>
+        <div class="td-tracker">
+            <div class="td-headline">Career Triple-Doubles (Regular Season)</div>
+            {% if triple_doubles.to_next <= 5 and triple_doubles.next_player %}
+            <div class="td-record-alert">{{ triple_doubles.to_next }} AWAY FROM PASSING {{ triple_doubles.next_player|upper }}!</div>
+            {% endif %}
+            <div class="td-count">{{ triple_doubles.total }}</div>
+            <div class="td-label">Career Triple-Doubles</div>
+            <div class="td-rank-badge">#{{ triple_doubles.rank }} All-Time</div>
+
+            <div class="td-comparison">
+                {% for player in triple_doubles.all_time_leaders[:6] %}
+                <div class="td-vs">
+                    <div class="td-vs-name">{{ player.name }}{% if player.active %}*{% endif %}</div>
+                    <div class="td-vs-count {% if player.player_id == 203999 %}jokic{% endif %}">{{ player.total }}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="td-season-grid">
+                {% for season in triple_doubles.season_breakdown %}
+                <div class="td-season-item">
+                    <div class="td-season-year">{{ season.season[:4] }}</div>
+                    <div class="td-season-count">{{ season.count }}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if triple_doubles.current_season %}
+            <div class="td-recent-games">
+                <div class="td-recent-title">Recent Triple-Doubles (2025-26)</div>
+                {% for game in triple_doubles.current_season[:5] %}
+                <div class="td-game">
+                    <span class="td-game-matchup">{{ game.date }} {{ game.matchup }}</span>
+                    <span class="td-game-stats">{{ game.pts }}/{{ game.reb }}/{{ game.ast }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <p class="clickable-hint" style="margin-top: 20px;">* Active player</p>
+        </div>
+        {% endif %}
+
+        <h2>Season Rankings (League-Wide)</h2>
+        <div class="legend">
+            <div class="legend-item"><div class="legend-color legend-gold"></div> 1st</div>
+            <div class="legend-item"><div class="legend-color legend-silver"></div> 2nd</div>
+            <div class="legend-item"><div class="legend-color legend-bronze"></div> 3rd</div>
+            <div class="legend-item"><div class="legend-color legend-top5"></div> Top 5</div>
+            <div class="legend-item"><div class="legend-color legend-top10"></div> Top 10</div>
+        </div>
+        <div class="table-container">
+            <table class="rankings-table">
+                <thead>
+                    <tr>
+                        <th title="NBA Season">Season</th>
+                        <th title="Points">PTS</th>
+                        <th title="Rebounds">REB</th>
+                        <th title="Assists">AST</th>
+                        <th title="Steals">STL</th>
+                        <th title="Blocks">BLK</th>
+                        <th title="Field Goal %">FG%</th>
+                        <th title="3-Point %">3P%</th>
+                        <th title="Free Throw %">FT%</th>
+                        <th title="Field Goals Made">FGM</th>
+                        <th title="Field Goals Attempted">FGA</th>
+                        <th title="Free Throws Made">FTM</th>
+                        <th title="Free Throws Attempted">FTA</th>
+                        <th title="Offensive Rebounds">OREB</th>
+                        <th title="Defensive Rebounds">DREB</th>
+                        <th title="Minutes">MIN</th>
+                        <th title="Efficiency">EFF</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in season_rankings %}
+                    <tr class="{% if row.SEASON_ID == '2025-26' %}current-season{% endif %}">
+                        <td class="season-col">{{ row.SEASON_ID }}{% if row.SEASON_ID == '2025-26' %} ⬅{% endif %}</td>
+                        {% if row.SEASON_ID == '2025-26' %}
+                        <td class="rank-cell {{ row.RANK_PTS|rank_class }}"><a href="/leaders/pts" class="rank-link">{{ row.RANK_PTS|safe_rank }}</a></td>
+                        <td class="rank-cell {{ row.RANK_REB|rank_class }}"><a href="/leaders/reb" class="rank-link">{{ row.RANK_REB|safe_rank }}</a></td>
+                        <td class="rank-cell {{ row.RANK_AST|rank_class }}"><a href="/leaders/ast" class="rank-link">{{ row.RANK_AST|safe_rank }}</a></td>
+                        <td class="rank-cell {{ row.RANK_STL|rank_class }}"><a href="/leaders/stl" class="rank-link">{{ row.RANK_STL|safe_rank }}</a></td>
+                        <td class="rank-cell {{ row.RANK_BLK|rank_class }}"><a href="/leaders/blk" class="rank-link">{{ row.RANK_BLK|safe_rank }}</a></td>
+                        <td class="rank-cell {{ row.RANK_FG_PCT|rank_class }}"><a href="/leaders/fg_pct" class="rank-link">{{ row.RANK_FG_PCT|safe_rank }}</a></td>
+                        <td class="rank-cell {{ row.RANK_FG3_PCT|rank_class }}"><a href="/leaders/fg3_pct" class="rank-link">{{ row.RANK_FG3_PCT|safe_rank }}</a></td>
+                        <td class="rank-cell {{ row.RANK_FT_PCT|rank_class }}"><a href="/leaders/ft_pct" class="rank-link">{{ row.RANK_FT_PCT|safe_rank }}</a></td>
+                        <td class="rank-cell {{ row.RANK_FGM|rank_class }}"><a href="/leaders/fgm" class="rank-link">{{ row.RANK_FGM|safe_rank }}</a></td>
+                        <td class="rank-cell {{ row.RANK_FGA|rank_class }}"><a href="/leaders/fga" class="rank-link">{{ row.RANK_FGA|safe_rank }}</a></td>
+                        <td class="rank-cell {{ row.RANK_FTM|rank_class }}"><a href="/leaders/ftm" class="rank-link">{{ row.RANK_FTM|safe_rank }}</a></td>
+                        <td class="rank-cell {{ row.RANK_FTA|rank_class }}"><a href="/leaders/fta" class="rank-link">{{ row.RANK_FTA|safe_rank }}</a></td>
+                        <td class="rank-cell {{ row.RANK_OREB|rank_class }}"><a href="/leaders/oreb" class="rank-link">{{ row.RANK_OREB|safe_rank }}</a></td>
+                        <td class="rank-cell {{ row.RANK_DREB|rank_class }}"><a href="/leaders/dreb" class="rank-link">{{ row.RANK_DREB|safe_rank }}</a></td>
+                        <td class="rank-cell {{ row.RANK_MIN|rank_class }}"><a href="/leaders/min" class="rank-link">{{ row.RANK_MIN|safe_rank }}</a></td>
+                        <td class="rank-cell {{ row.RANK_EFF|rank_class }}"><a href="/leaders/eff" class="rank-link">{{ row.RANK_EFF|safe_rank }}</a></td>
+                        {% else %}
+                        <td class="rank-cell {{ row.RANK_PTS|rank_class }}">{{ row.RANK_PTS|safe_rank }}</td>
+                        <td class="rank-cell {{ row.RANK_REB|rank_class }}">{{ row.RANK_REB|safe_rank }}</td>
+                        <td class="rank-cell {{ row.RANK_AST|rank_class }}">{{ row.RANK_AST|safe_rank }}</td>
+                        <td class="rank-cell {{ row.RANK_STL|rank_class }}">{{ row.RANK_STL|safe_rank }}</td>
+                        <td class="rank-cell {{ row.RANK_BLK|rank_class }}">{{ row.RANK_BLK|safe_rank }}</td>
+                        <td class="rank-cell {{ row.RANK_FG_PCT|rank_class }}">{{ row.RANK_FG_PCT|safe_rank }}</td>
+                        <td class="rank-cell {{ row.RANK_FG3_PCT|rank_class }}">{{ row.RANK_FG3_PCT|safe_rank }}</td>
+                        <td class="rank-cell {{ row.RANK_FT_PCT|rank_class }}">{{ row.RANK_FT_PCT|safe_rank }}</td>
+                        <td class="rank-cell {{ row.RANK_FGM|rank_class }}">{{ row.RANK_FGM|safe_rank }}</td>
+                        <td class="rank-cell {{ row.RANK_FGA|rank_class }}">{{ row.RANK_FGA|safe_rank }}</td>
+                        <td class="rank-cell {{ row.RANK_FTM|rank_class }}">{{ row.RANK_FTM|safe_rank }}</td>
+                        <td class="rank-cell {{ row.RANK_FTA|rank_class }}">{{ row.RANK_FTA|safe_rank }}</td>
+                        <td class="rank-cell {{ row.RANK_OREB|rank_class }}">{{ row.RANK_OREB|safe_rank }}</td>
+                        <td class="rank-cell {{ row.RANK_DREB|rank_class }}">{{ row.RANK_DREB|safe_rank }}</td>
+                        <td class="rank-cell {{ row.RANK_MIN|rank_class }}">{{ row.RANK_MIN|safe_rank }}</td>
+                        <td class="rank-cell {{ row.RANK_EFF|rank_class }}">{{ row.RANK_EFF|safe_rank }}</td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="clickable-hint">Click any stat in the 2025-26 row to see league leaders</p>
+
+        {% if records_watch %}
+        <h2>All-Time Records Watch</h2>
+        <div class="records-watch">
+            {% for record in records_watch %}
+            <div class="record-card {% if record.ahead and record.ahead[0].gap <= 20 %}hot{% endif %}">
+                <div class="record-header">
+                    <span class="record-stat-name">
+                        {{ record.stat }}
+                        {% if record.ahead and record.ahead[0].gap <= 20 %}<span class="hot-badge">HOT</span>{% endif %}
+                    </span>
+                    <span class="record-current-rank">#{{ record.rank }} All-Time</span>
+                </div>
+                <ul class="chase-list">
+                    {% for player in record.ahead|reverse %}
+                    <li class="chase-item">
+                        <div class="chase-player">
+                            <span class="chase-rank">#{{ player.rank }}</span>
+                            <span class="chase-name {% if player.active %}active{% endif %}">
+                                {{ player.name }}{% if player.active %} *{% endif %}
+                            </span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="color: #ccd6f6; font-weight: 600;">{{ "{:,}".format(player.value) }}</span>
+                            <span class="chase-gap {% if player.gap <= 20 %}close{% elif player.gap <= 100 %}medium{% else %}far{% endif %}" style="margin-left: 8px;">
+                                +{{ player.gap }}
+                            </span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                    <li class="chase-item" style="background: linear-gradient(90deg, rgba(255,215,0,0.2), transparent); border-radius: 6px; margin-top: 5px;">
+                        <div class="chase-player">
+                            <span class="chase-rank">#{{ record.rank }}</span>
+                            <span class="chase-name" style="color: var(--nuggets-gold); font-weight: 600;">Nikola Jokić</span>
+                        </div>
+                        <span class="jokic-value">{{ "{:,}".format(record.value) }}</span>
+                    </li>
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+        <p class="clickable-hint">* Active player</p>
+        {% endif %}
+    </div>
+
+    <footer>
+        <p>Data from NBA Stats API | Last updated: {{ cache_time|mountain_time }}</p>
+    </footer>
+</body>
+</html>

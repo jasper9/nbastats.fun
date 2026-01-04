@@ -558,12 +558,62 @@
                 columns: 1;
             }
         }
+        /* Navigation */
+        nav {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+        }
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .nav-brand {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--nuggets-gold);
+            text-decoration: none;
+            padding: 15px 0;
+        }
+        .nav-links {
+            display: flex;
+            gap: 5px;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 15px 15px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+        .nav-links a.active {
+            color: var(--nuggets-gold);
+            border-bottom-color: var(--nuggets-gold);
+        }
     </style>
 </head>
 <body>
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="nav-brand">NBA Stats . Fun</a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/jokic">Jokić</a>
+                <a href="/more" class="active">Nuggets</a>
+            </div>
+        </div>
+    </nav>
+
     <header>
-        <div class="page-title">Denver Nuggets - More Stats</div>
-        <a href="/" class="back-link">&larr; Back to Jokic Stats</a>
+        <div class="page-title">Denver Nuggets Stats</div>
     </header>
 
     <div class="container">
