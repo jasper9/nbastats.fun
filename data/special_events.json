@@ -1,0 +1,10 @@
+{
+  "_comment": "Special events/promotions for Nuggets home games. Key is date in YYYY-MM-DD format.",
+  "events": {
+    "2026-01-09": {
+      "title": "Bruce Brown Bobble Head Night",
+      "description": "First 10,000 fans receive a Bruce Brown bobblehead!",
+      "type": "giveaway"
+    }
+  }
+}

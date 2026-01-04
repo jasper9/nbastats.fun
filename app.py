@@ -25,6 +25,7 @@ except ImportError:
 
 JOKIC_PLAYER_ID = 203999
 CACHE_DIR = Path(__file__).parent / 'cache'
+DATA_DIR = Path(__file__).parent / 'data'
 
 # Month name to number mapping for sorting
 MONTH_MAP = {
@@ -77,6 +78,18 @@ def load_cache(filename):
     if cache_file.exists():
         try:
             with open(cache_file, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading {filename}: {e}")
+    return None
+
+
+def load_data(filename):
+    """Load data from a static data file."""
+    data_file = DATA_DIR / filename
+    if data_file.exists():
+        try:
+            with open(data_file, 'r') as f:
                 return json.load(f)
         except Exception as e:
             print(f"Error loading {filename}: {e}")
@@ -231,6 +244,10 @@ def index():
     upcoming_games = schedule_cache.get('games', []) if schedule_cache else []
     calendar_games = schedule_cache.get('calendar_games', []) if schedule_cache else []
 
+    # Load special events for games
+    special_events_data = load_data('special_events.json')
+    special_events = special_events_data.get('events', {}) if special_events_data else {}
+
     # Extract injuries and sort by return date
     injuries = injuries_cache.get('injuries', []) if injuries_cache else []
     injuries = sorted(injuries, key=lambda x: parse_return_date(x.get('return_date', '')))
@@ -255,6 +272,7 @@ def index():
         triple_doubles=triple_doubles,
         upcoming_games=upcoming_games,
         calendar_games=calendar_games,
+        special_events=special_events,
         injuries=injuries,
         injuries_updated=injuries_updated,
         now_date=now_date,

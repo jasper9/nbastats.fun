@@ -1138,6 +1138,34 @@
             font-size: 0.55rem;
             opacity: 0.8;
         }
+        .calendar-game.has-special {
+            position: relative;
+        }
+        .calendar-game .special-indicator {
+            position: absolute;
+            top: 1px;
+            right: 2px;
+            color: #fbbf24;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        .game-modal-special {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #1a1a2e;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .game-modal-special-title {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+        .game-modal-special-desc {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
         /* Triple-Double Tracker styles */
         .td-tracker {
             background: linear-gradient(135deg, var(--nuggets-navy) 0%, #1a3a5c 100%);
@@ -1498,7 +1526,8 @@
                                     {% set opponent = game.away_team if game.is_home else game.home_team %}
                                     {% set opp_name = opponent.split()[-1] %}
                                     {% set opp_city = opponent.split()[:-1]|join(' ') %}
-                                    <div class="calendar-game {{ 'home' if game.is_home else 'away' }} {{ 'win' if game.result == 'W' else 'loss' if game.result == 'L' else '' }}"
+                                    {% set special = special_events.get(day_str, {}) %}
+                                    <div class="calendar-game {{ 'home' if game.is_home else 'away' }} {{ 'win' if game.result == 'W' else 'loss' if game.result == 'L' else '' }} {{ 'has-special' if special else '' }}"
                                          data-matchup="{{ 'vs' if game.is_home else '@' }} {{ opponent }}"
                                          data-time="{{ game.commence_time|game_time }} MT"
                                          data-is-home="{{ 'true' if game.is_home else 'false' }}"
@@ -1509,10 +1538,16 @@
                                          data-spread="{{ game.nuggets_spread|format_spread if game.nuggets_spread is defined else '' }}"
                                          data-ml="{{ game.nuggets_ml|format_odds if game.nuggets_ml is defined else '' }}"
                                          data-total="{{ game.total or '' }}"
+                                         data-special-title="{{ special.title if special else '' }}"
+                                         data-special-desc="{{ special.description if special else '' }}"
+                                         data-special-type="{{ special.type if special else '' }}"
                                          onclick="showGameModal(this)">
                                         <div class="opponent">{{ '@' if not game.is_home else 'vs' }} {{ opp_name }}</div>
                                         {% if game.result %}
                                         <div class="score">{{ game.result }} {{ game.home_score }}-{{ game.away_score }}</div>
+                                        {% endif %}
+                                        {% if special %}
+                                        <div class="special-indicator" title="{{ special.title }}">*</div>
                                         {% endif %}
                                     </div>
                                     {% endfor %}
@@ -1697,6 +1732,8 @@
         const spread = el.dataset.spread;
         const ml = el.dataset.ml;
         const total = el.dataset.total;
+        const specialTitle = el.dataset.specialTitle;
+        const specialDesc = el.dataset.specialDesc;
 
         document.getElementById('modalMatchup').textContent = matchup;
         document.getElementById('modalTime').textContent = time;
@@ -1714,16 +1751,27 @@
         }
 
         let content = '';
+
+        // Add special event if present
+        if (specialTitle) {
+            content += `
+                <div class="game-modal-special">
+                    <div class="game-modal-special-title">${specialTitle}</div>
+                    ${specialDesc ? `<div class="game-modal-special-desc">${specialDesc}</div>` : ''}
+                </div>
+            `;
+        }
+
         if (result) {
             const isWin = result === 'W';
-            content = `
+            content += `
                 <div class="game-modal-result ${isWin ? 'win' : 'loss'}">
                     <div class="label">${isWin ? 'Victory' : 'Defeat'}</div>
                     <div class="score">${homeScore} - ${awayScore}</div>
                 </div>
             `;
         } else if (spread) {
-            content = `
+            content += `
                 <div class="game-modal-odds">
                     <div class="game-modal-odds-title">Betting Lines</div>
                     <div class="game-modal-odds-grid">
@@ -1742,7 +1790,7 @@
                     </div>
                 </div>
             `;
-        } else {
+        } else if (!specialTitle) {
             content = '<div style="text-align: center; color: var(--text-muted);">No additional details available</div>';
         }
 
