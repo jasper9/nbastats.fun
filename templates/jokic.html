@@ -91,9 +91,9 @@
         header {
             background: linear-gradient(135deg, var(--nuggets-navy) 0%, #1a3a5c 100%);
             text-align: center;
-            padding: 50px 20px;
+            padding: 20px 20px;
             margin-bottom: 0;
-            border-bottom: 4px solid var(--nuggets-gold);
+            border-bottom: 3px solid var(--nuggets-gold);
             position: relative;
             overflow: hidden;
         }
@@ -109,21 +109,34 @@
         }
         .player-name {
             font-family: 'Oswald', sans-serif;
-            font-size: 3.5rem;
+            font-size: 2.2rem;
             font-weight: 700;
             text-transform: uppercase;
             color: var(--text-primary);
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
             position: relative;
+            margin: 0;
         }
         .team-info {
             color: var(--nuggets-gold);
             font-family: 'Oswald', sans-serif;
-            font-size: 1rem;
-            margin-top: 10px;
+            font-size: 0.75rem;
+            margin-top: 4px;
             letter-spacing: 3px;
             text-transform: uppercase;
             font-weight: 500;
+        }
+        @media (max-width: 600px) {
+            header {
+                padding: 12px 15px;
+            }
+            .player-name {
+                font-size: 1.5rem;
+            }
+            .team-info {
+                font-size: 0.65rem;
+                letter-spacing: 2px;
+            }
         }
         /* Career highlights */
         .career-highlights {

@@ -12,10 +12,10 @@ A Flask-based dashboard for tracking Nikola Jokić and Denver Nuggets stats, sta
 - `templates/more.html` - Nuggets stats (roster, recent games, contracts)
 - `templates/leaders.html` - League leaders by stat category
 
-### Data Refresh Scripts
-- `refresh_cache.py` - Full cache refresh (run daily via cron)
-- `refresh_balldontlie.py` - Fetch data from BALLDONTLIE API (injuries, roster, games, contracts)
-- `refresh_odds.py` - Fetch betting odds from the-odds-api and BALLDONTLIE v2
+### Data Refresh
+- `refresh_cache.py` - **Main script** - refreshes all data (run daily via cron)
+- `refresh_balldontlie.py` - Module with BALLDONTLIE API functions (imported by refresh_cache.py)
+- `refresh_odds.py` - Module with odds API functions (imported by refresh_cache.py)
 
 ### Cache Files (in `cache/`)
 - `jokic_career.json` - Career stats and season rankings
@@ -123,12 +123,6 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 ```bash
 source venv/bin/activate
 python refresh_cache.py
-```
-
-### Refresh just odds
-```bash
-source venv/bin/activate
-python refresh_odds.py
 ```
 
 ### Check API responses

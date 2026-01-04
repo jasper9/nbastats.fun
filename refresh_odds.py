@@ -481,5 +481,5 @@ def refresh_odds():
     return games_with_odds
 
 
-if __name__ == '__main__':
-    refresh_odds()
+# Note: This module is imported by refresh_cache.py
+# Run `python refresh_cache.py` for full refresh

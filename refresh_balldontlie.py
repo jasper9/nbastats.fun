@@ -605,16 +605,5 @@ def refresh_salary_cap_status():
         return None
 
 
-if __name__ == '__main__':
-    print("=" * 50)
-    print("BALLDONTLIE Data Refresh")
-    print("=" * 50)
-    refresh_injuries()
-    refresh_roster()
-    refresh_recent_games()
-    refresh_jokic_stats()
-    refresh_contracts()
-    refresh_salary_cap_status()
-    print("\n" + "=" * 50)
-    print("Done!")
-    print("=" * 50)
+# Note: This module is imported by refresh_cache.py
+# Run `python refresh_cache.py` for full refresh
