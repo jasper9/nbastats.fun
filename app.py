@@ -85,6 +85,50 @@ def load_cache(filename):
     return None
 
 
+def save_cache(filename, data):
+    """Save data to a cache file."""
+    cache_file = CACHE_DIR / filename
+    try:
+        with open(cache_file, 'w') as f:
+            json.dump(data, f, indent=2)
+        return True
+    except Exception as e:
+        print(f"Error saving {filename}: {e}")
+        return False
+
+
+def update_schedule_with_final_score(game_date, home_team, away_team, home_score, away_score, is_nuggets_home):
+    """Update schedule cache with final game score."""
+    schedule = load_cache('nuggets_schedule.json')
+    if not schedule:
+        return False
+
+    nuggets_score = home_score if is_nuggets_home else away_score
+    opponent_score = away_score if is_nuggets_home else home_score
+    result = 'W' if nuggets_score > opponent_score else 'L'
+
+    updated = False
+
+    # Update both games and calendar_games lists
+    for games_list in [schedule.get('games', []), schedule.get('calendar_games', [])]:
+        for game in games_list:
+            if (game.get('local_date') == game_date and
+                game.get('home_team') == home_team and
+                game.get('away_team') == away_team):
+                game['is_past'] = True
+                game['game_status'] = 3
+                game['home_score'] = home_score
+                game['away_score'] = away_score
+                game['result'] = result
+                updated = True
+
+    if updated:
+        save_cache('nuggets_schedule.json', schedule)
+        print(f"Updated schedule with final: {away_team} @ {home_team} - {away_score}-{home_score}")
+
+    return updated
+
+
 def load_data(filename):
     """Load data from a static data file."""
     data_file = DATA_DIR / filename
@@ -254,8 +298,9 @@ def index():
             'updated_at': triple_doubles_cache.get('_cached_at', 'Unknown'),
         }
 
-    # Extract schedule
-    upcoming_games = schedule_cache.get('games', []) if schedule_cache else []
+    # Extract schedule - filter out past games from upcoming
+    all_games = schedule_cache.get('games', []) if schedule_cache else []
+    upcoming_games = [g for g in all_games if not g.get('is_past')]
     calendar_games = schedule_cache.get('calendar_games', []) if schedule_cache else []
 
     # Load special events for games
@@ -507,6 +552,15 @@ def api_live():
         # Determine game state
         if status == 'Final':
             game_state = 'final'
+            # Update schedule cache with final score
+            update_schedule_with_final_score(
+                today,
+                home_team.get('full_name'),
+                away_team.get('full_name'),
+                home_score,
+                away_score,
+                is_nuggets_home
+            )
         elif home_score > 0 or away_score > 0:
             game_state = 'live'
         else:
