@@ -7,8 +7,9 @@ A Flask-based dashboard for tracking Nikola Jokić and Denver Nuggets stats, sta
 
 ### Core Application
 - `app.py` - Flask app with routes and template filters
-- `templates/index.html` - Main dashboard (Jokić stats, schedule, injuries, standings)
-- `templates/more.html` - Additional stats (roster, recent games, contracts)
+- `templates/index.html` - Main dashboard (schedule, injuries, standings)
+- `templates/jokic.html` - Dedicated Jokić page (career stats, triple-doubles, records)
+- `templates/more.html` - Nuggets stats (roster, recent games, contracts)
 - `templates/leaders.html` - League leaders by stat category
 
 ### Data Refresh Scripts
@@ -84,7 +85,10 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 ## Testing Changes
 1. Run Flask: `source venv/bin/activate && python app.py`
-2. Use browser extension to verify UI changes
+2. **Use Claude in Chrome extension** to visually verify UI changes at `http://localhost:5001`
+   - Take screenshots to confirm layout/styling
+   - Navigate between pages to test links
+   - Check responsive behavior if needed
 3. Check console/network for errors
 4. Run refresh scripts to test data fetching
 
