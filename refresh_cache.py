@@ -552,7 +552,7 @@ def main():
 
     ensure_cache_dir()
 
-    # Refresh all data
+    # Refresh NBA API data
     refresh_jokic_career_stats()
     time.sleep(1)
 
@@ -569,6 +569,28 @@ def main():
     time.sleep(1)
 
     refresh_nuggets_schedule()
+    time.sleep(1)
+
+    # Refresh BALLDONTLIE data (injuries, roster, contracts, etc.)
+    print("\n" + "=" * 60)
+    print("Refreshing BALLDONTLIE data...")
+    print("=" * 60)
+
+    from refresh_balldontlie import (
+        refresh_injuries,
+        refresh_roster,
+        refresh_recent_games,
+        refresh_jokic_stats,
+        refresh_contracts,
+        refresh_salary_cap_status,
+    )
+
+    refresh_injuries()
+    refresh_roster()
+    refresh_recent_games()
+    refresh_jokic_stats()
+    refresh_contracts()
+    refresh_salary_cap_status()
 
     print("\n" + "=" * 60)
     print("Cache refresh complete!")
