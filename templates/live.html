@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Game - NBA Stats Fun</title>
+    {% if ga_tracking_id %}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_tracking_id }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{ ga_tracking_id }}');
+    </script>
+    {% endif %}
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23f85' stroke='%23333' stroke-width='3'/><path d='M50 5 v90 M5 50 h90 M15 20 Q50 50 15 80 M85 20 Q50 50 85 80' fill='none' stroke='%23333' stroke-width='3'/></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: #1c2128;
+            --border: #30363d;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b8c1;
+            --text-muted: #6b7280;
+            --nuggets-gold: #fec524;
+            --nuggets-navy: #0d2240;
+            --positive: #34d399;
+            --negative: #f87171;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+        /* Navigation */
+        nav {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+        }
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .nav-brand {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--nuggets-gold);
+            text-decoration: none;
+            padding: 15px 0;
+        }
+        .nav-links {
+            display: flex;
+            gap: 5px;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 15px 15px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-links a:hover { color: var(--text-primary); }
+        .nav-links a.active {
+            color: var(--nuggets-gold);
+            border-bottom-color: var(--nuggets-gold);
+        }
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--nuggets-navy) 0%, #1a3a5c 100%);
+            text-align: center;
+            padding: 20px 20px;
+            border-bottom: 3px solid var(--nuggets-gold);
+        }
+        .page-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-primary);
+        }
+        .page-subtitle {
+            color: var(--nuggets-gold);
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        /* Game Status */
+        .game-status {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-pregame { background: var(--bg-card); color: var(--text-secondary); }
+        .status-live { background: #dc2626; color: white; animation: pulse 2s infinite; }
+        .status-final { background: var(--positive); color: #000; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        /* Scoreboard */
+        .scoreboard {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        .team-score {
+            text-align: center;
+            min-width: 150px;
+        }
+        .team-name {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+        .team-name.nuggets { color: var(--nuggets-gold); }
+        .score {
+            font-family: 'Oswald', sans-serif;
+            font-size: 4rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .score.nuggets { color: var(--nuggets-gold); }
+        .score.opponent { color: var(--text-primary); }
+        .score-divider {
+            font-family: 'Oswald', sans-serif;
+            font-size: 2rem;
+            color: var(--text-muted);
+        }
+        .game-info {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        /* Win Probability */
+        .probability-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        .prob-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        .prob-value {
+            font-family: 'Oswald', sans-serif;
+            font-size: 5rem;
+            font-weight: 700;
+            color: var(--nuggets-gold);
+            line-height: 1;
+        }
+        .prob-bar-container {
+            height: 30px;
+            background: var(--bg-card);
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+            position: relative;
+        }
+        .prob-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--nuggets-gold), #ffdb70);
+            transition: width 0.5s ease;
+            border-radius: 15px;
+        }
+        .prob-bar-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        /* Chart */
+        .chart-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        .chart-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        /* Vendors Grid */
+        .vendors-section {
+            margin: 30px 0;
+        }
+        .vendors-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .vendors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .vendor-card {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid var(--border);
+        }
+        .vendor-name {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .vendor-prob {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.8rem;
+            color: var(--nuggets-gold);
+        }
+        .vendor-ml {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        /* No Game State */
+        .no-game {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .no-game h2 {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+        .update-time {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 20px;
+        }
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--nuggets-gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @media (max-width: 600px) {
+            .prob-value { font-size: 3.5rem; }
+            .score { font-size: 3rem; }
+            .scoreboard { gap: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="nav-brand">NBA Stats . Fun</a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/jokic">Jokic</a>
+                <a href="/more">Nuggets</a>
+                <a href="/live" class="active">Live</a>
+            </div>
+        </div>
+    </nav>
+
+    <header>
+        <div class="page-title">Live Win Probability</div>
+        <div class="page-subtitle">Powered by betting odds from 12+ bookmakers</div>
+    </header>
+
+    <div class="container">
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading game data...</p>
+        </div>
+
+        <div id="no-game" class="no-game" style="display: none;">
+            <h2>No Nuggets Game Today</h2>
+            <p>Check back on game day for live win probability tracking.</p>
+        </div>
+
+        <div id="game-content" style="display: none;">
+            <div class="game-status">
+                <span id="status-badge" class="status-badge status-pregame">Pre-Game</span>
+            </div>
+
+            <div class="scoreboard">
+                <div class="team-score">
+                    <div id="away-name" class="team-name">Away</div>
+                    <div id="away-score" class="score opponent">0</div>
+                </div>
+                <div class="score-divider">@</div>
+                <div class="team-score">
+                    <div id="home-name" class="team-name">Home</div>
+                    <div id="home-score" class="score opponent">0</div>
+                </div>
+            </div>
+
+            <div class="game-info" id="game-info"></div>
+
+            <div class="probability-section">
+                <div class="prob-label">Nuggets Win Probability</div>
+                <div class="prob-value" id="consensus-prob">--</div>
+                <div class="prob-bar-container">
+                    <div class="prob-bar" id="prob-bar" style="width: 50%"></div>
+                </div>
+                <div class="prob-bar-labels">
+                    <span>0%</span>
+                    <span>Consensus from <span id="vendor-count">0</span> bookmakers</span>
+                    <span>100%</span>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <div class="chart-title">Win Probability Over Time</div>
+                <div class="chart-container">
+                    <canvas id="probChart"></canvas>
+                </div>
+            </div>
+
+            <div class="vendors-section">
+                <div class="vendors-title">All Bookmaker Odds</div>
+                <div class="vendors-grid" id="vendors-grid"></div>
+            </div>
+
+            <div class="update-time">
+                Last updated: <span id="last-update">--</span>
+                <br>Auto-refreshes every 30 seconds
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Win probability calculated from moneyline odds. Data from BALLDONTLIE API.</p>
+        <p>For entertainment purposes only. Not financial advice.</p>
+    </div>
+
+    <script>
+        // Chart setup
+        const ctx = document.getElementById('probChart').getContext('2d');
+        const probHistory = [];
+        const timeLabels = [];
+
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: timeLabels,
+                datasets: [{
+                    label: 'Nuggets Win %',
+                    data: probHistory,
+                    borderColor: '#fec524',
+                    backgroundColor: 'rgba(254, 197, 36, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#fec524',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100,
+                        ticks: {
+                            callback: value => value + '%',
+                            color: '#6b7280',
+                        },
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                    },
+                    x: {
+                        ticks: { color: '#6b7280' },
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ctx.parsed.y.toFixed(1) + '%'
+                        }
+                    }
+                }
+            }
+        });
+
+        function formatOdds(ml) {
+            if (ml === null || ml === undefined) return '--';
+            return ml > 0 ? '+' + ml : ml.toString();
+        }
+
+        function updateUI(data) {
+            document.getElementById('loading').style.display = 'none';
+
+            if (data.error) {
+                if (data.error.includes('No Nuggets game')) {
+                    document.getElementById('no-game').style.display = 'block';
+                    document.getElementById('game-content').style.display = 'none';
+                } else {
+                    document.getElementById('no-game').innerHTML = `<h2>Error</h2><p>${data.error}</p>`;
+                    document.getElementById('no-game').style.display = 'block';
+                    document.getElementById('game-content').style.display = 'none';
+                }
+                return;
+            }
+
+            document.getElementById('no-game').style.display = 'none';
+            document.getElementById('game-content').style.display = 'block';
+
+            // Update status badge
+            const statusBadge = document.getElementById('status-badge');
+            statusBadge.className = 'status-badge';
+            if (data.game_state === 'live') {
+                statusBadge.classList.add('status-live');
+                statusBadge.textContent = data.period ? `Q${data.period} ${data.time_remaining || ''}` : 'LIVE';
+            } else if (data.game_state === 'final') {
+                statusBadge.classList.add('status-final');
+                statusBadge.textContent = 'FINAL';
+            } else {
+                statusBadge.classList.add('status-pregame');
+                statusBadge.textContent = 'PRE-GAME';
+            }
+
+            // Update scoreboard
+            const isNuggetsHome = data.nuggets.is_home;
+            const homeTeam = isNuggetsHome ? data.nuggets : data.opponent;
+            const awayTeam = isNuggetsHome ? data.opponent : data.nuggets;
+
+            document.getElementById('home-name').textContent = homeTeam.abbrev;
+            document.getElementById('away-name').textContent = awayTeam.abbrev;
+            document.getElementById('home-score').textContent = homeTeam.score;
+            document.getElementById('away-score').textContent = awayTeam.score;
+
+            // Highlight Nuggets
+            document.getElementById('home-name').classList.toggle('nuggets', isNuggetsHome);
+            document.getElementById('away-name').classList.toggle('nuggets', !isNuggetsHome);
+            document.getElementById('home-score').classList.toggle('nuggets', isNuggetsHome);
+            document.getElementById('home-score').classList.toggle('opponent', !isNuggetsHome);
+            document.getElementById('away-score').classList.toggle('nuggets', !isNuggetsHome);
+            document.getElementById('away-score').classList.toggle('opponent', isNuggetsHome);
+
+            // Game info
+            document.getElementById('game-info').textContent =
+                `${data.opponent.name} ${isNuggetsHome ? '@' : 'vs'} ${data.nuggets.name}`;
+
+            // Update probability
+            const prob = data.odds.consensus_prob;
+            document.getElementById('consensus-prob').textContent = prob ? prob.toFixed(1) + '%' : '--';
+            document.getElementById('prob-bar').style.width = (prob || 50) + '%';
+            document.getElementById('vendor-count').textContent = data.odds.vendor_count;
+
+            // Update chart
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+            if (prob !== null && prob !== undefined) {
+                // Only add if different from last value or first entry
+                if (probHistory.length === 0 || probHistory[probHistory.length - 1] !== prob) {
+                    timeLabels.push(timeStr);
+                    probHistory.push(prob);
+
+                    // Keep last 60 data points (30 min at 30s intervals)
+                    if (probHistory.length > 60) {
+                        timeLabels.shift();
+                        probHistory.shift();
+                    }
+
+                    chart.update();
+                }
+            }
+
+            // Update vendors grid
+            const vendorsGrid = document.getElementById('vendors-grid');
+            vendorsGrid.innerHTML = data.odds.vendors.map(v => `
+                <div class="vendor-card">
+                    <div class="vendor-name">${v.name}</div>
+                    <div class="vendor-prob">${v.nuggets_prob ? v.nuggets_prob.toFixed(1) + '%' : '--'}</div>
+                    <div class="vendor-ml">ML: ${formatOdds(v.nuggets_ml)}</div>
+                </div>
+            `).join('');
+
+            // Update timestamp
+            const updateTime = new Date(data.timestamp);
+            document.getElementById('last-update').textContent = updateTime.toLocaleTimeString();
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch('/api/live');
+                const data = await response.json();
+                updateUI(data);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        // Initial fetch
+        fetchData();
+
+        // Refresh every 30 seconds
+        setInterval(fetchData, 30000);
+    </script>
+</body>
+</html>

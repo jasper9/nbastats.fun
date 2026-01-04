@@ -1,9 +1,10 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 import calendar
 import json
 import math
 import os
 import re
+import requests
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -412,6 +413,151 @@ def more():
         current_year=current_year,
         cache_time=cache_time
     )
+
+
+@app.route('/live')
+def live():
+    """Live game tracking page with win probability from betting odds."""
+    return render_template('live.html')
+
+
+@app.route('/api/live')
+def api_live():
+    """API endpoint for live game data - polls BALLDONTLIE for current odds and score."""
+    api_key = os.getenv('BALLDONTLIE_API_KEY')
+    if not api_key:
+        return jsonify({'error': 'API key not configured'}), 500
+
+    NUGGETS_ID = 8
+    mountain_tz = ZoneInfo('America/Denver')
+    now = datetime.now(mountain_tz)
+    today = now.strftime('%Y-%m-%d')
+
+    try:
+        # Get today's Nuggets game
+        games_resp = requests.get(
+            'https://api.balldontlie.io/v1/games',
+            params={'team_ids[]': NUGGETS_ID, 'dates[]': today, 'per_page': 10},
+            headers={'Authorization': api_key},
+            timeout=15
+        )
+        games_resp.raise_for_status()
+        games = games_resp.json().get('data', [])
+
+        if not games:
+            return jsonify({'error': 'No Nuggets game today', 'date': today})
+
+        game = games[0]
+        game_id = game.get('id')
+        status = game.get('status', '')
+        home_team = game.get('home_team', {})
+        away_team = game.get('visitor_team', {})
+
+        is_nuggets_home = home_team.get('id') == NUGGETS_ID
+        nuggets_team = home_team if is_nuggets_home else away_team
+        opponent_team = away_team if is_nuggets_home else home_team
+
+        home_score = game.get('home_team_score', 0) or 0
+        away_score = game.get('visitor_team_score', 0) or 0
+        nuggets_score = home_score if is_nuggets_home else away_score
+        opponent_score = away_score if is_nuggets_home else home_score
+
+        # Determine game state
+        if status == 'Final':
+            game_state = 'final'
+        elif home_score > 0 or away_score > 0:
+            game_state = 'live'
+        else:
+            game_state = 'pregame'
+
+        # Get period/time info
+        period = game.get('period', 0)
+        time_remaining = game.get('time', '')
+
+        # Fetch live odds from BALLDONTLIE v2
+        odds_resp = requests.get(
+            'https://api.balldontlie.io/v2/odds',
+            params={'dates[]': today, 'per_page': 100},
+            headers={'Authorization': api_key},
+            timeout=15
+        )
+        odds_resp.raise_for_status()
+        all_odds = odds_resp.json().get('data', [])
+
+        # Filter for this game
+        game_odds = [o for o in all_odds if o.get('game_id') == game_id]
+
+        # Process odds by vendor
+        vendors = []
+        for o in game_odds:
+            if o.get('moneyline_home_odds') is None:
+                continue
+
+            vendor = o.get('vendor', 'unknown')
+            home_ml = o.get('moneyline_home_odds')
+            away_ml = o.get('moneyline_away_odds')
+
+            # Convert to Nuggets perspective
+            nuggets_ml = home_ml if is_nuggets_home else away_ml
+            opponent_ml = away_ml if is_nuggets_home else home_ml
+
+            # Convert moneyline to implied probability
+            def ml_to_prob(ml):
+                if ml is None:
+                    return None
+                if ml < 0:
+                    return abs(ml) / (abs(ml) + 100)
+                else:
+                    return 100 / (ml + 100)
+
+            nuggets_prob = ml_to_prob(nuggets_ml)
+
+            vendors.append({
+                'name': vendor,
+                'nuggets_ml': nuggets_ml,
+                'opponent_ml': opponent_ml,
+                'nuggets_prob': round(nuggets_prob * 100, 1) if nuggets_prob else None,
+                'spread': o.get('spread_home_value') if is_nuggets_home else o.get('spread_away_value'),
+                'total': o.get('total_value'),
+                'updated_at': o.get('updated_at'),
+            })
+
+        # Calculate consensus probability (average of all vendors)
+        probs = [v['nuggets_prob'] for v in vendors if v['nuggets_prob'] is not None]
+        consensus_prob = round(sum(probs) / len(probs), 1) if probs else None
+
+        # Sort vendors by name for consistent display
+        vendors.sort(key=lambda x: x['name'])
+
+        return jsonify({
+            'game_id': game_id,
+            'game_state': game_state,
+            'status': status,
+            'period': period,
+            'time_remaining': time_remaining,
+            'nuggets': {
+                'name': nuggets_team.get('full_name', 'Denver Nuggets'),
+                'abbrev': nuggets_team.get('abbreviation', 'DEN'),
+                'score': nuggets_score,
+                'is_home': is_nuggets_home,
+            },
+            'opponent': {
+                'name': opponent_team.get('full_name', ''),
+                'abbrev': opponent_team.get('abbreviation', ''),
+                'score': opponent_score,
+            },
+            'odds': {
+                'vendors': vendors,
+                'consensus_prob': consensus_prob,
+                'vendor_count': len(vendors),
+            },
+            'timestamp': now.isoformat(),
+        })
+
+    except requests.RequestException as e:
+        return jsonify({'error': f'API request failed: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Error: {str(e)}'}), 500
 
 
 if __name__ == '__main__':
