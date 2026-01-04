@@ -748,39 +748,73 @@
         }
 
         function updateMaxLeadLine() {
-            // Find the largest lead at any point in the game
-            let maxLead = 0;
-            let maxLeadIndex = -1;
-            let maxLeadTeam = null;
+            // Find the largest lead for each team
+            let maxNuggetsLead = 0;
+            let maxNuggetsLeadIndex = -1;
+            let maxOpponentLead = 0;
+            let maxOpponentLeadIndex = -1;
 
             for (let i = 0; i < nuggetsScoreHistory.length; i++) {
                 const nuggets = nuggetsScoreHistory[i];
                 const opponent = opponentScoreHistory[i];
-                const lead = Math.abs(nuggets - opponent);
+                const diff = nuggets - opponent;
 
-                if (lead > maxLead) {
-                    maxLead = lead;
-                    maxLeadIndex = i;
-                    maxLeadTeam = nuggets > opponent ? 'DEN' : (opponent > nuggets ? opponentName.split(' ').pop().toUpperCase().slice(0, 3) : null);
+                if (diff > maxNuggetsLead) {
+                    maxNuggetsLead = diff;
+                    maxNuggetsLeadIndex = i;
+                }
+                if (diff < -maxOpponentLead) {
+                    maxOpponentLead = -diff;
+                    maxOpponentLeadIndex = i;
                 }
             }
 
-            // Update the annotation on the score chart
-            if (maxLeadIndex >= 0 && maxLead > 0) {
-                const nuggets = nuggetsScoreHistory[maxLeadIndex];
-                const opponent = opponentScoreHistory[maxLeadIndex];
+            // Remove old annotations
+            delete scoreQuarterAnnotations.maxNuggetsLead;
+            delete scoreQuarterAnnotations.maxOpponentLead;
 
-                scoreQuarterAnnotations.maxLead = {
+            // Add max Nuggets lead line (gold)
+            if (maxNuggetsLeadIndex >= 0 && maxNuggetsLead > 0) {
+                const nuggets = nuggetsScoreHistory[maxNuggetsLeadIndex];
+                const opponent = opponentScoreHistory[maxNuggetsLeadIndex];
+
+                scoreQuarterAnnotations.maxNuggetsLead = {
                     type: 'line',
-                    xMin: maxLeadIndex,
-                    xMax: maxLeadIndex,
-                    yMin: Math.min(nuggets, opponent),
-                    yMax: Math.max(nuggets, opponent),
+                    xMin: maxNuggetsLeadIndex,
+                    xMax: maxNuggetsLeadIndex,
+                    yMin: opponent,
+                    yMax: nuggets,
+                    borderColor: '#fec524',
+                    borderWidth: 3,
+                    label: {
+                        display: true,
+                        content: `+${maxNuggetsLead} DEN`,
+                        position: 'center',
+                        backgroundColor: '#fec524',
+                        color: '#000000',
+                        font: { size: 11, weight: 'bold' },
+                        padding: 4
+                    }
+                };
+            }
+
+            // Add max opponent lead line (red)
+            if (maxOpponentLeadIndex >= 0 && maxOpponentLead > 0) {
+                const nuggets = nuggetsScoreHistory[maxOpponentLeadIndex];
+                const opponent = opponentScoreHistory[maxOpponentLeadIndex];
+                const oppAbbrev = opponentName.split(' ').pop().toUpperCase().slice(0, 3);
+
+                scoreQuarterAnnotations.maxOpponentLead = {
+                    type: 'line',
+                    xMin: maxOpponentLeadIndex,
+                    xMax: maxOpponentLeadIndex,
+                    yMin: nuggets,
+                    yMax: opponent,
                     borderColor: '#ef4444',
                     borderWidth: 3,
                     label: {
                         display: true,
-                        content: `+${maxLead} ${maxLeadTeam}`,
+                        content: `+${maxOpponentLead} ${oppAbbrev}`,
                         position: 'center',
                         backgroundColor: '#ef4444',
                         color: '#ffffff',
@@ -788,8 +822,6 @@
                         padding: 4
                     }
                 };
-            } else {
-                delete scoreQuarterAnnotations.maxLead;
             }
 
             scoreChart.options.plugins.annotation.annotations = { ...scoreQuarterAnnotations };
