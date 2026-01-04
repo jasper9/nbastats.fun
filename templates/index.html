@@ -894,6 +894,23 @@
         .bookmaker-table tr:last-child td {
             border-bottom: none;
         }
+        .bookmaker-table .ml-cell.is-favorite {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            font-weight: 700;
+            position: relative;
+        }
+        .bookmaker-table .fav-badge {
+            display: inline-block;
+            font-size: 0.5rem;
+            background: #22c55e;
+            color: #000;
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-left: 4px;
+            font-weight: 700;
+            vertical-align: middle;
+        }
         /* Schedule layout - cards + calendar side by side */
         .schedule-layout {
             display: grid;
@@ -1520,35 +1537,56 @@
                                 </div>
                             </div>
                             {% set providers = game.odds_providers or {} %}
-                            {% if providers|length > 1 %}
-                            {# Show comparison when both providers have data #}
-                            <div class="odds-comparison">
-                                {% for pname, pdata in providers.items() %}
-                                <div class="odds-provider">
-                                    <div class="odds-provider-name">{{ pdata.bookmaker or pname }}</div>
-                                    <div class="odds-api-source">via {{ 'the-odds-api' if pname == 'theoddsapi' else 'BALLDONTLIE' }}</div>
-                                    <div class="odds-row">
-                                        <span class="odds-row-label">ML</span>
-                                        <span class="odds-row-value {{ 'favorite' if pdata.nuggets_ml and pdata.nuggets_ml < 0 else 'underdog' }}">
-                                            {{ pdata.nuggets_ml|format_odds if pdata.nuggets_ml else '-' }}
-                                        </span>
-                                    </div>
-                                    {% if pdata.nuggets_spread %}
-                                    <div class="odds-row">
-                                        <span class="odds-row-label">Spread</span>
-                                        <span class="odds-row-value {{ 'favorite' if pdata.nuggets_spread < 0 else 'underdog' }}">
-                                            {{ pdata.nuggets_spread|format_spread }}
-                                        </span>
-                                    </div>
-                                    {% endif %}
-                                    {% if pdata.total %}
-                                    <div class="odds-row">
-                                        <span class="odds-row-label">O/U</span>
-                                        <span class="odds-row-value">{{ pdata.total }}</span>
-                                    </div>
-                                    {% endif %}
-                                </div>
-                                {% endfor %}
+                            {% set opponent = game.home_team if not game.is_home else game.away_team %}
+                            {% set opp_abbrev = opponent.split()[-1][:3]|upper %}
+
+                            {% if providers|length >= 1 %}
+                            {# Unified table format for all odds - clearer comparison #}
+                            {% set all_odds = [] %}
+                            {% for pname, pdata in providers.items() %}
+                                {% set source = 'the-odds-api' if pname == 'theoddsapi' else 'BALLDONTLIE' %}
+                                {# Handle nested vendors from balldontlie #}
+                                {% if pdata.vendors %}
+                                    {% for vname, vdata in pdata.vendors.items() %}
+                                        {% set _ = all_odds.append({'book': vname|capitalize, 'source': source, 'data': vdata}) %}
+                                    {% endfor %}
+                                {% else %}
+                                    {% set _ = all_odds.append({'book': pdata.bookmaker or pname|capitalize, 'source': source, 'data': pdata}) %}
+                                {% endif %}
+                            {% endfor %}
+
+                            <div class="multi-book-odds">
+                                <table class="bookmaker-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Book</th>
+                                            <th>DEN</th>
+                                            <th>{{ opp_abbrev }}</th>
+                                            <th>Spread</th>
+                                            <th>O/U</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for odds in all_odds %}
+                                        {% set den_fav = odds.data.nuggets_ml and odds.data.nuggets_ml < 0 %}
+                                        {% set opp_fav = odds.data.opponent_ml and odds.data.opponent_ml < 0 %}
+                                        <tr>
+                                            <td class="book-name">{{ odds.book }}</td>
+                                            <td class="ml-cell {{ 'is-favorite' if den_fav else '' }}">
+                                                {{ odds.data.nuggets_ml|format_odds if odds.data.nuggets_ml else '-' }}
+                                                {% if den_fav %}<span class="fav-badge">FAV</span>{% endif %}
+                                            </td>
+                                            <td class="ml-cell {{ 'is-favorite' if opp_fav else '' }}">
+                                                {{ odds.data.opponent_ml|format_odds if odds.data.opponent_ml else '-' }}
+                                                {% if opp_fav %}<span class="fav-badge">FAV</span>{% endif %}
+                                            </td>
+                                            <td>{{ odds.data.nuggets_spread|format_spread if odds.data.nuggets_spread else '-' }}</td>
+                                            <td>{{ odds.data.total if odds.data.total else '-' }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                                <div class="odds-source">{% for pname in providers.keys() %}{{ 'the-odds-api' if pname == 'theoddsapi' else 'BALLDONTLIE' }}{{ ', ' if not loop.last else '' }}{% endfor %}</div>
                             </div>
                             {% else %}
                             {# Single provider - show available odds with team context #}
