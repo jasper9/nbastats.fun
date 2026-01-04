@@ -1,0 +1,1908 @@
+{
+  "game_id": 18447310,
+  "snapshots": [
+    {
+      "timestamp": "2026-01-04T13:31:56.276652-07:00",
+      "game_state": "pregame",
+      "period": 0,
+      "time_remaining": null,
+      "nuggets_score": 0,
+      "opponent_score": 0,
+      "consensus_prob": 58.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:33:26.803289-07:00",
+      "game_state": "pregame",
+      "period": 0,
+      "time_remaining": null,
+      "nuggets_score": 0,
+      "opponent_score": 0,
+      "consensus_prob": 58.3,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:36:15.740625-07:00",
+      "game_state": "pregame",
+      "period": 0,
+      "time_remaining": null,
+      "nuggets_score": 0,
+      "opponent_score": 0,
+      "consensus_prob": 58.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:36:46.256346-07:00",
+      "game_state": "pregame",
+      "period": 0,
+      "time_remaining": null,
+      "nuggets_score": 0,
+      "opponent_score": 0,
+      "consensus_prob": 58.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:38:16.251293-07:00",
+      "game_state": "pregame",
+      "period": 0,
+      "time_remaining": null,
+      "nuggets_score": 0,
+      "opponent_score": 0,
+      "consensus_prob": 57.9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:41:02.253869-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 11:40",
+      "nuggets_score": 0,
+      "opponent_score": 2,
+      "consensus_prob": 56.9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:41:32.256458-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 11:11",
+      "nuggets_score": 0,
+      "opponent_score": 2,
+      "consensus_prob": 56.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:42:02.257871-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 10:42",
+      "nuggets_score": 2,
+      "opponent_score": 2,
+      "consensus_prob": 56.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:42:32.250869-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 10:20",
+      "nuggets_score": 2,
+      "opponent_score": 2,
+      "consensus_prob": 56.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:43:02.249014-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 9:45",
+      "nuggets_score": 4,
+      "opponent_score": 4,
+      "consensus_prob": 56.9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:43:34.247297-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 9:26",
+      "nuggets_score": 7,
+      "opponent_score": 4,
+      "consensus_prob": 58.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:44:12.246790-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 9:11",
+      "nuggets_score": 7,
+      "opponent_score": 5,
+      "consensus_prob": 59.4,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:44:42.276403-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 9:11",
+      "nuggets_score": 7,
+      "opponent_score": 6,
+      "consensus_prob": 59.3,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:44:42.278487-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 9:11",
+      "nuggets_score": 7,
+      "opponent_score": 6,
+      "consensus_prob": 59.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:45:12.245800-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 8:42",
+      "nuggets_score": 7,
+      "opponent_score": 8,
+      "consensus_prob": 58.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:45:42.474290-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 8:42",
+      "nuggets_score": 7,
+      "opponent_score": 9,
+      "consensus_prob": 56.3,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:46:12.253053-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 8:02",
+      "nuggets_score": 7,
+      "opponent_score": 9,
+      "consensus_prob": 55.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:46:42.441594-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 7:59",
+      "nuggets_score": 7,
+      "opponent_score": 9,
+      "consensus_prob": 53.4,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:47:12.442822-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 7:56",
+      "nuggets_score": 7,
+      "opponent_score": 9,
+      "consensus_prob": 51.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:47:50.328951-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 7:56",
+      "nuggets_score": 7,
+      "opponent_score": 12,
+      "consensus_prob": 50.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:48:24.133151-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 7:42",
+      "nuggets_score": 7,
+      "opponent_score": 12,
+      "consensus_prob": 49.8,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:48:50.791481-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 7:28",
+      "nuggets_score": 7,
+      "opponent_score": 12,
+      "consensus_prob": 49.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:49:21.256710-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 7:00",
+      "nuggets_score": 9,
+      "opponent_score": 14,
+      "consensus_prob": 49.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:49:51.257051-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 6:37",
+      "nuggets_score": 9,
+      "opponent_score": 14,
+      "consensus_prob": 49.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:50:39.125495-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 6:37",
+      "nuggets_score": 9,
+      "opponent_score": 14,
+      "consensus_prob": 49.8,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:51:11.255084-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 6:37",
+      "nuggets_score": 9,
+      "opponent_score": 14,
+      "consensus_prob": 49.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:53:00.251794-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 6:37",
+      "nuggets_score": 9,
+      "opponent_score": 14,
+      "consensus_prob": 48.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:53:30.248332-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 6:23",
+      "nuggets_score": 9,
+      "opponent_score": 14,
+      "consensus_prob": 49.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:53:54.180094-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 6:23",
+      "nuggets_score": 10,
+      "opponent_score": 14,
+      "consensus_prob": 50.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:54:24.250374-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 6:03",
+      "nuggets_score": 11,
+      "opponent_score": 14,
+      "consensus_prob": 50.9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:54:54.249410-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 5:32",
+      "nuggets_score": 14,
+      "opponent_score": 14,
+      "consensus_prob": 51.9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:55:24.251457-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 5:17",
+      "nuggets_score": 14,
+      "opponent_score": 17,
+      "consensus_prob": 52.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:56:06.253078-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 4:32",
+      "nuggets_score": 14,
+      "opponent_score": 20,
+      "consensus_prob": 50.3,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:56:36.253904-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 4:32",
+      "nuggets_score": 14,
+      "opponent_score": 20,
+      "consensus_prob": 46.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:57:24.252765-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 4:16",
+      "nuggets_score": 14,
+      "opponent_score": 21,
+      "consensus_prob": 44.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:57:54.250913-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 4:16",
+      "nuggets_score": 14,
+      "opponent_score": 22,
+      "consensus_prob": 43.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:58:54.252876-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 3:28",
+      "nuggets_score": 16,
+      "opponent_score": 24,
+      "consensus_prob": 42.3,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T13:59:42.275890-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 3:24",
+      "nuggets_score": 16,
+      "opponent_score": 25,
+      "consensus_prob": 41,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:00:42.275402-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 2:49",
+      "nuggets_score": 16,
+      "opponent_score": 25,
+      "consensus_prob": 40.4,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:01:42.273632-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 2:49",
+      "nuggets_score": 16,
+      "opponent_score": 25,
+      "consensus_prob": 41.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:02:42.293537-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 2:49",
+      "nuggets_score": 16,
+      "opponent_score": 25,
+      "consensus_prob": 41.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:03:06.094938-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 2:49",
+      "nuggets_score": 16,
+      "opponent_score": 25,
+      "consensus_prob": 41.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:03:36.096419-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 2:36",
+      "nuggets_score": 16,
+      "opponent_score": 25,
+      "consensus_prob": 42.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:04:06.103533-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 2:36",
+      "nuggets_score": 19,
+      "opponent_score": 25,
+      "consensus_prob": 43.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:04:36.107921-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 2:18",
+      "nuggets_score": 19,
+      "opponent_score": 27,
+      "consensus_prob": 44,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:05:06.097940-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 1:34",
+      "nuggets_score": 21,
+      "opponent_score": 27,
+      "consensus_prob": 44.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:05:36.097826-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 1:19",
+      "nuggets_score": 24,
+      "opponent_score": 27,
+      "consensus_prob": 46.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:06:06.098691-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 :40.6",
+      "nuggets_score": 27,
+      "opponent_score": 30,
+      "consensus_prob": 47.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:06:30.270626-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 :29.3",
+      "nuggets_score": 29,
+      "opponent_score": 33,
+      "consensus_prob": 47.9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:06:57.051591-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "Q1 :20.2",
+      "nuggets_score": 29,
+      "opponent_score": 33,
+      "consensus_prob": 48,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:07:27.050877-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "END Q1",
+      "nuggets_score": 29,
+      "opponent_score": 33,
+      "consensus_prob": 47.9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:07:59.247553-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "END Q1",
+      "nuggets_score": 29,
+      "opponent_score": 33,
+      "consensus_prob": 48.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:08:32.244111-07:00",
+      "game_state": "live",
+      "period": 1,
+      "time_remaining": "END Q1",
+      "nuggets_score": 29,
+      "opponent_score": 33,
+      "consensus_prob": 49.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:09:32.250967-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 12:00",
+      "nuggets_score": 29,
+      "opponent_score": 33,
+      "consensus_prob": 48.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:10:02.255663-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 11:39",
+      "nuggets_score": 29,
+      "opponent_score": 33,
+      "consensus_prob": 48.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:10:32.250016-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 11:31",
+      "nuggets_score": 30,
+      "opponent_score": 33,
+      "consensus_prob": 50.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:11:02.254921-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 11:14",
+      "nuggets_score": 31,
+      "opponent_score": 33,
+      "consensus_prob": 51.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:11:32.248081-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 10:43",
+      "nuggets_score": 31,
+      "opponent_score": 35,
+      "consensus_prob": 51.8,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:12:02.252145-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 10:18",
+      "nuggets_score": 31,
+      "opponent_score": 35,
+      "consensus_prob": 51,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:12:32.250141-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 9:55",
+      "nuggets_score": 33,
+      "opponent_score": 35,
+      "consensus_prob": 51.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:13:02.252510-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 9:12",
+      "nuggets_score": 33,
+      "opponent_score": 35,
+      "consensus_prob": 53.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:13:32.254983-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 9:03",
+      "nuggets_score": 33,
+      "opponent_score": 37,
+      "consensus_prob": 51.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:14:42.274070-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 8:34",
+      "nuggets_score": 33,
+      "opponent_score": 38,
+      "consensus_prob": 46.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:15:42.305019-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 7:47",
+      "nuggets_score": 38,
+      "opponent_score": 38,
+      "consensus_prob": 51.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:16:42.277256-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 7:30",
+      "nuggets_score": 38,
+      "opponent_score": 39,
+      "consensus_prob": 53.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:17:08.102241-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 7:30",
+      "nuggets_score": 38,
+      "opponent_score": 40,
+      "consensus_prob": 54.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:17:38.252704-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 6:54",
+      "nuggets_score": 38,
+      "opponent_score": 40,
+      "consensus_prob": 51.8,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:18:08.249829-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 6:29",
+      "nuggets_score": 38,
+      "opponent_score": 43,
+      "consensus_prob": 50.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:18:38.251071-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 6:17",
+      "nuggets_score": 38,
+      "opponent_score": 43,
+      "consensus_prob": 46.8,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:19:08.245324-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 6:17",
+      "nuggets_score": 38,
+      "opponent_score": 43,
+      "consensus_prob": 45.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:19:38.247954-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 6:17",
+      "nuggets_score": 38,
+      "opponent_score": 43,
+      "consensus_prob": 44.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:20:08.253662-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 6:17",
+      "nuggets_score": 38,
+      "opponent_score": 43,
+      "consensus_prob": 43.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:20:38.255815-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 6:17",
+      "nuggets_score": 38,
+      "opponent_score": 43,
+      "consensus_prob": 43.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:21:38.254411-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 6:17",
+      "nuggets_score": 38,
+      "opponent_score": 44,
+      "consensus_prob": 43.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:22:08.255379-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 5:56",
+      "nuggets_score": 41,
+      "opponent_score": 45,
+      "consensus_prob": 43.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:22:42.284257-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 5:34",
+      "nuggets_score": 41,
+      "opponent_score": 45,
+      "consensus_prob": 45.4,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:23:42.283280-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 5:16",
+      "nuggets_score": 41,
+      "opponent_score": 45,
+      "consensus_prob": 46.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:24:19.423757-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 5:01",
+      "nuggets_score": 41,
+      "opponent_score": 46,
+      "consensus_prob": 46.4,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:24:42.273259-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 5:01",
+      "nuggets_score": 42,
+      "opponent_score": 46,
+      "consensus_prob": 46.9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:25:08.796886-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 4:45",
+      "nuggets_score": 43,
+      "opponent_score": 48,
+      "consensus_prob": 47.3,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:25:38.797232-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 4:24",
+      "nuggets_score": 43,
+      "opponent_score": 51,
+      "consensus_prob": 45.4,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:26:09.257350-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 4:24",
+      "nuggets_score": 43,
+      "opponent_score": 51,
+      "consensus_prob": 42.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:26:39.245776-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 4:24",
+      "nuggets_score": 43,
+      "opponent_score": 51,
+      "consensus_prob": 40.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:27:39.248440-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 4:24",
+      "nuggets_score": 43,
+      "opponent_score": 51,
+      "consensus_prob": 39.8,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:29:09.255866-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 4:12",
+      "nuggets_score": 43,
+      "opponent_score": 51,
+      "consensus_prob": 39.9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:29:37.380945-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 3:56",
+      "nuggets_score": 43,
+      "opponent_score": 51,
+      "consensus_prob": 40,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:30:07.382531-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 3:39",
+      "nuggets_score": 43,
+      "opponent_score": 51,
+      "consensus_prob": 39.8,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:30:39.172499-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 3:27",
+      "nuggets_score": 43,
+      "opponent_score": 51,
+      "consensus_prob": 39.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:31:09.245265-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 3:18",
+      "nuggets_score": 43,
+      "opponent_score": 51,
+      "consensus_prob": 39.4,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:32:09.256402-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 2:40",
+      "nuggets_score": 45,
+      "opponent_score": 51,
+      "consensus_prob": 39.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:32:39.255273-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 2:21",
+      "nuggets_score": 45,
+      "opponent_score": 53,
+      "consensus_prob": 38.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:33:09.251066-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 1:45",
+      "nuggets_score": 45,
+      "opponent_score": 53,
+      "consensus_prob": 37.9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:33:39.250772-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 1:45",
+      "nuggets_score": 45,
+      "opponent_score": 54,
+      "consensus_prob": 36.9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:34:09.253945-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 1:45",
+      "nuggets_score": 45,
+      "opponent_score": 54,
+      "consensus_prob": 35,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:34:39.254809-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 1:17",
+      "nuggets_score": 45,
+      "opponent_score": 57,
+      "consensus_prob": 32.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:35:09.253517-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 1:17",
+      "nuggets_score": 45,
+      "opponent_score": 57,
+      "consensus_prob": 31.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:35:39.252485-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 1:17",
+      "nuggets_score": 46,
+      "opponent_score": 57,
+      "consensus_prob": 29.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:36:42.283594-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 :24.2",
+      "nuggets_score": 48,
+      "opponent_score": 59,
+      "consensus_prob": 31.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:37:42.279906-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Q2 :08.4",
+      "nuggets_score": 50,
+      "opponent_score": 59,
+      "consensus_prob": 33.3,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:38:42.285801-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Half",
+      "nuggets_score": 52,
+      "opponent_score": 59,
+      "consensus_prob": 36.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:39:13.249375-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Half",
+      "nuggets_score": 52,
+      "opponent_score": 59,
+      "consensus_prob": 37.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:39:42.287163-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Half",
+      "nuggets_score": 52,
+      "opponent_score": 59,
+      "consensus_prob": 38.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:40:43.259290-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Half",
+      "nuggets_score": 52,
+      "opponent_score": 59,
+      "consensus_prob": 38.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:41:43.258577-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Half",
+      "nuggets_score": 52,
+      "opponent_score": 59,
+      "consensus_prob": 38.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:42:13.258028-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Half",
+      "nuggets_score": 52,
+      "opponent_score": 59,
+      "consensus_prob": 38.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:43:09.884311-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Half",
+      "nuggets_score": 52,
+      "opponent_score": 59,
+      "consensus_prob": 38.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:43:57.260238-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Half",
+      "nuggets_score": 52,
+      "opponent_score": 59,
+      "consensus_prob": 37.8,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:45:23.747119-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Half",
+      "nuggets_score": 52,
+      "opponent_score": 59,
+      "consensus_prob": 37.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:46:26.251296-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Half",
+      "nuggets_score": 52,
+      "opponent_score": 59,
+      "consensus_prob": 37.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:46:57.256840-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Half",
+      "nuggets_score": 52,
+      "opponent_score": 59,
+      "consensus_prob": 37.3,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:47:41.303301-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Half",
+      "nuggets_score": 52,
+      "opponent_score": 59,
+      "consensus_prob": 37.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:48:12.258816-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Half",
+      "nuggets_score": 52,
+      "opponent_score": 59,
+      "consensus_prob": 37.3,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:48:57.046327-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Half",
+      "nuggets_score": 52,
+      "opponent_score": 59,
+      "consensus_prob": 37.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:49:27.253625-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Half",
+      "nuggets_score": 52,
+      "opponent_score": 59,
+      "consensus_prob": 37.3,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:52:15.600437-07:00",
+      "game_state": "live",
+      "period": 2,
+      "time_remaining": "Half",
+      "nuggets_score": 52,
+      "opponent_score": 59,
+      "consensus_prob": 37.9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:53:50.418569-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 11:37",
+      "nuggets_score": 52,
+      "opponent_score": 59,
+      "consensus_prob": 38.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:54:20.419721-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 11:16",
+      "nuggets_score": 54,
+      "opponent_score": 59,
+      "consensus_prob": 39.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:54:51.254995-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 10:52",
+      "nuggets_score": 54,
+      "opponent_score": 61,
+      "consensus_prob": 40,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:55:21.262735-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 10:26",
+      "nuggets_score": 54,
+      "opponent_score": 61,
+      "consensus_prob": 38.8,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:55:51.252937-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 10:26",
+      "nuggets_score": 54,
+      "opponent_score": 63,
+      "consensus_prob": 36.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:56:21.262683-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 10:06",
+      "nuggets_score": 56,
+      "opponent_score": 63,
+      "consensus_prob": 35.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:56:51.262819-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 9:30",
+      "nuggets_score": 56,
+      "opponent_score": 66,
+      "consensus_prob": 34.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:57:42.277999-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 9:18",
+      "nuggets_score": 56,
+      "opponent_score": 69,
+      "consensus_prob": 27.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:58:42.287894-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 8:51",
+      "nuggets_score": 56,
+      "opponent_score": 71,
+      "consensus_prob": 21,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T14:59:42.284334-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 8:51",
+      "nuggets_score": 56,
+      "opponent_score": 71,
+      "consensus_prob": 20.8,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:00:36.019894-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 8:51",
+      "nuggets_score": 56,
+      "opponent_score": 71,
+      "consensus_prob": 20.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:01:11.761985-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 8:51",
+      "nuggets_score": 56,
+      "opponent_score": 71,
+      "consensus_prob": 20.9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:01:41.761571-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 8:14",
+      "nuggets_score": 58,
+      "opponent_score": 74,
+      "consensus_prob": 20.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:02:11.760582-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 7:44",
+      "nuggets_score": 61,
+      "opponent_score": 77,
+      "consensus_prob": 19.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:02:41.761277-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 7:32",
+      "nuggets_score": 61,
+      "opponent_score": 77,
+      "consensus_prob": 19.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:03:11.764119-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 7:32",
+      "nuggets_score": 62,
+      "opponent_score": 77,
+      "consensus_prob": 19,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:03:41.763111-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 7:13",
+      "nuggets_score": 63,
+      "opponent_score": 77,
+      "consensus_prob": 19.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:04:12.255172-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 7:13",
+      "nuggets_score": 63,
+      "opponent_score": 77,
+      "consensus_prob": 20.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:04:42.288478-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 6:19",
+      "nuggets_score": 66,
+      "opponent_score": 77,
+      "consensus_prob": 21.9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:05:42.285873-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 5:50",
+      "nuggets_score": 66,
+      "opponent_score": 79,
+      "consensus_prob": 21.8,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:06:42.274364-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 5:09",
+      "nuggets_score": 66,
+      "opponent_score": 84,
+      "consensus_prob": 15.4,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:07:42.287421-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 5:09",
+      "nuggets_score": 66,
+      "opponent_score": 84,
+      "consensus_prob": 12.9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:08:42.310697-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 5:09",
+      "nuggets_score": 66,
+      "opponent_score": 84,
+      "consensus_prob": 12.8,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:09:42.283124-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 5:09",
+      "nuggets_score": 66,
+      "opponent_score": 84,
+      "consensus_prob": 11.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:10:40.814779-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 4:51",
+      "nuggets_score": 68,
+      "opponent_score": 84,
+      "consensus_prob": 11.8,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:11:13.263716-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 4:16",
+      "nuggets_score": 71,
+      "opponent_score": 86,
+      "consensus_prob": 12.3,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:11:42.287993-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 3:55",
+      "nuggets_score": 71,
+      "opponent_score": 88,
+      "consensus_prob": 12.4,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:12:13.261815-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 3:37",
+      "nuggets_score": 73,
+      "opponent_score": 88,
+      "consensus_prob": 12.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:12:42.286148-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 3:12",
+      "nuggets_score": 73,
+      "opponent_score": 91,
+      "consensus_prob": 11.4,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:13:13.266974-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 2:52",
+      "nuggets_score": 73,
+      "opponent_score": 91,
+      "consensus_prob": 10.4,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:13:42.287403-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 2:49",
+      "nuggets_score": 75,
+      "opponent_score": 91,
+      "consensus_prob": 10.9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:14:42.285263-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 2:44",
+      "nuggets_score": 78,
+      "opponent_score": 91,
+      "consensus_prob": 14.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:15:12.423679-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 2:29",
+      "nuggets_score": 78,
+      "opponent_score": 91,
+      "consensus_prob": 14.4,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:15:42.281144-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 2:14",
+      "nuggets_score": 80,
+      "opponent_score": 93,
+      "consensus_prob": 14.9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:16:19.541820-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 2:14",
+      "nuggets_score": 81,
+      "opponent_score": 93,
+      "consensus_prob": 16.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:16:42.286395-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 2:01",
+      "nuggets_score": 81,
+      "opponent_score": 93,
+      "consensus_prob": 17.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:17:19.535078-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 1:57",
+      "nuggets_score": 83,
+      "opponent_score": 93,
+      "consensus_prob": 19.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:17:42.281269-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 1:57",
+      "nuggets_score": 83,
+      "opponent_score": 94,
+      "consensus_prob": 18.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:18:16.572040-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 1:57",
+      "nuggets_score": 83,
+      "opponent_score": 94,
+      "consensus_prob": 18.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:18:42.290628-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 1:57",
+      "nuggets_score": 83,
+      "opponent_score": 94,
+      "consensus_prob": 18.3,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:19:17.259574-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 1:23",
+      "nuggets_score": 83,
+      "opponent_score": 94,
+      "consensus_prob": 19.4,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:19:42.289895-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 1:15",
+      "nuggets_score": 83,
+      "opponent_score": 94,
+      "consensus_prob": 18.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:20:05.680629-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 :54.0",
+      "nuggets_score": 83,
+      "opponent_score": 96,
+      "consensus_prob": 17.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:20:35.682637-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 :54.0",
+      "nuggets_score": 83,
+      "opponent_score": 96,
+      "consensus_prob": 16.3,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:21:36.259678-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 :54.0",
+      "nuggets_score": 83,
+      "opponent_score": 96,
+      "consensus_prob": 15.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:22:03.397684-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 :54.0",
+      "nuggets_score": 83,
+      "opponent_score": 96,
+      "consensus_prob": 15.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:22:33.401320-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 :54.0",
+      "nuggets_score": 83,
+      "opponent_score": 96,
+      "consensus_prob": 15.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:23:32.790645-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 :45.3",
+      "nuggets_score": 84,
+      "opponent_score": 96,
+      "consensus_prob": 15.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:24:02.790022-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 :45.3",
+      "nuggets_score": 84,
+      "opponent_score": 96,
+      "consensus_prob": 14.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:24:36.727812-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 :32.5",
+      "nuggets_score": 84,
+      "opponent_score": 97,
+      "consensus_prob": 13.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:25:05.028337-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "Q3 :00.0",
+      "nuggets_score": 84,
+      "opponent_score": 100,
+      "consensus_prob": 12.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:25:35.030058-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "END Q3",
+      "nuggets_score": 84,
+      "opponent_score": 100,
+      "consensus_prob": 10.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:26:18.912734-07:00",
+      "game_state": "live",
+      "period": 3,
+      "time_remaining": "END Q3",
+      "nuggets_score": 84,
+      "opponent_score": 100,
+      "consensus_prob": 9,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:28:02.265636-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 11:45",
+      "nuggets_score": 87,
+      "opponent_score": 100,
+      "consensus_prob": 9.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:28:32.262049-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 11:20",
+      "nuggets_score": 87,
+      "opponent_score": 100,
+      "consensus_prob": 11,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:29:02.260982-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 11:20",
+      "nuggets_score": 87,
+      "opponent_score": 100,
+      "consensus_prob": 11.3,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:29:32.265706-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 10:34",
+      "nuggets_score": 90,
+      "opponent_score": 103,
+      "consensus_prob": 12,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:30:42.292766-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 10:20",
+      "nuggets_score": 90,
+      "opponent_score": 103,
+      "consensus_prob": 10,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:31:42.285868-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 9:43",
+      "nuggets_score": 90,
+      "opponent_score": 105,
+      "consensus_prob": 8.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:32:42.293231-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 9:14",
+      "nuggets_score": 90,
+      "opponent_score": 106,
+      "consensus_prob": 7.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:33:42.299585-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 9:14",
+      "nuggets_score": 90,
+      "opponent_score": 107,
+      "consensus_prob": 6.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:34:42.295105-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 9:14",
+      "nuggets_score": 90,
+      "opponent_score": 107,
+      "consensus_prob": 6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:40:02.236403-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 8:24",
+      "nuggets_score": 90,
+      "opponent_score": 112,
+      "consensus_prob": 5.5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:40:32.262470-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 8:07",
+      "nuggets_score": 90,
+      "opponent_score": 112,
+      "consensus_prob": 5.6,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:42:02.261289-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 7:02",
+      "nuggets_score": 94,
+      "opponent_score": 112,
+      "consensus_prob": 5.7,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:42:30.524873-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 7:02",
+      "nuggets_score": 94,
+      "opponent_score": 112,
+      "consensus_prob": 5.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:44:01.265729-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 5:42",
+      "nuggets_score": 96,
+      "opponent_score": 114,
+      "consensus_prob": 5.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:44:31.263747-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 5:42",
+      "nuggets_score": 97,
+      "opponent_score": 114,
+      "consensus_prob": 5.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:45:31.262212-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 4:59",
+      "nuggets_score": 97,
+      "opponent_score": 116,
+      "consensus_prob": 5.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:48:29.264290-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 4:03",
+      "nuggets_score": 103,
+      "opponent_score": 116,
+      "consensus_prob": 5.4,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:49:29.263307-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 3:22",
+      "nuggets_score": 106,
+      "opponent_score": 118,
+      "consensus_prob": 5.1,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:49:59.266005-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 3:08",
+      "nuggets_score": 106,
+      "opponent_score": 118,
+      "consensus_prob": 5.2,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:50:42.294557-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 2:39",
+      "nuggets_score": 106,
+      "opponent_score": 121,
+      "consensus_prob": 5,
+      "vendor_count": 12
+    },
+    {
+      "timestamp": "2026-01-04T15:51:42.289825-07:00",
+      "game_state": "live",
+      "period": 4,
+      "time_remaining": "Q4 2:06",
+      "nuggets_score": 108,
+      "opponent_score": 121,
+      "consensus_prob": 13.1,
+      "vendor_count": 12
+    }
+  ],
+  "game_info": {
+    "nuggets_name": "Denver Nuggets",
+    "opponent_name": "Brooklyn Nets",
+    "is_nuggets_home": false,
+    "date": "2026-01-04"
+  },
+  "created_at": "2026-01-04T13:32:04.479997",
+  "final_state": "final",
+  "final_score": {
+    "nuggets": 115,
+    "opponent": 127
+  },
+  "updated_at": "2026-01-04T16:36:44.996125"
+}
