@@ -900,7 +900,8 @@
             font-weight: 700;
             position: relative;
         }
-        .bookmaker-table .fav-badge {
+        .bookmaker-table .fav-badge,
+        .consensus-line .fav-badge {
             display: inline-block;
             font-size: 0.5rem;
             background: #22c55e;
@@ -910,6 +911,48 @@
             margin-left: 4px;
             font-weight: 700;
             vertical-align: middle;
+        }
+        .consensus-line {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+        }
+        .consensus-label {
+            display: block;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            color: #4ade80;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .consensus-odds {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+        .consensus-team {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .consensus-team.is-favorite {
+            color: #4ade80;
+        }
+        .consensus-team strong {
+            font-size: 1.1rem;
+            margin-left: 4px;
+        }
+        .consensus-extra {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            padding-left: 12px;
+            border-left: 1px solid var(--border);
+        }
+        .consensus-extra strong {
+            color: var(--text-secondary);
         }
         /* Schedule layout - cards + calendar side by side */
         .schedule-layout {
@@ -1555,13 +1598,56 @@
                                 {% endif %}
                             {% endfor %}
 
+                            {# Calculate averages if multiple bookmakers #}
+                            {% set ns = namespace(den_ml_sum=0, den_ml_count=0, opp_ml_sum=0, opp_ml_count=0, spread_sum=0, spread_count=0, total_sum=0, total_count=0) %}
+                            {% for odds in all_odds %}
+                                {% if odds.data.nuggets_ml %}
+                                    {% set ns.den_ml_sum = ns.den_ml_sum + odds.data.nuggets_ml %}
+                                    {% set ns.den_ml_count = ns.den_ml_count + 1 %}
+                                {% endif %}
+                                {% if odds.data.opponent_ml %}
+                                    {% set ns.opp_ml_sum = ns.opp_ml_sum + odds.data.opponent_ml %}
+                                    {% set ns.opp_ml_count = ns.opp_ml_count + 1 %}
+                                {% endif %}
+                                {% if odds.data.nuggets_spread %}
+                                    {% set ns.spread_sum = ns.spread_sum + odds.data.nuggets_spread %}
+                                    {% set ns.spread_count = ns.spread_count + 1 %}
+                                {% endif %}
+                                {% if odds.data.total %}
+                                    {% set ns.total_sum = ns.total_sum + odds.data.total %}
+                                    {% set ns.total_count = ns.total_count + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {% set avg_den_ml = (ns.den_ml_sum / ns.den_ml_count)|round|int if ns.den_ml_count > 0 else none %}
+                            {% set avg_opp_ml = (ns.opp_ml_sum / ns.opp_ml_count)|round|int if ns.opp_ml_count > 0 else none %}
+                            {% set avg_spread = (ns.spread_sum / ns.spread_count)|round(1) if ns.spread_count > 0 else none %}
+                            {% set avg_total = (ns.total_sum / ns.total_count)|round(1) if ns.total_count > 0 else none %}
+
                             <div class="multi-book-odds">
+                                {# Show average line prominently if multiple books #}
+                                {% if all_odds|length > 1 and avg_den_ml %}
+                                <div class="consensus-line">
+                                    <span class="consensus-label">Consensus</span>
+                                    <div class="consensus-odds">
+                                        <span class="consensus-team {{ 'is-favorite' if avg_den_ml < 0 else '' }}">
+                                            DEN <strong>{{ avg_den_ml|format_odds }}</strong>
+                                            {% if avg_den_ml < 0 %}<span class="fav-badge">FAV</span>{% endif %}
+                                        </span>
+                                        <span class="consensus-team {{ 'is-favorite' if avg_opp_ml and avg_opp_ml < 0 else '' }}">
+                                            {{ opp_abbrev }} <strong>{{ avg_opp_ml|format_odds if avg_opp_ml else '-' }}</strong>
+                                            {% if avg_opp_ml and avg_opp_ml < 0 %}<span class="fav-badge">FAV</span>{% endif %}
+                                        </span>
+                                        {% if avg_spread %}<span class="consensus-extra">Spread <strong>{{ avg_spread|format_spread }}</strong></span>{% endif %}
+                                        {% if avg_total %}<span class="consensus-extra">O/U <strong>{{ avg_total }}</strong></span>{% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
                                 <table class="bookmaker-table">
                                     <thead>
                                         <tr>
                                             <th>Book</th>
-                                            <th>DEN</th>
-                                            <th>{{ opp_abbrev }}</th>
+                                            <th>DEN ML</th>
+                                            <th>{{ opp_abbrev }} ML</th>
                                             <th>Spread</th>
                                             <th>O/U</th>
                                         </tr>
@@ -1574,11 +1660,9 @@
                                             <td class="book-name">{{ odds.book }}</td>
                                             <td class="ml-cell {{ 'is-favorite' if den_fav else '' }}">
                                                 {{ odds.data.nuggets_ml|format_odds if odds.data.nuggets_ml else '-' }}
-                                                {% if den_fav %}<span class="fav-badge">FAV</span>{% endif %}
                                             </td>
                                             <td class="ml-cell {{ 'is-favorite' if opp_fav else '' }}">
                                                 {{ odds.data.opponent_ml|format_odds if odds.data.opponent_ml else '-' }}
-                                                {% if opp_fav %}<span class="fav-badge">FAV</span>{% endif %}
                                             </td>
                                             <td>{{ odds.data.nuggets_spread|format_spread if odds.data.nuggets_spread else '-' }}</td>
                                             <td>{{ odds.data.total if odds.data.total else '-' }}</td>
@@ -1586,7 +1670,7 @@
                                         {% endfor %}
                                     </tbody>
                                 </table>
-                                <div class="odds-source">{% for pname in providers.keys() %}{{ 'the-odds-api' if pname == 'theoddsapi' else 'BALLDONTLIE' }}{{ ', ' if not loop.last else '' }}{% endfor %}</div>
+                                <div class="odds-source">{{ all_odds|length }} books via {% for pname in providers.keys() %}{{ 'the-odds-api' if pname == 'theoddsapi' else 'BALLDONTLIE' }}{{ ', ' if not loop.last else '' }}{% endfor %}</div>
                             </div>
                             {% else %}
                             {# Single provider - show available odds with team context #}
