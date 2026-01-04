@@ -965,10 +965,9 @@
                 const currentDiff = currentNuggets - currentOpponent;
 
                 if (currentDiff !== 0) {
-                    const oppAbbrev = opponentName.split(' ').pop().toUpperCase().slice(0, 3);
                     const label = currentDiff > 0
-                        ? `+${currentDiff} DEN`
-                        : `+${Math.abs(currentDiff)} ${oppAbbrev}`;
+                        ? `+${currentDiff}`
+                        : `-${Math.abs(currentDiff)}`;
 
                     scoreQuarterAnnotations.currentGap = {
                         type: 'line',
@@ -1072,10 +1071,9 @@
             if (lastProbIndex >= 0) {
                 const currentSwing = probDisplayHistory[lastProbIndex];
                 if (currentSwing !== 0) {
-                    const oppAbbrev = opponentName.split(' ').pop().toUpperCase().slice(0, 3);
                     const label = currentSwing > 0
-                        ? `+${currentSwing.toFixed(0)}% DEN`
-                        : `+${Math.abs(currentSwing).toFixed(0)}% ${oppAbbrev}`;
+                        ? `+${currentSwing.toFixed(0)}%`
+                        : `${currentSwing.toFixed(0)}%`;
 
                     quarterAnnotations.currentProb = {
                         type: 'line',
