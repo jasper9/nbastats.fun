@@ -11,6 +11,7 @@ A Flask-based dashboard for tracking Nikola Jokić and Denver Nuggets stats, sta
 - `templates/jokic.html` - Dedicated Jokić page (career stats, triple-doubles, records)
 - `templates/more.html` - Nuggets stats (roster, recent games, contracts)
 - `templates/leaders.html` - League leaders by stat category
+- `templates/live.html` - Live game win probability tracker
 
 ### Data Refresh
 - `refresh_cache.py` - **Main script** - refreshes all data (run daily via cron)
@@ -107,6 +108,15 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 - Images from NBA CDN: `appimages.nba.com/p/tr:n-slnfre/2025/uniform/Denver%20Nuggets/DEN_[AE|IE|SE|CE].jpg`
 - **No cron needed** - jerseys are assigned for entire season upfront
 - Re-run `scrape_jerseys.py` only at start of next season
+
+### Live Win Probability
+- `/live` page shows real-time win probability during games
+- Polls BALLDONTLIE v2 API for live odds from 12+ bookmakers
+- Converts moneylines to implied probability using: `prob = |ml| / (|ml| + 100)` for favorites
+- Shows consensus (average) probability across all bookmakers
+- Chart.js graph tracks probability changes over time
+- Auto-refreshes every 30 seconds
+- Game states: PRE-GAME, LIVE (with quarter/time), FINAL
 
 ## Testing Changes
 1. Run Flask: `source venv/bin/activate && python app.py`
