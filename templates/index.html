@@ -2263,6 +2263,39 @@
                     </a>
                 `;
             }
+
+            // Show injuries for completed games
+            // Filter to show injuries that were likely active at game time
+            const gameDateObj = new Date(gameDate + 'T00:00:00');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const daysDiff = Math.floor((today - gameDateObj) / (1000 * 60 * 60 * 24));
+
+            // For recent games (within 7 days), show current injury report
+            // Injuries are filtered by return date to exclude those who returned before the game
+            const relevantInjuries = injuriesData.filter(inj => {
+                if (inj.status !== 'Out' && inj.status !== 'Day-To-Day') return false;
+                const returnDate = parseReturnDate(inj.return_date);
+                // If injury has a return date before the game date, player was back
+                if (returnDate && gameDateObj > returnDate) return false;
+                return true;
+            });
+
+            if (relevantInjuries.length > 0 && daysDiff <= 7) {
+                content += `
+                    <div class="game-modal-injuries">
+                        <div class="game-modal-injuries-title">Nuggets Injuries${daysDiff > 0 ? ' (Current)' : ''}</div>
+                        <div class="modal-injury-list">
+                            ${relevantInjuries.map(inj => `
+                                <div class="modal-injury-row">
+                                    <span class="injury-player">#${inj.jersey} ${inj.name}</span>
+                                    <span class="injury-badge ${(inj.game_status || inj.status).toLowerCase().replace(' ', '-')}">${inj.game_status || inj.status}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
         } else {
             // Future game - show odds if available
             if (spread || ml) {
