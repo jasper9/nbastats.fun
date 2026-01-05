@@ -586,17 +586,46 @@ def refresh_nuggets_schedule():
 
 
 def main():
+    """
+    Full cache refresh - runs hourly, daily, and weekly refreshes.
+
+    For scheduled refreshes, use the individual scripts:
+    - refresh_hourly.py: standings, recent games (run every hour)
+    - refresh_daily.py: stats, schedule, odds, injuries (run daily)
+    - refresh_weekly.py: roster, contracts, salary cap (run weekly)
+    """
     print("=" * 60)
-    print(f"NBA Stats Cache Refresh - {datetime.now().isoformat()}")
+    print(f"FULL Cache Refresh - {datetime.now().isoformat()}")
     print("=" * 60)
 
     ensure_cache_dir()
 
-    # Refresh NBA API data
-    refresh_jokic_career_stats()
-    time.sleep(1)
+    # === HOURLY DATA ===
+    print("\n" + "-" * 40)
+    print("HOURLY DATA")
+    print("-" * 40)
 
     refresh_team_standings()
+    time.sleep(1)
+
+    from refresh_balldontlie import (
+        refresh_injuries,
+        refresh_roster,
+        refresh_recent_games,
+        refresh_jokic_stats,
+        refresh_contracts,
+        refresh_salary_cap_status,
+    )
+
+    refresh_recent_games()
+    time.sleep(1)
+
+    # === DAILY DATA ===
+    print("\n" + "-" * 40)
+    print("DAILY DATA")
+    print("-" * 40)
+
+    refresh_jokic_career_stats()
     time.sleep(1)
 
     refresh_alltime_records()
@@ -611,35 +640,31 @@ def main():
     refresh_nuggets_schedule()
     time.sleep(1)
 
-    # Refresh odds data (archives pre-game odds, evaluates beat-odds for past games)
-    print("\n[7/7] Refreshing odds data...")
     from refresh_odds import refresh_odds
     refresh_odds()
     time.sleep(1)
 
-    # Refresh BALLDONTLIE data (injuries, roster, contracts, etc.)
-    print("\n" + "=" * 60)
-    print("Refreshing BALLDONTLIE data...")
-    print("=" * 60)
-
-    from refresh_balldontlie import (
-        refresh_injuries,
-        refresh_roster,
-        refresh_recent_games,
-        refresh_jokic_stats,
-        refresh_contracts,
-        refresh_salary_cap_status,
-    )
-
     refresh_injuries()
-    refresh_roster()
-    refresh_recent_games()
+    time.sleep(1)
+
     refresh_jokic_stats()
+    time.sleep(1)
+
+    # === WEEKLY DATA ===
+    print("\n" + "-" * 40)
+    print("WEEKLY DATA")
+    print("-" * 40)
+
+    refresh_roster()
+    time.sleep(1)
+
     refresh_contracts()
+    time.sleep(1)
+
     refresh_salary_cap_status()
 
     print("\n" + "=" * 60)
-    print("Cache refresh complete!")
+    print("Full cache refresh complete!")
     print(f"Cache files saved to: {CACHE_DIR}")
     print("=" * 60)
 
