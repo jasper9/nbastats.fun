@@ -7,11 +7,32 @@ For full cache refresh, use refresh_cache.py instead.
 
 import json
 import os
+import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
+
+
+def atomic_write_json(filepath, data, indent=2):
+    """
+    Write JSON data to a file atomically.
+    Writes to a temp file first, then renames to avoid race conditions.
+    """
+    filepath = Path(filepath)
+    # Create temp file in same directory to ensure same filesystem for atomic rename
+    fd, tmp_path = tempfile.mkstemp(dir=filepath.parent, suffix='.tmp')
+    try:
+        with os.fdopen(fd, 'w') as f:
+            json.dump(data, f, indent=indent)
+        # Atomic rename (works on same filesystem)
+        os.replace(tmp_path, filepath)
+    except Exception:
+        # Clean up temp file on error
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        raise
 
 load_dotenv()
 
@@ -249,8 +270,7 @@ def load_historical_odds():
 def save_historical_odds(data):
     """Save historical odds data."""
     data['_updated_at'] = datetime.now().isoformat()
-    with open(HISTORICAL_ODDS_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
+    atomic_write_json(HISTORICAL_ODDS_FILE, data)
 
 
 def archive_pregame_odds(game, odds_data):
@@ -468,14 +488,13 @@ def refresh_odds():
                     evaluated_count += 1
     print(f"  Evaluated beat-odds for {evaluated_count} past games")
 
-    # Save updated cache
+    # Save updated cache atomically to avoid race conditions with web server
     schedule_data['_odds_updated_at'] = datetime.now().isoformat()
     schedule_data['_odds_providers'] = {
         'theoddsapi': len(theoddsapi_odds),
         'balldontlie': len(balldontlie_odds),
     }
-    with open(schedule_file, 'w') as f:
-        json.dump(schedule_data, f, indent=2)
+    atomic_write_json(schedule_file, schedule_data)
     print("  Saved updated schedule cache")
 
     return games_with_odds

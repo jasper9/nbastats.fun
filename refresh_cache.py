@@ -7,6 +7,7 @@ Run this manually or set up a cron job (e.g., daily at 6am):
 
 import json
 import os
+import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
@@ -27,11 +28,30 @@ def ensure_cache_dir():
     CACHE_DIR.mkdir(exist_ok=True)
 
 
+def atomic_write_json(filepath, data, indent=2):
+    """
+    Write JSON data to a file atomically.
+    Writes to a temp file first, then renames to avoid race conditions.
+    """
+    filepath = Path(filepath)
+    # Create temp file in same directory to ensure same filesystem for atomic rename
+    fd, tmp_path = tempfile.mkstemp(dir=filepath.parent, suffix='.tmp')
+    try:
+        with os.fdopen(fd, 'w') as f:
+            json.dump(data, f, indent=indent)
+        # Atomic rename (works on same filesystem)
+        os.replace(tmp_path, filepath)
+    except Exception:
+        # Clean up temp file on error
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        raise
+
+
 def save_cache(filename, data):
-    """Save data to a cache file with timestamp."""
+    """Save data to a cache file with timestamp (atomic write)."""
     data['_cached_at'] = datetime.now().isoformat()
-    with open(CACHE_DIR / filename, 'w') as f:
-        json.dump(data, f, indent=2)
+    atomic_write_json(CACHE_DIR / filename, data)
     print(f"  Saved {filename}")
 
 
@@ -250,8 +270,7 @@ def refresh_triple_doubles_baseline():
     ensure_cache_dir()
     baseline['_created_at'] = datetime.now().isoformat()
     baseline['_current_season'] = f"{CURRENT_SEASON_YEAR}-{str(CURRENT_SEASON_YEAR+1)[-2:]}"
-    with open(CACHE_DIR / 'triple_doubles_baseline.json', 'w') as f:
-        json.dump(baseline, f, indent=2)
+    atomic_write_json(CACHE_DIR / 'triple_doubles_baseline.json', baseline)
     print(f"  Saved triple_doubles_baseline.json")
     return baseline
 

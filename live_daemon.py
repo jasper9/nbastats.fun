@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import sys
+import tempfile
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -67,6 +68,26 @@ def ensure_dirs():
     LIVE_HISTORY_DIR.mkdir(exist_ok=True)
 
 
+def atomic_write_json(filepath, data, indent=2):
+    """
+    Write JSON data to a file atomically.
+    Writes to a temp file first, then renames to avoid race conditions.
+    """
+    filepath = Path(filepath)
+    # Create temp file in same directory to ensure same filesystem for atomic rename
+    fd, tmp_path = tempfile.mkstemp(dir=filepath.parent, suffix='.tmp')
+    try:
+        with os.fdopen(fd, 'w') as f:
+            json.dump(data, f, indent=indent)
+        # Atomic rename (works on same filesystem)
+        os.replace(tmp_path, filepath)
+    except Exception:
+        # Clean up temp file on error
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        raise
+
+
 def load_cache(filename):
     """Load a cache file."""
     cache_file = CACHE_DIR / filename
@@ -77,10 +98,9 @@ def load_cache(filename):
 
 
 def save_cache(filename, data):
-    """Save data to cache file."""
+    """Save data to cache file (atomic write)."""
     data['_cached_at'] = datetime.now().isoformat()
-    with open(CACHE_DIR / filename, 'w') as f:
-        json.dump(data, f, indent=2)
+    atomic_write_json(CACHE_DIR / filename, data)
 
 
 def load_live_history(game_id):
@@ -93,10 +113,9 @@ def load_live_history(game_id):
 
 
 def save_live_history(game_id, data):
-    """Save history for a specific game."""
+    """Save history for a specific game (atomic write)."""
     history_file = LIVE_HISTORY_DIR / f'game_{game_id}.json'
-    with open(history_file, 'w') as f:
-        json.dump(data, f, indent=2)
+    atomic_write_json(history_file, data)
 
 
 def ml_to_prob(ml):
