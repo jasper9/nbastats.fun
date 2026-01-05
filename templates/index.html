@@ -999,22 +999,53 @@
         }
         /* Calendar styles */
         .calendar-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 15px;
             overflow: visible;
+        }
+        .calendar-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 0 5px;
+        }
+        .calendar-nav-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+        .calendar-nav-btn:hover {
+            background: var(--nuggets-navy);
+        }
+        .calendar-nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .calendar-nav-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.3rem;
+            color: var(--text-primary);
         }
         .calendar-month {
             background: var(--bg-card);
             overflow: visible;
             border: 1px solid var(--border);
             border-radius: 4px;
+            display: none;
+        }
+        .calendar-month.active {
+            display: block;
         }
         .calendar-header {
             background: var(--bg-secondary);
-            padding: 10px 15px;
+            padding: 12px 15px;
             font-family: 'Oswald', sans-serif;
-            font-size: 1rem;
+            font-size: 1.1rem;
             text-align: center;
             color: var(--accent);
         }
@@ -1036,9 +1067,9 @@
         }
         .calendar-day {
             background: var(--bg-card);
-            min-height: 60px;
-            padding: 4px;
-            font-size: 0.75rem;
+            min-height: 80px;
+            padding: 6px;
+            font-size: 0.85rem;
             position: relative;
             min-width: 0;
             overflow: visible;
@@ -1051,15 +1082,16 @@
         }
         .calendar-day-num {
             color: var(--text-muted);
-            font-size: 0.7rem;
-            margin-bottom: 2px;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+            font-weight: 600;
         }
         .calendar-game {
             background: var(--nuggets-navy);
-            border-radius: 2px;
-            padding: 3px 4px;
-            font-size: 0.6rem;
-            margin-top: 2px;
+            border-radius: 3px;
+            padding: 5px 6px;
+            font-size: 0.75rem;
+            margin-top: 3px;
             text-align: left;
             white-space: nowrap;
             overflow: hidden;
@@ -1236,8 +1268,9 @@
             font-weight: 600;
         }
         .calendar-game .score {
-            font-size: 0.55rem;
-            opacity: 0.8;
+            font-size: 0.7rem;
+            opacity: 0.9;
+            margin-top: 2px;
         }
         .calendar-game.has-special {
             position: relative;
@@ -1252,12 +1285,13 @@
         }
         .calendar-game .beat-odds-indicator {
             position: absolute;
-            bottom: 1px;
-            right: 2px;
-            font-size: 0.5rem;
+            bottom: 3px;
+            right: 4px;
+            font-size: 0.6rem;
             font-weight: bold;
-            padding: 0 2px;
+            padding: 1px 3px;
             border-radius: 2px;
+            background: rgba(0,0,0,0.3);
         }
         .calendar-game .beat-odds-indicator.covered {
             color: #4ade80;
@@ -1786,7 +1820,12 @@
                 {# Right side - Calendar view #}
                 <div class="schedule-calendar-section">
                     <h3>Schedule Calendar</h3>
-                    <div class="calendar-container">
+                    <div class="calendar-nav">
+                        <button class="calendar-nav-btn" onclick="prevMonth()" id="prev-month-btn">← Prev</button>
+                        <span class="calendar-nav-title" id="calendar-nav-title"></span>
+                        <button class="calendar-nav-btn" onclick="nextMonth()" id="next-month-btn">Next →</button>
+                    </div>
+                    <div class="calendar-container" id="calendar-container">
                         {% set months = {} %}
                         {% for game in calendar_games %}
                             {% set game_date = game.local_date if game.local_date else game.commence_time[:10] %}
@@ -1803,7 +1842,7 @@
                         {% set month = month_key[5:7]|int %}
                         {% set month_names = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
 
-                        <div class="calendar-month">
+                        <div class="calendar-month" data-month="{{ month_key }}" data-month-name="{{ month_names[month] }} {{ year }}">
                             <div class="calendar-header">{{ month_names[month] }} {{ year }}</div>
                             <div class="calendar-grid">
                                 {% for day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] %}
@@ -2060,6 +2099,66 @@
         }{% if not loop.last %},{% endif %}
         {% endfor %}
     ];
+
+    // Calendar navigation
+    let calendarMonths = [];
+    let currentMonthIndex = 0;
+
+    function initCalendar() {
+        const container = document.getElementById('calendar-container');
+        if (!container) return;
+
+        calendarMonths = Array.from(container.querySelectorAll('.calendar-month'));
+        if (calendarMonths.length === 0) return;
+
+        // Find the current month or default to first month with games
+        const now = new Date();
+        const currentMonthKey = now.toISOString().slice(0, 7);
+
+        // Try to find current month, otherwise show first month
+        let foundIndex = calendarMonths.findIndex(m => m.dataset.month === currentMonthKey);
+        currentMonthIndex = foundIndex >= 0 ? foundIndex : 0;
+
+        showMonth(currentMonthIndex);
+    }
+
+    function showMonth(index) {
+        if (index < 0 || index >= calendarMonths.length) return;
+
+        currentMonthIndex = index;
+
+        // Hide all months, show selected
+        calendarMonths.forEach((m, i) => {
+            m.classList.toggle('active', i === index);
+        });
+
+        // Update nav title
+        const titleEl = document.getElementById('calendar-nav-title');
+        if (titleEl && calendarMonths[index]) {
+            titleEl.textContent = calendarMonths[index].dataset.monthName;
+        }
+
+        // Update button states
+        const prevBtn = document.getElementById('prev-month-btn');
+        const nextBtn = document.getElementById('next-month-btn');
+        if (prevBtn) prevBtn.disabled = index === 0;
+        if (nextBtn) nextBtn.disabled = index === calendarMonths.length - 1;
+    }
+
+    function prevMonth() {
+        if (currentMonthIndex > 0) {
+            showMonth(currentMonthIndex - 1);
+        }
+    }
+
+    function nextMonth() {
+        if (currentMonthIndex < calendarMonths.length - 1) {
+            showMonth(currentMonthIndex + 1);
+        }
+    }
+
+    // Initialize calendar on page load
+    document.addEventListener('DOMContentLoaded', initCalendar);
 
     function showGameModal(el) {
         const modal = document.getElementById('gameModal');
