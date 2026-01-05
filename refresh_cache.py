@@ -446,8 +446,11 @@ def refresh_nuggets_schedule():
             try:
                 with open(history_file, 'r') as f:
                     history_data = json.load(f)
-                    if history_data.get('game_date') and history_data.get('balldontlie_id'):
-                        history_mappings[history_data['game_date']] = history_data['balldontlie_id']
+                    # game_id is the balldontlie_id, date is in game_info
+                    game_date = history_data.get('game_info', {}).get('date')
+                    game_id = history_data.get('game_id')
+                    if game_date and game_id:
+                        history_mappings[game_date] = game_id
             except Exception:
                 pass
 
