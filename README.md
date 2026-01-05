@@ -57,24 +57,28 @@ Visit `http://localhost:5001` in your browser.
 
 ### Refreshing the Cache
 
-The app reads from cached JSON files to avoid hitting NBA API rate limits. Refresh the cache to get updated stats:
+The app reads from cached JSON files to avoid hitting NBA API rate limits. Data is refreshed at different intervals:
 
 ```bash
 source venv/bin/activate
+
+# Full refresh (all data - for initial setup or manual refresh)
 python refresh_cache.py
+
+# Or run individual refresh scripts:
+python refresh_hourly.py   # Standings, recent games
+python refresh_daily.py    # Stats, schedule, odds, injuries
+python refresh_weekly.py   # Roster, contracts, salary cap
 ```
 
-This fetches:
-- Jokić career stats and per-game rankings
-- Team standings (East and West)
-- All-time records for Jokić to chase
-- Triple-double data for active players
-- League leaders for all stat categories
-- Nuggets roster, injuries, and contracts (via BALLDONTLIE)
-- Betting odds from multiple sources
-- Recent game results
+| Script | Data | Frequency |
+|--------|------|-----------|
+| `refresh_hourly.py` | Standings, recent games | Every hour |
+| `refresh_daily.py` | Jokić stats, all-time records, triple-doubles, league leaders, schedule, odds, injuries | Daily |
+| `refresh_weekly.py` | Roster, contracts, salary cap | Weekly |
+| `refresh_cache.py` | All of the above | Manual |
 
-**Note:** The NBA API can be slow and occasionally times out. The script handles this gracefully.
+**Note:** The NBA API can be slow and occasionally times out. The scripts handle this gracefully.
 
 ### One-Time Data Scrapes
 
@@ -115,8 +119,27 @@ sudo ./setup_server.sh
 | Process Manager | systemd (auto-restart on failure) |
 | SSL | Let's Encrypt via certbot (auto-renew) |
 | Firewall | UFW (ports 80, 443, 22) |
-| Cache Refresh | Cron daily at 6am MT |
+| Cache Refresh | Cron (hourly, daily, weekly) |
 | Logs | `/var/log/nbastats/` |
+
+### Live Game Daemon (Optional)
+
+The live daemon automatically captures win probability history during Nuggets games:
+
+```bash
+cd /var/www/nbastats
+sudo ./install_daemon.sh
+```
+
+This creates:
+- **Systemd service**: `nbastats-live` (auto-starts on boot)
+- **Log file**: `/var/log/nbastats/live_daemon.log` (rotated daily, 14-day retention)
+
+The daemon:
+- Polls every minute checking for games
+- Starts capturing 30 min before tip-off
+- Saves snapshots every 30 seconds during live games
+- Updates schedule with game history links when game ends
 
 ### Before Running the Script
 
@@ -139,8 +162,10 @@ sudo journalctl -u nbastats -f
 sudo tail -f /var/log/nbastats/access.log
 sudo tail -f /var/log/nbastats/error.log
 
-# View cache refresh logs
-sudo tail -f /var/log/nbastats/refresh.log
+# Live daemon commands
+sudo systemctl status nbastats-live
+sudo systemctl restart nbastats-live
+sudo tail -f /var/log/nbastats/live_daemon.log
 
 # Manually refresh cache
 cd /var/www/nbastats
@@ -150,41 +175,56 @@ sudo -u www-data ./venv/bin/python refresh_cache.py
 cd /var/www/nbastats
 sudo git pull
 sudo systemctl restart nbastats
+sudo systemctl restart nbastats-live  # If daemon is installed
 ```
 
-### Cron Job
+### Cron Jobs
 
-The cache automatically refreshes daily at 6am Mountain Time:
+The cache refreshes at different intervals:
 
+```bash
+# Hourly - standings and recent games
+0 * * * * cd /var/www/nbastats && ./venv/bin/python refresh_hourly.py > /dev/null 2>&1
+
+# Daily at 6am MT (13:00 UTC) - stats, schedule, odds, injuries
+0 13 * * * cd /var/www/nbastats && ./venv/bin/python refresh_daily.py > /dev/null 2>&1
+
+# Weekly on Sunday at 6am MT - roster, contracts, salary cap
+0 13 * * 0 cd /var/www/nbastats && ./venv/bin/python refresh_weekly.py > /dev/null 2>&1
 ```
-0 13 * * * www-data cd /var/www/nbastats && /var/www/nbastats/venv/bin/python refresh_cache.py
-```
-
-(13:00 UTC = 6:00 AM MT during daylight saving time)
 
 ## Project Structure
 
 ```
 nba_fun/
 ├── app.py                    # Flask application
-├── refresh_cache.py          # Main cache refresh (run via cron)
-├── refresh_balldontlie.py    # BALLDONTLIE API data fetch
-├── refresh_odds.py           # Betting odds fetch
+├── refresh_cache.py          # Full cache refresh (manual)
+├── refresh_hourly.py         # Hourly refresh (standings, recent games)
+├── refresh_daily.py          # Daily refresh (stats, schedule, odds, injuries)
+├── refresh_weekly.py         # Weekly refresh (roster, contracts, salary cap)
+├── refresh_balldontlie.py    # BALLDONTLIE API module
+├── refresh_odds.py           # Betting odds module
+├── live_daemon.py            # Live game tracking daemon
+├── install_daemon.sh         # Daemon installer (systemd + logrotate)
 ├── scrape_promotions.py      # One-time: scrape promotional schedule
-├── scrape_jerseys.py         # One-time: scrape jersey schedule from LockerVision
+├── scrape_jerseys.py         # One-time: scrape jersey schedule
 ├── requirements.txt          # Python dependencies
 ├── setup_server.sh           # Production server setup
 ├── templates/
 │   ├── index.html            # Main dashboard (schedule, injuries, standings)
 │   ├── jokic.html            # Jokić stats page
 │   ├── more.html             # Nuggets roster/contracts page
-│   └── leaders.html          # League leaders page
-├── cache/                    # Cached JSON data (gitignored, refreshed by cron)
+│   ├── leaders.html          # League leaders page
+│   ├── live.html             # Live game win probability
+│   └── live_history.html     # Historical game probability view
+├── cache/                    # Cached JSON data (refreshed by cron/daemon)
 │   ├── jokic_career.json
 │   ├── nuggets_schedule.json
 │   ├── injuries.json
 │   ├── contracts.json
 │   ├── standings.json
+│   ├── live_history/         # Win probability snapshots per game
+│   │   └── game_*.json
 │   └── ...
 └── data/                     # Static data files (checked into git)
     ├── special_events.json   # Promotional events for home games

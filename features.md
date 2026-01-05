@@ -96,15 +96,6 @@ The odds look weird in the "Upcoming Games" section. For the "Brooklyn Nets" gam
 
 Can we clean up the refresh_*.py scripts?  I think some are redundant now.  Can we get rid of whichever ones aren't needed?
 
-
---
-
-On a few of the pop up details from clicking on a game on the calendar is getting way too tall (usually when there is a lot of injuried players) because there is no way to scroll.   Maybe we should make it wider?
-
-
-Would it be possible to use the BallDontLie betting odds to report to build a live game perdiction when games are happening?  Maybe make a graph out of it?   Since they have so many bookmakers this should give a good overall prediction right?  Is there any other way to do a live game prediction?    Let's make a new "Live" page.  There is a Nuggets game starting soon that we can use as a test.
-
-
 Is there a way to keep the contract data refresh in the scripts but make it refresh at a slower rate, like weekly?
 
 
@@ -118,3 +109,62 @@ Let's work on the graph on the live page.   Can we have vertical lines marking e
 Can we make the dots on the graph smaller.   Can we fill in the graph on the probability graph between the line and EVEN line?   Yellow on the top (for nuggets), some other color for the opponent.  It would be great if we can dynamically find a color that matches the oponent.
 
 Can we also add red gap lines in the probablity line graph to illustrate the largest of each team's win probablity?
+
+
+the refresh cache script does a bunch of work and calls two other scripts to do work.   Let's split all this work into a set of three scripts that are run (a) hourly, (b) daily, and (c) weekly.
+
+I'll use the printing to standard out that refresh_cache.py is doing to describe them:
+
+ (a) hourly
+[2/6] Fetching team standings...
+Refreshing BALLDONTLIE data - [Recent Games]
+
+ (b) daily
+[1/6] Fetching Jokic career stats...
+[3/6] Fetching all-time records...
+[4/6] Fetching triple-double data (current season only)...
+[5/6] Fetching league leaders...
+[6/6] Fetching Nuggets schedule and odds...
+[7/7] Refreshing odds data...
+Refreshing BALLDONTLIE data - [Injuries]
+Refreshing BALLDONTLIE data - [Jokic Stats]
+
+ (c) weekly
+Refreshing BALLDONTLIE data - [Roster]
+Refreshing BALLDONTLIE data - [Contracts]
+Refreshing BALLDONTLIE data - [Salary Cap Status]
+
+
+
+Can you be sure to update the .claude docs and user documentation with the changes from today.
+
+
+--
+
+On a few of the pop up details from clicking on a game on the calendar is getting way too tall (usually when there is a lot of injuried players) because there is no way to scroll.   Maybe we should make it wider?
+
+
+Would it be possible to use the BallDontLie betting odds to report to build a live game perdiction when games are happening?  Maybe make a graph out of it?   Since they have so many bookmakers this should give a good overall prediction right?  Is there any other way to do a live game prediction?    Let's make a new "Live" page.  There is a Nuggets game starting soon that we can use as a test.
+
+
+
+
+
+
+Now let's think deeply abobut a good solution for moving the data from the live page to a historical page (and updating the calendar with the link) automatically so a user doesn't have to be viewing it.  Could we build a long lived daemon that could take care of this automatically?   Have it run via systemd on ubuntu?   If so, go ahead and build it all and create an installer shell script to put it in place with logging to a log file that is rotated by logrotate.
+
+
+
+When the odds refreshing is in progress it appears to clear out the local cache file while it works, and if you refresh the webpage at the exact same time you see "No games with odds available yet." until it finishes.   Is there a way we can write to a seperate file and only replace the live file when it's complete?   I'm open to any other solution to avoid this delay.  It's a problem because it can take a minute or two to process all the odds it seems.
+
+
+There seems to be text in the background of the game from today on the calendar that is hard to read.  What is that text?  Why is it there?
+
+
+Can you combine everything from the local permissions file to the project permissions file
+
+
+Can you replace any documentation we have with cron examples with this format:
+0 * * * * /var/www/nbastats/venv/bin/python /var/www/nbastats/refresh_hourly.py > /dev/null 2>&1
+0 6 * * * /var/www/nbastats/venv/bin/python /var/www/nbastats/refresh_daily.py > /dev/null 2>&1
+0 6 * * 0 /var/www/nbastats/venv/bin/python /var/www/nbastats/refresh_weekly.py > /dev/null 2>&1

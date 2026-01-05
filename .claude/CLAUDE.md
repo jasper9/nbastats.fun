@@ -13,17 +13,25 @@ A Flask-based dashboard for tracking Nikola Jokić and Denver Nuggets stats, sta
 - `templates/leaders.html` - League leaders by stat category
 - `templates/live.html` - Live game win probability tracker
 
-### Data Refresh
-- `refresh_cache.py` - **Main script** - refreshes all data (run daily via cron)
-- `refresh_balldontlie.py` - Module with BALLDONTLIE API functions (imported by refresh_cache.py)
-- `refresh_odds.py` - Module with odds API functions (imported by refresh_cache.py)
+### Data Refresh Scripts
+- `refresh_cache.py` - **Full refresh** - runs all data refreshes (for manual use)
+- `refresh_hourly.py` - Standings, recent games (run via hourly cron)
+- `refresh_daily.py` - Stats, schedule, odds, injuries (run via daily cron)
+- `refresh_weekly.py` - Roster, contracts, salary cap (run via weekly cron)
+- `refresh_balldontlie.py` - Module with BALLDONTLIE API functions
+- `refresh_odds.py` - Module with odds API functions
+
+### Live Game Daemon
+- `live_daemon.py` - Long-running daemon for automatic game history capture
+- `install_daemon.sh` - Installer script for systemd service + logrotate
 
 ### Cache Files (in `cache/`)
 - `jokic_career.json` - Career stats and season rankings
-- `nuggets_schedule.json` - Schedule with odds data
+- `nuggets_schedule.json` - Schedule with odds data and `balldontlie_id` for history linking
 - `injuries.json` - Injury report with content change tracking
 - `contracts.json` - Player contracts with extension info
 - `standings.json`, `roster.json`, `recent_games.json`, etc.
+- `live_history/game_*.json` - Win probability snapshots for completed games
 
 ### Static Data Files (in `data/`)
 - `special_events.json` - Promotional events/giveaways for home games
@@ -118,6 +126,26 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 - Auto-refreshes every 30 seconds
 - Game states: PRE-GAME, LIVE (with quarter/time), FINAL
 
+### Live Game History
+- `/live/<game_id>` shows historical win probability for completed games
+- Snapshots stored in `cache/live_history/game_*.json`
+- Calendar links to history via `balldontlie_id` field in schedule
+- Charts show: probability swing with max gaps, score progression
+- Box score with quarter-by-quarter highlights (winner in green)
+- **Live daemon** (`live_daemon.py`) automatically captures snapshots during games
+
+### Live Daemon
+The live daemon runs as a systemd service to automatically capture game data:
+- Checks every minute for Nuggets games
+- Starts polling 30 min before game time
+- Captures snapshots every 30 seconds during live games
+- Updates schedule cache with `balldontlie_id` when game ends
+- Handles timezone differences (parses ET/CT/MT/PT from API)
+- Logs to `/var/log/nbastats/live_daemon.log`
+
+Install with: `sudo ./install_daemon.sh`
+Control with: `sudo systemctl [start|stop|restart|status] nbastats-live`
+
 ## Testing Changes
 1. Run Flask: `source venv/bin/activate && python app.py`
 2. **Use Claude in Chrome extension** to visually verify UI changes at `http://localhost:5001`
@@ -129,10 +157,33 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 ## Common Tasks
 
-### Refresh all data
+### Refresh data (by frequency)
 ```bash
 source venv/bin/activate
+
+# Full refresh (all data)
 python refresh_cache.py
+
+# Hourly data only (standings, recent games)
+python refresh_hourly.py
+
+# Daily data only (stats, schedule, odds, injuries)
+python refresh_daily.py
+
+# Weekly data only (roster, contracts, salary cap)
+python refresh_weekly.py
+```
+
+### Production cron setup
+```bash
+# Hourly - standings and recent games
+0 * * * * cd /var/www/nbastats && ./venv/bin/python refresh_hourly.py > /dev/null 2>&1
+
+# Daily at 6am MT (13:00 UTC) - stats, schedule, odds
+0 13 * * * cd /var/www/nbastats && ./venv/bin/python refresh_daily.py > /dev/null 2>&1
+
+# Weekly on Sunday at 6am MT - roster, contracts
+0 13 * * 0 cd /var/www/nbastats && ./venv/bin/python refresh_weekly.py > /dev/null 2>&1
 ```
 
 ### Check API responses
