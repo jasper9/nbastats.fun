@@ -449,6 +449,9 @@
     <script>
         const snapshots = {{ history.snapshots|tojson }};
         const opponentName = "{{ history.game_info.opponent_name }}";
+        const finalNuggetsScore = {{ history.final_score.nuggets or 0 }};
+        const finalOpponentScore = {{ history.final_score.opponent or 0 }};
+        const finalScoreDiff = finalNuggetsScore - finalOpponentScore;
 
         // Set opponent name in box score
         const oppAbbrev = opponentName.split(' ').pop().substring(0, 3).toUpperCase();
@@ -790,12 +793,12 @@
             };
         }
 
-        // Final score difference - vertical line with navy label
-        const isFinalMaxNuggetsLead = currentDiff > 0 && currentDiff === maxNuggetsLead;
-        const isFinalMaxOppLead = currentDiff < 0 && currentDiff === maxOppLead;
-        if (!isFinalMaxNuggetsLead && !isFinalMaxOppLead && currentDiff !== 0) {
-            const yTop = currentDiff > 0 ? nuggetsScores[lastIdx] : opponentScores[lastIdx];
-            const yBot = currentDiff > 0 ? opponentScores[lastIdx] : nuggetsScores[lastIdx];
+        // Final score difference - vertical line with navy label (use actual final score)
+        const isFinalMaxNuggetsLead = finalScoreDiff > 0 && finalScoreDiff === maxNuggetsLead;
+        const isFinalMaxOppLead = finalScoreDiff < 0 && finalScoreDiff === maxOppLead;
+        if (!isFinalMaxNuggetsLead && !isFinalMaxOppLead && finalScoreDiff !== 0) {
+            const yTop = finalScoreDiff > 0 ? finalNuggetsScore : finalOpponentScore;
+            const yBot = finalScoreDiff > 0 ? finalOpponentScore : finalNuggetsScore;
             scoreAnnotations.finalDiff = {
                 type: 'line',
                 xMin: lastIdx,
@@ -806,7 +809,7 @@
                 borderWidth: 3,
                 label: {
                     display: true,
-                    content: `Final ${currentDiff > 0 ? '+' : ''}${currentDiff}`,
+                    content: `Final ${finalScoreDiff > 0 ? '+' : ''}${finalScoreDiff}`,
                     position: 'end',
                     xAdjust: -20,
                     backgroundColor: '#1e3a5f',
