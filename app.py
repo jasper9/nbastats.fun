@@ -539,6 +539,9 @@ def more():
     # Current year for contract status display
     current_year = datetime.now().year
 
+    # Get game IDs with live history data
+    live_history_ids = get_live_history_game_ids()
+
     return render_template('more.html',
         roster=roster,
         recent_games=recent_games,
@@ -547,7 +550,8 @@ def more():
         contracts=contracts,
         salary_cap=salary_cap,
         current_year=current_year,
-        cache_time=cache_time
+        cache_time=cache_time,
+        live_history_ids=live_history_ids
     )
 
 

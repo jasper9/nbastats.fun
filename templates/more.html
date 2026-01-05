@@ -149,9 +149,14 @@
             background: #991b1b;
             color: #fca5a5;
         }
-        .quarter-scores {
-            color: var(--text-muted);
-            font-size: 0.8rem;
+        .game-history-link {
+            color: var(--nuggets-gold);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .game-history-link:hover {
+            color: #fff;
+            text-decoration: underline;
         }
 
         /* Roster */
@@ -710,23 +715,28 @@
                     <th>Opponent</th>
                     <th>Result</th>
                     <th>Score</th>
-                    <th>Quarters</th>
                 </tr>
             </thead>
             <tbody>
                 {% for game in recent_games %}
+                {% set has_history = game.id|string in live_history_ids %}
                 <tr>
-                    <td>{{ game.date }}</td>
-                    <td>{{ '@' if not game.is_home else 'vs' }} {{ game.opponent }}</td>
-                    <td><span class="result-badge {{ game.result }}">{{ game.result }}</span></td>
-                    <td>{{ game.nuggets_score }} - {{ game.opponent_score }}</td>
-                    <td class="quarter-scores">
-                        {% if game.is_home %}
-                        {{ game.home_q1 }}-{{ game.visitor_q1 }} | {{ game.home_q2 }}-{{ game.visitor_q2 }} | {{ game.home_q3 }}-{{ game.visitor_q3 }} | {{ game.home_q4 }}-{{ game.visitor_q4 }}{% if game.home_ot1 %} | OT: {{ game.home_ot1 }}-{{ game.visitor_ot1 }}{% endif %}
+                    <td>
+                        {% if has_history %}
+                        <a href="/live/{{ game.id }}" class="game-history-link">{{ game.date }}</a>
                         {% else %}
-                        {{ game.visitor_q1 }}-{{ game.home_q1 }} | {{ game.visitor_q2 }}-{{ game.home_q2 }} | {{ game.visitor_q3 }}-{{ game.home_q3 }} | {{ game.visitor_q4 }}-{{ game.home_q4 }}{% if game.visitor_ot1 %} | OT: {{ game.visitor_ot1 }}-{{ game.home_ot1 }}{% endif %}
+                        {{ game.date }}
                         {% endif %}
                     </td>
+                    <td>
+                        {% if has_history %}
+                        <a href="/live/{{ game.id }}" class="game-history-link">{{ '@' if not game.is_home else 'vs' }} {{ game.opponent }}</a>
+                        {% else %}
+                        {{ '@' if not game.is_home else 'vs' }} {{ game.opponent }}
+                        {% endif %}
+                    </td>
+                    <td><span class="result-badge {{ game.result }}">{{ game.result }}</span></td>
+                    <td>{{ game.nuggets_score }} - {{ game.opponent_score }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
