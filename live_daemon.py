@@ -110,14 +110,25 @@ def ml_to_prob(ml):
 
 
 def get_todays_game(api_key):
-    """Check if there's a Nuggets game today and return game info."""
+    """Check if there's a Nuggets game today (or still in progress from yesterday).
+
+    Queries both today and yesterday to handle:
+    - Late-night West Coast games that cross midnight in other timezones
+    - Games that started yesterday but are still live
+    """
     now = datetime.now(MOUNTAIN_TZ)
     today = now.strftime('%Y-%m-%d')
+    yesterday = (now - timedelta(days=1)).strftime('%Y-%m-%d')
 
     try:
+        # Query both today and yesterday to catch edge cases
         resp = requests.get(
             'https://api.balldontlie.io/v1/games',
-            params={'team_ids[]': NUGGETS_ID, 'dates[]': today, 'per_page': 10},
+            params={
+                'team_ids[]': NUGGETS_ID,
+                'dates[]': [yesterday, today],
+                'per_page': 10
+            },
             headers={'Authorization': api_key},
             timeout=15
         )
@@ -127,15 +138,54 @@ def get_todays_game(api_key):
         if not games:
             return None
 
-        return games[0]
+        # Prioritize:
+        # 1. Any live game (regardless of date)
+        # 2. Today's scheduled game
+        # 3. Yesterday's game if it's Final (might still need final processing)
+        live_game = None
+        todays_game = None
+        yesterdays_final = None
+
+        for game in games:
+            status = game.get('status', '')
+            game_date = game.get('date', '')
+            home_score = game.get('home_team_score', 0) or 0
+            away_score = game.get('visitor_team_score', 0) or 0
+
+            # Check if game is live
+            is_live = (home_score > 0 or away_score > 0) and status != 'Final'
+
+            if is_live:
+                live_game = game
+                break  # Live game takes priority
+            elif game_date == today and status != 'Final':
+                todays_game = game
+            elif game_date == yesterday and status == 'Final':
+                yesterdays_final = game
+
+        # Return in priority order
+        if live_game:
+            logger.debug(f"Found live game: {live_game.get('id')}")
+            return live_game
+        elif todays_game:
+            logger.debug(f"Found today's scheduled game: {todays_game.get('id')}")
+            return todays_game
+        elif yesterdays_final:
+            # Only return if we might need to do final processing
+            logger.debug(f"Found yesterday's final game: {yesterdays_final.get('id')}")
+            return yesterdays_final
+
+        return None
+
     except Exception as e:
-        logger.error(f"Error fetching today's game: {e}")
+        logger.error(f"Error fetching games: {e}")
         return None
 
 
 def fetch_live_data(api_key, game):
     """Fetch live game data including odds."""
     game_id = game.get('id')
+    game_date = game.get('date', '')  # Use the game's actual date from API
     status = game.get('status', '')
     home_team = game.get('home_team', {})
     away_team = game.get('visitor_team', {})
@@ -162,16 +212,15 @@ def fetch_live_data(api_key, game):
     time_remaining = game.get('time', '')
 
     now = datetime.now(MOUNTAIN_TZ)
-    today = now.strftime('%Y-%m-%d')
 
-    # Fetch live odds
+    # Fetch live odds using the game's actual date
     consensus_prob = None
     vendor_count = 0
 
     try:
         odds_resp = requests.get(
             'https://api.balldontlie.io/v2/odds',
-            params={'dates[]': today, 'per_page': 100},
+            params={'dates[]': game_date, 'per_page': 100},
             headers={'Authorization': api_key},
             timeout=15
         )
@@ -221,7 +270,7 @@ def fetch_live_data(api_key, game):
         'consensus_prob': consensus_prob,
         'vendor_count': vendor_count,
         'timestamp': now.isoformat(),
-        'date': today,
+        'date': game_date,  # Use the game's actual date from API
     }
 
 
@@ -357,29 +406,47 @@ def update_recent_games(data):
 
 
 def get_game_start_time(game):
-    """Parse game start time from API response."""
-    # BALLDONTLIE returns status like "7:00 PM ET" for scheduled games
+    """Parse game start time from API response.
+
+    BALLDONTLIE returns status like "7:00 PM ET" or "10:30 PM PT" for scheduled games.
+    We need to parse the timezone from the string and use the game's date field.
+    """
     status = game.get('status', '')
+    game_date = game.get('date', '')  # API returns game date as YYYY-MM-DD
 
     # If it's a time string, parse it
-    if 'PM' in status or 'AM' in status:
+    if ('PM' in status or 'AM' in status) and game_date:
         try:
-            # Parse the time (assuming ET timezone)
-            now = datetime.now(MOUNTAIN_TZ)
-            today_str = now.strftime('%Y-%m-%d')
+            # Map timezone abbreviations to ZoneInfo names
+            tz_map = {
+                'ET': 'America/New_York',
+                'CT': 'America/Chicago',
+                'MT': 'America/Denver',
+                'PT': 'America/Los_Angeles',
+            }
 
-            # Clean up the time string
-            time_str = status.replace(' ET', '').replace(' PT', '').replace(' MT', '').strip()
+            # Extract timezone from status string
+            game_tz = None
+            time_str = status
+            for tz_abbrev, tz_name in tz_map.items():
+                if tz_abbrev in status:
+                    game_tz = ZoneInfo(tz_name)
+                    time_str = status.replace(f' {tz_abbrev}', '').strip()
+                    break
 
-            # Parse as Eastern time
-            eastern = ZoneInfo('America/New_York')
-            game_time = datetime.strptime(f"{today_str} {time_str}", '%Y-%m-%d %I:%M %p')
-            game_time = game_time.replace(tzinfo=eastern)
+            if not game_tz:
+                # Default to Eastern if no timezone found
+                game_tz = ZoneInfo('America/New_York')
+                logger.warning(f"No timezone found in '{status}', defaulting to ET")
 
-            # Convert to Mountain
-            return game_time.astimezone(MOUNTAIN_TZ)
+            # Parse using the game's actual date from the API
+            game_time = datetime.strptime(f"{game_date} {time_str}", '%Y-%m-%d %I:%M %p')
+            game_time = game_time.replace(tzinfo=game_tz)
+
+            return game_time
+
         except Exception as e:
-            logger.warning(f"Could not parse game time '{status}': {e}")
+            logger.warning(f"Could not parse game time '{status}' for date {game_date}: {e}")
 
     return None
 
