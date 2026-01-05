@@ -15,7 +15,7 @@
     {% endif %}
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23f85' stroke='%23333' stroke-width='3'/><path d='M50 5 v90 M5 50 h90 M15 20 Q50 50 15 80 M85 20 Q50 50 85 80' fill='none' stroke='%23333' stroke-width='3'/></svg>">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.1.0/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
         :root {
@@ -567,6 +567,7 @@
         }
 
         const opponentColor = getTeamColor(opponentName);
+        const opponentColorWithAlpha = opponentColor + '66';  // Add 40% opacity
 
         // Find max swings for both teams (probability chart)
         let maxNuggetsSwing = 0, maxNuggetsSwingIdx = 0;
@@ -685,10 +686,12 @@
                     fill: {
                         target: { value: 0 },
                         above: 'rgba(254, 197, 36, 0.4)',
-                        below: 'rgba(107, 114, 128, 0.4)',
+                        below: opponentColorWithAlpha,
                     },
                     tension: 0.3,
                     pointRadius: 0,
+                    pointHoverRadius: 4,
+                    pointBackgroundColor: '#fec524',
                 }]
             },
             options: {
@@ -830,16 +833,20 @@
                         fill: false,
                         tension: 0.1,
                         pointRadius: 0,
+                        pointHoverRadius: 4,
+                        pointBackgroundColor: '#fec524',
                     },
                     {
-                        label: oppAbbrev,
+                        label: opponentName.replace('Brooklyn ', '').replace('Los Angeles ', 'LA '),
                         data: opponentScores,
                         borderColor: opponentColor,
+                        pointBackgroundColor: opponentColor,
                         backgroundColor: 'rgba(107, 114, 128, 0.1)',
                         borderWidth: 2,
                         fill: false,
                         tension: 0.1,
                         pointRadius: 0,
+                        pointHoverRadius: 4,
                     }
                 ]
             },

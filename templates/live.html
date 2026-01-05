@@ -288,41 +288,31 @@
         /* Box Score */
         .box-score-section {
             background: var(--bg-secondary);
-            border-radius: 12px;
+            border-radius: 8px;
             padding: 15px;
             margin: 15px 0;
-        }
-        .box-score-title {
-            font-family: 'Oswald', sans-serif;
-            font-size: 1.2rem;
-            color: var(--text-primary);
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
         }
         .box-score-table {
             width: 100%;
             border-collapse: collapse;
+            font-family: 'Oswald', sans-serif;
         }
         .box-score-table th,
         .box-score-table td {
-            padding: 10px 8px;
+            padding: 8px 12px;
             text-align: center;
             border-bottom: 1px solid var(--border);
         }
         .box-score-table th {
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             color: var(--text-muted);
-            text-transform: uppercase;
             font-weight: 500;
         }
-        .box-score-table th:first-child,
-        .box-score-table td:first-child {
+        .box-score-table .team-name {
             text-align: left;
             font-weight: 600;
         }
         .box-score-table td {
-            font-family: 'Oswald', sans-serif;
             font-size: 1.1rem;
         }
         .box-score-table .team-nuggets {
@@ -333,12 +323,80 @@
         }
         .box-score-table .total-col {
             font-weight: 700;
-            font-size: 1.3rem;
             border-left: 2px solid var(--border);
         }
-        .box-score-table .quarter-winner {
-            background: rgba(254, 197, 36, 0.15);
+        .box-score-table .quarter-win {
+            color: var(--positive);
+            font-weight: 700;
         }
+        .box-score-table .quarter-loss {
+            color: var(--text-muted);
+        }
+        /* Player Stats Table */
+        .player-stats-section {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 15px 0;
+            display: none;
+        }
+        .player-stats-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .player-stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.72rem;
+        }
+        .player-stats-table th {
+            background: var(--bg-card);
+            color: var(--text-muted);
+            font-family: 'Oswald', sans-serif;
+            font-weight: 500;
+            font-size: 0.65rem;
+            padding: 6px 2px;
+            text-align: center;
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+        }
+        .player-stats-table th.player-col {
+            text-align: left;
+            padding-left: 8px;
+        }
+        .player-stats-table td {
+            padding: 5px 2px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .player-stats-table td.player-col {
+            text-align: left;
+            padding-left: 8px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .player-stats-table tr:hover {
+            background: rgba(254, 197, 36, 0.1);
+        }
+        .player-stats-table .positive {
+            color: var(--positive);
+        }
+        .player-stats-table .negative {
+            color: var(--negative);
+        }
+        .player-stats-table .highlight {
+            color: var(--nuggets-gold);
+            font-weight: 600;
+        }
+        .player-stats-table .pct {
+            color: var(--text-secondary);
+            font-size: 0.65rem;
+        }
+
         /* No Game State */
         .no-game {
             text-align: center;
@@ -471,22 +529,21 @@
             </div>
 
             <div class="box-score-section">
-                <div class="box-score-title">Box Score</div>
                 <table class="box-score-table">
                     <thead>
                         <tr>
-                            <th>Team</th>
+                            <th class="team-name">Team</th>
                             <th>Q1</th>
                             <th>Q2</th>
                             <th>Q3</th>
                             <th>Q4</th>
                             <th id="ot-header" style="display: none;">OT</th>
-                            <th>Total</th>
+                            <th class="total-col">T</th>
                         </tr>
                     </thead>
                     <tbody id="box-score-body">
                         <tr class="team-nuggets">
-                            <td id="box-nuggets-name">DEN</td>
+                            <td id="box-nuggets-name" class="team-name">DEN</td>
                             <td id="box-nuggets-q1">-</td>
                             <td id="box-nuggets-q2">-</td>
                             <td id="box-nuggets-q3">-</td>
@@ -495,7 +552,7 @@
                             <td id="box-nuggets-total" class="total-col">-</td>
                         </tr>
                         <tr class="team-opponent">
-                            <td id="box-opponent-name">OPP</td>
+                            <td id="box-opponent-name" class="team-name">OPP</td>
                             <td id="box-opponent-q1">-</td>
                             <td id="box-opponent-q2">-</td>
                             <td id="box-opponent-q3">-</td>
@@ -503,6 +560,40 @@
                             <td id="box-opponent-ot" style="display: none;">-</td>
                             <td id="box-opponent-total" class="total-col">-</td>
                         </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Player Stats (shown when available from history) -->
+            <div class="player-stats-section" id="player-stats-section">
+                <div class="player-stats-title">Nuggets Player Stats</div>
+                <table class="player-stats-table">
+                    <thead>
+                        <tr>
+                            <th class="player-col">Player</th>
+                            <th>MIN</th>
+                            <th>PTS</th>
+                            <th>REB</th>
+                            <th>AST</th>
+                            <th>STL</th>
+                            <th>BLK</th>
+                            <th>FGM</th>
+                            <th>FGA</th>
+                            <th>FG%</th>
+                            <th>3PM</th>
+                            <th>3PA</th>
+                            <th>3P%</th>
+                            <th>FTM</th>
+                            <th>FTA</th>
+                            <th>FT%</th>
+                            <th>OREB</th>
+                            <th>DREB</th>
+                            <th>TOV</th>
+                            <th>PF</th>
+                            <th>+/-</th>
+                        </tr>
+                    </thead>
+                    <tbody id="player-stats-body">
                     </tbody>
                 </table>
             </div>
@@ -1192,13 +1283,17 @@
                 nEl.textContent = nScore > 0 ? nScore : '-';
                 oEl.textContent = oScore > 0 ? oScore : '-';
 
-                // Highlight quarter winner
-                nEl.classList.remove('quarter-winner');
-                oEl.classList.remove('quarter-winner');
-                if (nScore > oScore && nScore > 0) {
-                    nEl.classList.add('quarter-winner');
-                } else if (oScore > nScore && oScore > 0) {
-                    oEl.classList.add('quarter-winner');
+                // Highlight quarter winner/loser with color
+                nEl.classList.remove('quarter-win', 'quarter-loss');
+                oEl.classList.remove('quarter-win', 'quarter-loss');
+                if (nScore > 0 && oScore > 0) {
+                    if (nScore > oScore) {
+                        nEl.classList.add('quarter-win');
+                        oEl.classList.add('quarter-loss');
+                    } else if (oScore > nScore) {
+                        oEl.classList.add('quarter-win');
+                        nEl.classList.add('quarter-loss');
+                    }
                 }
             }
 
@@ -1209,6 +1304,64 @@
             // Update team names
             document.getElementById('box-opponent-name').textContent =
                 opponentName.split(' ').pop().toUpperCase().slice(0, 3) || 'OPP';
+        }
+
+        // Helper function to shorten player names
+        function shortenName(name) {
+            const parts = name.split(' ');
+            const suffixes = ['II', 'III', 'IV', 'Jr.', 'Sr.'];
+            if (parts.length > 2 && suffixes.includes(parts[parts.length - 1])) {
+                // Has suffix: "DaRon Holmes II" -> "D. Holmes II"
+                return `${parts[0][0]}. ${parts[parts.length - 2]} ${parts[parts.length - 1]}`;
+            }
+            // Normal: "Nikola Jokic" -> "N. Jokic"
+            return `${parts[0][0]}. ${parts[parts.length - 1]}`;
+        }
+
+        // Render player stats table
+        function renderPlayerStats(playerStats) {
+            if (!playerStats || playerStats.length === 0) {
+                document.getElementById('player-stats-section').style.display = 'none';
+                return;
+            }
+
+            const tbody = document.getElementById('player-stats-body');
+            tbody.innerHTML = playerStats.map(p => {
+                const ptsClass = p.pts >= 20 ? 'highlight' : '';
+                const rebClass = p.reb >= 10 ? 'highlight' : '';
+                const astClass = p.ast >= 10 ? 'highlight' : '';
+                const pmClass = p.plus_minus > 0 ? 'positive' : (p.plus_minus < 0 ? 'negative' : '');
+                const pmValue = p.plus_minus ? (p.plus_minus > 0 ? '+' + p.plus_minus : p.plus_minus) : '0';
+                const fgPct = p.fg_pct ? (p.fg_pct * 100).toFixed(1) : '-';
+                const fg3Pct = p.fg3_pct ? (p.fg3_pct * 100).toFixed(1) : '-';
+                const ftPct = p.ft_pct ? (p.ft_pct * 100).toFixed(1) : '-';
+
+                return `<tr>
+                    <td class="player-col">${shortenName(p.name)}</td>
+                    <td>${p.min}</td>
+                    <td class="${ptsClass}">${p.pts}</td>
+                    <td class="${rebClass}">${p.reb}</td>
+                    <td class="${astClass}">${p.ast}</td>
+                    <td>${p.stl}</td>
+                    <td>${p.blk}</td>
+                    <td>${p.fgm}</td>
+                    <td>${p.fga}</td>
+                    <td class="pct">${fgPct}</td>
+                    <td>${p.fg3m}</td>
+                    <td>${p.fg3a}</td>
+                    <td class="pct">${fg3Pct}</td>
+                    <td>${p.ftm}</td>
+                    <td>${p.fta}</td>
+                    <td class="pct">${ftPct}</td>
+                    <td>${p.oreb}</td>
+                    <td>${p.dreb}</td>
+                    <td>${p.tov}</td>
+                    <td>${p.pf}</td>
+                    <td class="${pmClass}">${pmValue}</td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('player-stats-section').style.display = 'block';
         }
 
         async function loadHistory(gameId) {
@@ -1261,6 +1414,11 @@
                 updateQuarterLines();
                 updateMaxLeadLine();
                 updateMaxProbLines();
+
+                // Render player stats if available
+                if (history.player_stats && history.player_stats.length > 0) {
+                    renderPlayerStats(history.player_stats);
+                }
 
                 // Update box score with last known values
                 const lastPeriod = periodHistory[periodHistory.length - 1] || 0;
