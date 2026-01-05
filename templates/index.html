@@ -1284,20 +1284,34 @@
             font-weight: bold;
         }
         .calendar-game .beat-odds-indicator {
-            position: absolute;
-            bottom: 3px;
-            right: 4px;
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             font-weight: bold;
             padding: 1px 3px;
             border-radius: 2px;
             background: rgba(0,0,0,0.3);
         }
-        .calendar-game .beat-odds-indicator.covered {
+        .calendar-game .beat-odds-indicator.covered,
+        .beat-odds-indicator.covered {
             color: #4ade80;
         }
-        .calendar-game .beat-odds-indicator.not-covered {
+        .calendar-game .beat-odds-indicator.not-covered,
+        .beat-odds-indicator.not-covered {
             color: #f87171;
+        }
+        .calendar-legend {
+            text-align: center;
+            padding: 10px 0 5px 0;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .calendar-legend .legend-item {
+            margin: 0 12px;
+        }
+        .calendar-legend .beat-odds-indicator {
+            font-size: 0.7rem;
+            padding: 1px 4px;
+            border-radius: 2px;
+            background: rgba(0,0,0,0.3);
         }
         .game-modal-special {
             background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
@@ -1905,10 +1919,11 @@
                                         <div class="special-indicator" title="{{ special.title }}">*</div>
                                         {% endif %}
                                         {% if beat_odds and beat_odds.covered_spread is defined %}
-                                        <div class="beat-odds-indicator {{ 'covered' if beat_odds.covered_spread else 'not-covered' }}"
+                                        <br>
+                                        <span class="beat-odds-indicator {{ 'covered' if beat_odds.covered_spread else 'not-covered' }}"
                                              title="{{ 'Covered ' ~ beat_odds.spread ~ ' spread' if beat_odds.covered_spread else 'Did not cover ' ~ beat_odds.spread ~ ' spread' }}">
                                             {{ 'ATS✓' if beat_odds.covered_spread else 'ATS✗' }}
-                                        </div>
+                                        </span>
                                         {% endif %}
                                     </div>
                                     {% endfor %}
@@ -1919,6 +1934,10 @@
                         {% endfor %}
                     </div>
                 </div>
+            </div>
+            <div class="calendar-legend">
+                <span class="legend-item"><span class="beat-odds-indicator covered">ATS✓</span> = Covered the spread</span>
+                <span class="legend-item"><span class="beat-odds-indicator not-covered">ATS✗</span> = Did not cover</span>
             </div>
         </div>
         {% endif %}
