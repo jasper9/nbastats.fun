@@ -388,7 +388,12 @@
                     {% for p in history.player_stats %}
                     <tr>
                         {% set name_parts = p.name.split() %}
+                        {% set suffixes = ['II', 'III', 'IV', 'Jr.', 'Sr.'] %}
+                        {% if name_parts|length > 2 and name_parts[-1] in suffixes %}
+                        <td class="player-col">{{ name_parts[0][0] }}. {{ name_parts[-2] }} {{ name_parts[-1] }}</td>
+                        {% else %}
                         <td class="player-col">{{ name_parts[0][0] }}. {{ name_parts[-1] }}</td>
+                        {% endif %}
                         <td>{{ p.min }}</td>
                         <td class="{% if p.pts >= 20 %}highlight{% endif %}">{{ p.pts }}</td>
                         <td class="{% if p.reb >= 10 %}highlight{% endif %}">{{ p.reb }}</td>
