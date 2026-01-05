@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(mkdir:*)",
+      "Bash(python app.py:*)",
+      "Bash(cat:*)",
+      "Bash(python refresh_cache.py:*)",
+      "Bash(python:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(bash -n:*)",
+      "Bash(git restore:*)",
+      "Bash(curl:*)",
+      "WebSearch",
+      "Bash(git mv:*)",
+      "Bash(pgrep:*)",
+      "Bash(echo:*)",
+      "WebFetch(domain:www.nba.com)",
+      "WebFetch(domain:lockervision.nba.com)",
+      "WebFetch(domain:developer.sportradar.com)",
+      "WebFetch(domain:gleague.nba.com)",
+      "WebFetch(domain:www.spotrac.com)",
+      "Bash(time curl -s http://127.0.0.1:5001/api/live)",
+      "Bash(git push)"
+    ]
+  }
+}
