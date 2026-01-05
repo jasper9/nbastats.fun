@@ -524,9 +524,10 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {% set score_diff = (history.final_score.nuggets or 0) - (history.final_score.opponent or 0) %}
                     <tr class="totals-row">
                         <td class="player-col">TOTAL</td>
-                        <td class="min-col">240</td>
+                        <td class="min-col"></td>
                         <td class="stat-col">{{ totals.pts }}</td>
                         <td class="stat-col">{{ totals.reb }}</td>
                         <td class="stat-col">{{ totals.ast }}</td>
@@ -545,7 +546,7 @@
                         <td class="stat-col">{{ totals.dreb }}</td>
                         <td class="stat-col">{{ totals.tov }}</td>
                         <td class="stat-col">{{ totals.pf }}</td>
-                        <td class="stat-col">-</td>
+                        <td class="stat-col {% if score_diff > 0 %}positive{% elif score_diff < 0 %}negative{% endif %}">{{ '%+d'|format(score_diff) }}</td>
                     </tr>
                 </tbody>
             </table>
