@@ -8,10 +8,11 @@ A Flask-based dashboard for tracking Nikola Jokić and Denver Nuggets stats, sta
 ### Core Application
 - `app.py` - Flask app with routes and template filters
 - `templates/index.html` - Main dashboard (schedule, injuries, standings)
-- `templates/jokic.html` - Dedicated Jokić page (career stats, triple-doubles, records)
-- `templates/more.html` - Nuggets stats (roster, recent games, contracts)
+- `templates/jokic.html` - Dedicated Jokić page (career stats, season averages, triple-doubles, records)
+- `templates/more.html` - Nuggets stats (recent games, roster, contracts)
 - `templates/leaders.html` - League leaders by stat category
 - `templates/live.html` - Live game win probability tracker
+- `templates/live_history.html` - Historical game recap with charts and player stats
 
 ### Data Refresh Scripts
 - `refresh_cache.py` - **Full refresh** - runs all data refreshes (for manual use)
@@ -21,17 +22,22 @@ A Flask-based dashboard for tracking Nikola Jokić and Denver Nuggets stats, sta
 - `refresh_balldontlie.py` - Module with BALLDONTLIE API functions
 - `refresh_odds.py` - Module with odds API functions
 
+**Note:** All refresh scripts use atomic file writes (temp file + rename) to prevent partial reads during refresh.
+
 ### Live Game Daemon
 - `live_daemon.py` - Long-running daemon for automatic game history capture
 - `install_daemon.sh` - Installer script for systemd service + logrotate
 
 ### Cache Files (in `cache/`)
 - `jokic_career.json` - Career stats and season rankings
-- `nuggets_schedule.json` - Schedule with odds data and `balldontlie_id` for history linking
+- `jokic_live.json` - Current season averages
+- `nuggets_schedule.json` - Full season schedule with odds data and `balldontlie_id` for history linking
 - `injuries.json` - Injury report with content change tracking
 - `contracts.json` - Player contracts with extension info
 - `standings.json`, `roster.json`, `recent_games.json`, etc.
-- `live_history/game_*.json` - Win probability snapshots for completed games
+- `live_status.json` - Current game status (is_live flag for nav indicator)
+- `live_history/game_*.json` - Win probability snapshots and player stats for completed games
+- `historical_odds.json` - Pre-game odds archive for ATS tracking
 
 ### Static Data Files (in `data/`)
 - `special_events.json` - Promotional events/giveaways for home games
@@ -130,17 +136,41 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 - `/live/<game_id>` shows historical win probability for completed games
 - Snapshots stored in `cache/live_history/game_*.json`
 - Calendar links to history via `balldontlie_id` field in schedule
-- Charts show: probability swing with max gaps, score progression
+- Charts show: probability swing with max gaps, score progression (with team color shading)
 - Box score with quarter-by-quarter highlights (winner in green)
+- Player stats table separated into Starters and Bench sections
+- Team totals row with aggregate stats and +/- (score differential)
 - **Live daemon** (`live_daemon.py`) automatically captures snapshots during games
+
+### Live Nav Indicator
+- Nav "Live" link shows pulsing red dot when a game is in progress
+- Nav "Live" link is dimmed with strikethrough when no game is live
+- Status tracked via `cache/live_status.json` (written by live daemon)
+- Auto-expires after 2 minutes to handle stale data
+
+### Calendar Features
+- **Full season view** - shows all games from October to April (entire NBA season)
+- **Prev/Next navigation** - buttons to move between months
+- **Back-to-back highlighting** - purple indicators on consecutive game days
+- **ATS indicator** - shows if Nuggets covered the spread (with legend below calendar)
+- **Game modal** - click any game to see details, injuries, odds, jersey, promotions
+- **History links** - past games with captured data link to game recap page
+
+### Recent Games (on /more)
+- Clickable Date and Opponent columns when game history exists
+- Links to `/live/<game_id>` for game recap
+- Automatically links future games when daemon captures history
 
 ### Live Daemon
 The live daemon runs as a systemd service to automatically capture game data:
 - Checks every minute for Nuggets games
 - Starts polling 30 min before game time
 - Captures snapshots every 30 seconds during live games
+- Updates `live_status.json` for nav indicator (is_live flag)
 - Updates schedule cache with `balldontlie_id` when game ends
+- Fetches and saves player stats at game end
 - Handles timezone differences (parses ET/CT/MT/PT from API)
+- Uses atomic file writes to prevent partial reads
 - Logs to `/var/log/nbastats/live_daemon.log`
 
 Install with: `sudo ./install_daemon.sh`
