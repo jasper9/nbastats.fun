@@ -227,6 +227,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 0.72rem;
+            table-layout: fixed;
         }
         .player-stats-table th {
             background: var(--bg-card);
@@ -239,20 +240,36 @@
             border-bottom: 2px solid var(--border);
             white-space: nowrap;
         }
-        .player-stats-table th.player-col {
+        .player-stats-table th.player-col,
+        .player-stats-table td.player-col {
+            width: 90px;
             text-align: left;
             padding-left: 8px;
         }
+        .player-stats-table th.min-col,
+        .player-stats-table td.min-col { width: 36px; }
+        .player-stats-table th.stat-col,
+        .player-stats-table td.stat-col { width: 28px; }
+        .player-stats-table th.pct-col,
+        .player-stats-table td.pct-col { width: 34px; }
         .player-stats-table td {
             padding: 5px 2px;
             text-align: center;
             border-bottom: 1px solid var(--border);
         }
         .player-stats-table td.player-col {
-            text-align: left;
-            padding-left: 8px;
             font-weight: 500;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .player-stats-table tr.totals-row {
+            background: var(--bg-card);
+            font-weight: 600;
+        }
+        .player-stats-table tr.totals-row td {
+            border-top: 2px solid var(--border);
+            color: var(--nuggets-gold);
         }
         .player-stats-table tr:hover {
             background: rgba(254, 197, 36, 0.1);
@@ -356,66 +373,180 @@
 
         {% if history.player_stats %}
         <!-- Nuggets Player Stats -->
+        {% macro player_row(p) %}
+        <tr>
+            {% set name_parts = p.name.split() %}
+            {% set suffixes = ['II', 'III', 'IV', 'Jr.', 'Sr.'] %}
+            {% if name_parts|length > 2 and name_parts[-1] in suffixes %}
+            <td class="player-col">{{ name_parts[0][0] }}. {{ name_parts[-2] }} {{ name_parts[-1] }}</td>
+            {% else %}
+            <td class="player-col">{{ name_parts[0][0] }}. {{ name_parts[-1] }}</td>
+            {% endif %}
+            <td class="min-col">{{ p.min }}</td>
+            <td class="stat-col {% if p.pts >= 20 %}highlight{% endif %}">{{ p.pts }}</td>
+            <td class="stat-col {% if p.reb >= 10 %}highlight{% endif %}">{{ p.reb }}</td>
+            <td class="stat-col {% if p.ast >= 10 %}highlight{% endif %}">{{ p.ast }}</td>
+            <td class="stat-col">{{ p.stl }}</td>
+            <td class="stat-col">{{ p.blk }}</td>
+            <td class="stat-col">{{ p.fgm }}</td>
+            <td class="stat-col">{{ p.fga }}</td>
+            <td class="pct-col pct">{{ "%.1f"|format(p.fg_pct * 100) if p.fg_pct else '-' }}</td>
+            <td class="stat-col">{{ p.fg3m }}</td>
+            <td class="stat-col">{{ p.fg3a }}</td>
+            <td class="pct-col pct">{{ "%.1f"|format(p.fg3_pct * 100) if p.fg3_pct else '-' }}</td>
+            <td class="stat-col">{{ p.ftm }}</td>
+            <td class="stat-col">{{ p.fta }}</td>
+            <td class="pct-col pct">{{ "%.1f"|format(p.ft_pct * 100) if p.ft_pct else '-' }}</td>
+            <td class="stat-col">{{ p.oreb }}</td>
+            <td class="stat-col">{{ p.dreb }}</td>
+            <td class="stat-col">{{ p.tov }}</td>
+            <td class="stat-col">{{ p.pf }}</td>
+            <td class="stat-col {% if p.plus_minus > 0 %}positive{% elif p.plus_minus < 0 %}negative{% endif %}">{{ '%+d'|format(p.plus_minus) if p.plus_minus else '0' }}</td>
+        </tr>
+        {% endmacro %}
+
+        {% set starters = history.player_stats|selectattr('starter', 'equalto', true)|list %}
+        {% set bench = history.player_stats|selectattr('starter', 'equalto', false)|list %}
+
         <div class="player-stats-section">
-            <div class="player-stats-title">Nuggets Player Stats</div>
+            <div class="player-stats-title">Starters</div>
             <table class="player-stats-table">
                 <thead>
                     <tr>
                         <th class="player-col">Player</th>
-                        <th>MIN</th>
-                        <th>PTS</th>
-                        <th>REB</th>
-                        <th>AST</th>
-                        <th>STL</th>
-                        <th>BLK</th>
-                        <th>FGM</th>
-                        <th>FGA</th>
-                        <th>FG%</th>
-                        <th>3PM</th>
-                        <th>3PA</th>
-                        <th>3P%</th>
-                        <th>FTM</th>
-                        <th>FTA</th>
-                        <th>FT%</th>
-                        <th>OREB</th>
-                        <th>DREB</th>
-                        <th>TOV</th>
-                        <th>PF</th>
-                        <th>+/-</th>
+                        <th class="min-col">MIN</th>
+                        <th class="stat-col">PTS</th>
+                        <th class="stat-col">REB</th>
+                        <th class="stat-col">AST</th>
+                        <th class="stat-col">STL</th>
+                        <th class="stat-col">BLK</th>
+                        <th class="stat-col">FGM</th>
+                        <th class="stat-col">FGA</th>
+                        <th class="pct-col">FG%</th>
+                        <th class="stat-col">3PM</th>
+                        <th class="stat-col">3PA</th>
+                        <th class="pct-col">3P%</th>
+                        <th class="stat-col">FTM</th>
+                        <th class="stat-col">FTA</th>
+                        <th class="pct-col">FT%</th>
+                        <th class="stat-col">OREB</th>
+                        <th class="stat-col">DREB</th>
+                        <th class="stat-col">TOV</th>
+                        <th class="stat-col">PF</th>
+                        <th class="stat-col">+/-</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for p in history.player_stats %}
+                    {% for p in starters %}{{ player_row(p) }}{% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="player-stats-section">
+            <div class="player-stats-title">Bench</div>
+            <table class="player-stats-table">
+                <thead>
                     <tr>
-                        {% set name_parts = p.name.split() %}
-                        {% set suffixes = ['II', 'III', 'IV', 'Jr.', 'Sr.'] %}
-                        {% if name_parts|length > 2 and name_parts[-1] in suffixes %}
-                        <td class="player-col">{{ name_parts[0][0] }}. {{ name_parts[-2] }} {{ name_parts[-1] }}</td>
-                        {% else %}
-                        <td class="player-col">{{ name_parts[0][0] }}. {{ name_parts[-1] }}</td>
-                        {% endif %}
-                        <td>{{ p.min }}</td>
-                        <td class="{% if p.pts >= 20 %}highlight{% endif %}">{{ p.pts }}</td>
-                        <td class="{% if p.reb >= 10 %}highlight{% endif %}">{{ p.reb }}</td>
-                        <td class="{% if p.ast >= 10 %}highlight{% endif %}">{{ p.ast }}</td>
-                        <td>{{ p.stl }}</td>
-                        <td>{{ p.blk }}</td>
-                        <td>{{ p.fgm }}</td>
-                        <td>{{ p.fga }}</td>
-                        <td class="pct">{{ "%.1f"|format(p.fg_pct * 100) if p.fg_pct else '-' }}</td>
-                        <td>{{ p.fg3m }}</td>
-                        <td>{{ p.fg3a }}</td>
-                        <td class="pct">{{ "%.1f"|format(p.fg3_pct * 100) if p.fg3_pct else '-' }}</td>
-                        <td>{{ p.ftm }}</td>
-                        <td>{{ p.fta }}</td>
-                        <td class="pct">{{ "%.1f"|format(p.ft_pct * 100) if p.ft_pct else '-' }}</td>
-                        <td>{{ p.oreb }}</td>
-                        <td>{{ p.dreb }}</td>
-                        <td>{{ p.tov }}</td>
-                        <td>{{ p.pf }}</td>
-                        <td class="{% if p.plus_minus > 0 %}positive{% elif p.plus_minus < 0 %}negative{% endif %}">{{ '%+d'|format(p.plus_minus) if p.plus_minus else '0' }}</td>
+                        <th class="player-col">Player</th>
+                        <th class="min-col">MIN</th>
+                        <th class="stat-col">PTS</th>
+                        <th class="stat-col">REB</th>
+                        <th class="stat-col">AST</th>
+                        <th class="stat-col">STL</th>
+                        <th class="stat-col">BLK</th>
+                        <th class="stat-col">FGM</th>
+                        <th class="stat-col">FGA</th>
+                        <th class="pct-col">FG%</th>
+                        <th class="stat-col">3PM</th>
+                        <th class="stat-col">3PA</th>
+                        <th class="pct-col">3P%</th>
+                        <th class="stat-col">FTM</th>
+                        <th class="stat-col">FTA</th>
+                        <th class="pct-col">FT%</th>
+                        <th class="stat-col">OREB</th>
+                        <th class="stat-col">DREB</th>
+                        <th class="stat-col">TOV</th>
+                        <th class="stat-col">PF</th>
+                        <th class="stat-col">+/-</th>
                     </tr>
-                    {% endfor %}
+                </thead>
+                <tbody>
+                    {% for p in bench %}{{ player_row(p) }}{% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Team Totals -->
+        {% set totals = namespace(pts=0, reb=0, ast=0, stl=0, blk=0, fgm=0, fga=0, fg3m=0, fg3a=0, ftm=0, fta=0, oreb=0, dreb=0, tov=0, pf=0) %}
+        {% for p in history.player_stats %}
+            {% set totals.pts = totals.pts + (p.pts or 0) %}
+            {% set totals.reb = totals.reb + (p.reb or 0) %}
+            {% set totals.ast = totals.ast + (p.ast or 0) %}
+            {% set totals.stl = totals.stl + (p.stl or 0) %}
+            {% set totals.blk = totals.blk + (p.blk or 0) %}
+            {% set totals.fgm = totals.fgm + (p.fgm or 0) %}
+            {% set totals.fga = totals.fga + (p.fga or 0) %}
+            {% set totals.fg3m = totals.fg3m + (p.fg3m or 0) %}
+            {% set totals.fg3a = totals.fg3a + (p.fg3a or 0) %}
+            {% set totals.ftm = totals.ftm + (p.ftm or 0) %}
+            {% set totals.fta = totals.fta + (p.fta or 0) %}
+            {% set totals.oreb = totals.oreb + (p.oreb or 0) %}
+            {% set totals.dreb = totals.dreb + (p.dreb or 0) %}
+            {% set totals.tov = totals.tov + (p.tov or 0) %}
+            {% set totals.pf = totals.pf + (p.pf or 0) %}
+        {% endfor %}
+        <div class="player-stats-section">
+            <div class="player-stats-title">Team Totals</div>
+            <table class="player-stats-table">
+                <thead>
+                    <tr>
+                        <th class="player-col"></th>
+                        <th class="min-col">MIN</th>
+                        <th class="stat-col">PTS</th>
+                        <th class="stat-col">REB</th>
+                        <th class="stat-col">AST</th>
+                        <th class="stat-col">STL</th>
+                        <th class="stat-col">BLK</th>
+                        <th class="stat-col">FGM</th>
+                        <th class="stat-col">FGA</th>
+                        <th class="pct-col">FG%</th>
+                        <th class="stat-col">3PM</th>
+                        <th class="stat-col">3PA</th>
+                        <th class="pct-col">3P%</th>
+                        <th class="stat-col">FTM</th>
+                        <th class="stat-col">FTA</th>
+                        <th class="pct-col">FT%</th>
+                        <th class="stat-col">OREB</th>
+                        <th class="stat-col">DREB</th>
+                        <th class="stat-col">TOV</th>
+                        <th class="stat-col">PF</th>
+                        <th class="stat-col">+/-</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="totals-row">
+                        <td class="player-col">TOTAL</td>
+                        <td class="min-col">240</td>
+                        <td class="stat-col">{{ totals.pts }}</td>
+                        <td class="stat-col">{{ totals.reb }}</td>
+                        <td class="stat-col">{{ totals.ast }}</td>
+                        <td class="stat-col">{{ totals.stl }}</td>
+                        <td class="stat-col">{{ totals.blk }}</td>
+                        <td class="stat-col">{{ totals.fgm }}</td>
+                        <td class="stat-col">{{ totals.fga }}</td>
+                        <td class="pct-col pct">{{ "%.1f"|format((totals.fgm / totals.fga * 100) if totals.fga > 0 else 0) }}</td>
+                        <td class="stat-col">{{ totals.fg3m }}</td>
+                        <td class="stat-col">{{ totals.fg3a }}</td>
+                        <td class="pct-col pct">{{ "%.1f"|format((totals.fg3m / totals.fg3a * 100) if totals.fg3a > 0 else 0) }}</td>
+                        <td class="stat-col">{{ totals.ftm }}</td>
+                        <td class="stat-col">{{ totals.fta }}</td>
+                        <td class="pct-col pct">{{ "%.1f"|format((totals.ftm / totals.fta * 100) if totals.fta > 0 else 0) }}</td>
+                        <td class="stat-col">{{ totals.oreb }}</td>
+                        <td class="stat-col">{{ totals.dreb }}</td>
+                        <td class="stat-col">{{ totals.tov }}</td>
+                        <td class="stat-col">{{ totals.pf }}</td>
+                        <td class="stat-col">-</td>
+                    </tr>
                 </tbody>
             </table>
         </div>

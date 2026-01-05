@@ -367,12 +367,69 @@ def update_schedule_with_final(data):
     return updated
 
 
-def fetch_player_stats(api_key, game_id):
+def get_nba_starters(game_date):
+    """Get starter info from NBA API for the Nuggets game on given date."""
+    try:
+        from nba_api.stats.endpoints import LeagueGameFinder, BoxScoreTraditionalV3
+
+        # Find Nuggets game on this date
+        lgf = LeagueGameFinder(
+            team_id_nullable=1610612743,  # Nuggets NBA team ID
+            date_from_nullable=game_date.strftime('%m/%d/%Y'),
+            date_to_nullable=game_date.strftime('%m/%d/%Y'),
+            season_type_nullable='Regular Season'
+        )
+        games = lgf.get_dict()
+
+        nba_game_id = None
+        for rs in games.get('resultSets', []):
+            if rs.get('name') == 'LeagueGameFinderResults':
+                rows = rs.get('rowSet', [])
+                if rows:
+                    headers = rs.get('headers', [])
+                    game_dict = dict(zip(headers, rows[0]))
+                    nba_game_id = game_dict.get('GAME_ID')
+                    break
+
+        if not nba_game_id:
+            logger.warning(f"Could not find NBA game ID for {game_date}")
+            return {}
+
+        # Get box score with starter info
+        bs = BoxScoreTraditionalV3(game_id=nba_game_id)
+        data = bs.get_dict()
+        box = data.get('boxScoreTraditional', {})
+
+        # Find Nuggets team (could be home or away)
+        starters = {}
+        for team_key in ['homeTeam', 'awayTeam']:
+            team = box.get(team_key, {})
+            if team.get('teamId') == 1610612743:  # Nuggets
+                for p in team.get('players', []):
+                    name = f"{p.get('firstName', '')} {p.get('familyName', '')}"
+                    # Position is only filled for starters
+                    starters[name] = bool(p.get('position'))
+                break
+
+        logger.info(f"Found {sum(starters.values())} starters from NBA API")
+        return starters
+
+    except Exception as e:
+        logger.error(f"Error getting starters from NBA API: {e}")
+        return {}
+
+
+def fetch_player_stats(api_key, game_id, game_date=None):
     """Fetch player box score stats for a completed game."""
     try:
+        # Get starter info from NBA API if we have the date
+        starters = {}
+        if game_date:
+            starters = get_nba_starters(game_date)
+
         resp = requests.get(
             'https://api.balldontlie.io/v1/stats',
-            params={'game_ids[]': game_id},
+            params={'game_ids[]': game_id, 'per_page': 100},
             headers={'Authorization': api_key},
             timeout=15
         )
@@ -391,16 +448,22 @@ def fetch_player_stats(api_key, game_id):
             except:
                 return 0
 
+        # Filter out DNP (0 or no minutes) and sort by minutes
+        nuggets_stats = [s for s in nuggets_stats if parse_mins(s.get('min')) > 0]
         nuggets_stats.sort(key=lambda x: -parse_mins(x.get('min')))
 
         # Extract relevant stats for each player
         player_stats = []
         for s in nuggets_stats:
             player = s.get('player', {})
+            name = f"{player.get('first_name', '')} {player.get('last_name', '')}"
+            # Use NBA API starter info if available, otherwise unknown
+            is_starter = starters.get(name, None)
             player_stats.append({
-                'name': f"{player.get('first_name', '')} {player.get('last_name', '')}",
+                'name': name,
                 'jersey': player.get('jersey_number', ''),
                 'position': player.get('position', ''),
+                'starter': is_starter,
                 'min': s.get('min', '0'),
                 'pts': s.get('pts', 0),
                 'reb': s.get('reb', 0),
@@ -567,7 +630,9 @@ def run_daemon():
                     update_recent_games(data)
 
                     # Fetch and save player stats
-                    player_stats = fetch_player_stats(api_key, game_id)
+                    game_date_str = game.get('date', '')
+                    game_date_obj = datetime.strptime(game_date_str, '%Y-%m-%d').date() if game_date_str else None
+                    player_stats = fetch_player_stats(api_key, game_id, game_date_obj)
                     if player_stats:
                         history = load_live_history(game_id)
                         if history:
