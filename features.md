@@ -138,6 +138,10 @@ Refreshing BALLDONTLIE data - [Salary Cap Status]
 
 Can you be sure to update the .claude docs and user documentation with the changes from today.
 
+Can you replace any documentation we have with cron examples with this format:
+0 * * * * /var/www/nbastats/venv/bin/python /var/www/nbastats/refresh_hourly.py > /dev/null 2>&1
+0 6 * * * /var/www/nbastats/venv/bin/python /var/www/nbastats/refresh_daily.py > /dev/null 2>&1
+0 6 * * 0 /var/www/nbastats/venv/bin/python /var/www/nbastats/refresh_weekly.py > /dev/null 2>&1
 
 --
 
@@ -164,7 +168,3 @@ There seems to be text in the background of the game from today on the calendar 
 Can you combine everything from the local permissions file to the project permissions file
 
 
-Can you replace any documentation we have with cron examples with this format:
-0 * * * * /var/www/nbastats/venv/bin/python /var/www/nbastats/refresh_hourly.py > /dev/null 2>&1
-0 6 * * * /var/www/nbastats/venv/bin/python /var/www/nbastats/refresh_daily.py > /dev/null 2>&1
-0 6 * * 0 /var/www/nbastats/venv/bin/python /var/www/nbastats/refresh_weekly.py > /dev/null 2>&1

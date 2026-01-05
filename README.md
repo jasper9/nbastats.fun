@@ -184,13 +184,13 @@ The cache refreshes at different intervals:
 
 ```bash
 # Hourly - standings and recent games
-0 * * * * cd /var/www/nbastats && ./venv/bin/python refresh_hourly.py > /dev/null 2>&1
+0 * * * * /var/www/nbastats/venv/bin/python /var/www/nbastats/refresh_hourly.py > /dev/null 2>&1
 
-# Daily at 6am MT (13:00 UTC) - stats, schedule, odds, injuries
-0 13 * * * cd /var/www/nbastats && ./venv/bin/python refresh_daily.py > /dev/null 2>&1
+# Daily at 6am - stats, schedule, odds, injuries
+0 6 * * * /var/www/nbastats/venv/bin/python /var/www/nbastats/refresh_daily.py > /dev/null 2>&1
 
-# Weekly on Sunday at 6am MT - roster, contracts, salary cap
-0 13 * * 0 cd /var/www/nbastats && ./venv/bin/python refresh_weekly.py > /dev/null 2>&1
+# Weekly on Sunday at 6am - roster, contracts, salary cap
+0 6 * * 0 /var/www/nbastats/venv/bin/python /var/www/nbastats/refresh_weekly.py > /dev/null 2>&1
 ```
 
 ## Project Structure
