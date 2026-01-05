@@ -239,9 +239,8 @@
         .player-stats-section {
             background: var(--bg-secondary);
             border-radius: 8px;
-            padding: 15px;
+            padding: 12px;
             margin: 15px 0;
-            overflow-x: auto;
         }
         .player-stats-title {
             font-family: 'Oswald', sans-serif;
@@ -254,33 +253,31 @@
         .player-stats-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.8rem;
-            min-width: 900px;
+            font-size: 0.72rem;
         }
         .player-stats-table th {
             background: var(--bg-card);
             color: var(--text-muted);
             font-family: 'Oswald', sans-serif;
             font-weight: 500;
-            font-size: 0.7rem;
-            padding: 8px 4px;
+            font-size: 0.65rem;
+            padding: 6px 2px;
             text-align: center;
             border-bottom: 2px solid var(--border);
             white-space: nowrap;
         }
         .player-stats-table th.player-col {
             text-align: left;
-            padding-left: 10px;
-            min-width: 140px;
+            padding-left: 8px;
         }
         .player-stats-table td {
-            padding: 8px 4px;
+            padding: 5px 2px;
             text-align: center;
             border-bottom: 1px solid var(--border);
         }
         .player-stats-table td.player-col {
             text-align: left;
-            padding-left: 10px;
+            padding-left: 8px;
             font-weight: 500;
             white-space: nowrap;
         }
@@ -299,7 +296,7 @@
         }
         .player-stats-table .pct {
             color: var(--text-secondary);
-            font-size: 0.75rem;
+            font-size: 0.65rem;
         }
     </style>
 </head>
@@ -417,7 +414,8 @@
                 <tbody>
                     {% for p in history.player_stats %}
                     <tr>
-                        <td class="player-col">{{ p.name }}</td>
+                        {% set name_parts = p.name.split() %}
+                        <td class="player-col">{{ name_parts[0][0] }}. {{ name_parts[-1] }}</td>
                         <td>{{ p.min }}</td>
                         <td class="{% if p.pts >= 20 %}highlight{% endif %}">{{ p.pts }}</td>
                         <td class="{% if p.reb >= 10 %}highlight{% endif %}">{{ p.reb }}</td>
