@@ -367,6 +367,70 @@ def update_schedule_with_final(data):
     return updated
 
 
+def fetch_player_stats(api_key, game_id):
+    """Fetch player box score stats for a completed game."""
+    try:
+        resp = requests.get(
+            'https://api.balldontlie.io/v1/stats',
+            params={'game_ids[]': game_id},
+            headers={'Authorization': api_key},
+            timeout=15
+        )
+        resp.raise_for_status()
+        all_stats = resp.json().get('data', [])
+
+        # Filter for Nuggets players (team_id 8)
+        nuggets_stats = [s for s in all_stats if s.get('team', {}).get('id') == NUGGETS_ID]
+
+        # Sort by minutes played (descending)
+        def parse_mins(m):
+            if not m:
+                return 0
+            try:
+                return int(str(m).split(':')[0]) if ':' in str(m) else int(m)
+            except:
+                return 0
+
+        nuggets_stats.sort(key=lambda x: -parse_mins(x.get('min')))
+
+        # Extract relevant stats for each player
+        player_stats = []
+        for s in nuggets_stats:
+            player = s.get('player', {})
+            player_stats.append({
+                'name': f"{player.get('first_name', '')} {player.get('last_name', '')}",
+                'jersey': player.get('jersey_number', ''),
+                'position': player.get('position', ''),
+                'min': s.get('min', '0'),
+                'pts': s.get('pts', 0),
+                'reb': s.get('reb', 0),
+                'ast': s.get('ast', 0),
+                'stl': s.get('stl', 0),
+                'blk': s.get('blk', 0),
+                'fgm': s.get('fgm', 0),
+                'fga': s.get('fga', 0),
+                'fg_pct': s.get('fg_pct', 0),
+                'fg3m': s.get('fg3m', 0),
+                'fg3a': s.get('fg3a', 0),
+                'fg3_pct': s.get('fg3_pct', 0),
+                'ftm': s.get('ftm', 0),
+                'fta': s.get('fta', 0),
+                'ft_pct': s.get('ft_pct', 0),
+                'oreb': s.get('oreb', 0),
+                'dreb': s.get('dreb', 0),
+                'tov': s.get('turnover', 0),
+                'pf': s.get('pf', 0),
+                'plus_minus': s.get('plus_minus', 0),
+            })
+
+        logger.info(f"Fetched stats for {len(player_stats)} Nuggets players")
+        return player_stats
+
+    except Exception as e:
+        logger.error(f"Error fetching player stats: {e}")
+        return []
+
+
 def update_recent_games(data):
     """Update recent games cache with final game."""
     recent = load_cache('recent_games.json')
@@ -501,6 +565,15 @@ def run_daemon():
                     save_snapshot(data)
                     update_schedule_with_final(data)
                     update_recent_games(data)
+
+                    # Fetch and save player stats
+                    player_stats = fetch_player_stats(api_key, game_id)
+                    if player_stats:
+                        history = load_live_history(game_id)
+                        if history:
+                            history['player_stats'] = player_stats
+                            save_live_history(game_id, history)
+                            logger.info(f"Saved player stats for {len(player_stats)} players")
 
                     game_finished = True
                     postgame_time = now + timedelta(seconds=POSTGAME_WAIT)

@@ -234,6 +234,73 @@
         @media (max-width: 600px) {
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
         }
+
+        /* Player Stats Table */
+        .player-stats-section {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        .player-stats-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .player-stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            min-width: 900px;
+        }
+        .player-stats-table th {
+            background: var(--bg-card);
+            color: var(--text-muted);
+            font-family: 'Oswald', sans-serif;
+            font-weight: 500;
+            font-size: 0.7rem;
+            padding: 8px 4px;
+            text-align: center;
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+        }
+        .player-stats-table th.player-col {
+            text-align: left;
+            padding-left: 10px;
+            min-width: 140px;
+        }
+        .player-stats-table td {
+            padding: 8px 4px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .player-stats-table td.player-col {
+            text-align: left;
+            padding-left: 10px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .player-stats-table tr:hover {
+            background: rgba(254, 197, 36, 0.1);
+        }
+        .player-stats-table .positive {
+            color: var(--positive);
+        }
+        .player-stats-table .negative {
+            color: var(--negative);
+        }
+        .player-stats-table .highlight {
+            color: var(--nuggets-gold);
+            font-weight: 600;
+        }
+        .player-stats-table .pct {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
     </style>
 </head>
 <body>
@@ -316,6 +383,67 @@
                 </tbody>
             </table>
         </div>
+
+        {% if history.player_stats %}
+        <!-- Nuggets Player Stats -->
+        <div class="player-stats-section">
+            <div class="player-stats-title">Nuggets Player Stats</div>
+            <table class="player-stats-table">
+                <thead>
+                    <tr>
+                        <th class="player-col">Player</th>
+                        <th>MIN</th>
+                        <th>PTS</th>
+                        <th>REB</th>
+                        <th>AST</th>
+                        <th>STL</th>
+                        <th>BLK</th>
+                        <th>FGM</th>
+                        <th>FGA</th>
+                        <th>FG%</th>
+                        <th>3PM</th>
+                        <th>3PA</th>
+                        <th>3P%</th>
+                        <th>FTM</th>
+                        <th>FTA</th>
+                        <th>FT%</th>
+                        <th>OREB</th>
+                        <th>DREB</th>
+                        <th>TOV</th>
+                        <th>PF</th>
+                        <th>+/-</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in history.player_stats %}
+                    <tr>
+                        <td class="player-col">{{ p.name }}</td>
+                        <td>{{ p.min }}</td>
+                        <td class="{% if p.pts >= 20 %}highlight{% endif %}">{{ p.pts }}</td>
+                        <td class="{% if p.reb >= 10 %}highlight{% endif %}">{{ p.reb }}</td>
+                        <td class="{% if p.ast >= 10 %}highlight{% endif %}">{{ p.ast }}</td>
+                        <td>{{ p.stl }}</td>
+                        <td>{{ p.blk }}</td>
+                        <td>{{ p.fgm }}</td>
+                        <td>{{ p.fga }}</td>
+                        <td class="pct">{{ "%.1f"|format(p.fg_pct * 100) if p.fg_pct else '-' }}</td>
+                        <td>{{ p.fg3m }}</td>
+                        <td>{{ p.fg3a }}</td>
+                        <td class="pct">{{ "%.1f"|format(p.fg3_pct * 100) if p.fg3_pct else '-' }}</td>
+                        <td>{{ p.ftm }}</td>
+                        <td>{{ p.fta }}</td>
+                        <td class="pct">{{ "%.1f"|format(p.ft_pct * 100) if p.ft_pct else '-' }}</td>
+                        <td>{{ p.oreb }}</td>
+                        <td>{{ p.dreb }}</td>
+                        <td>{{ p.tov }}</td>
+                        <td>{{ p.pf }}</td>
+                        <td class="{% if p.plus_minus > 0 %}positive{% elif p.plus_minus < 0 %}negative{% endif %}">{{ '%+d'|format(p.plus_minus) if p.plus_minus else '0' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
 
         <!-- Stats Grid -->
         <div class="stats-grid">
