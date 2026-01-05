@@ -1086,6 +1086,27 @@
             margin-bottom: 4px;
             font-weight: 600;
         }
+        .b2b-indicator {
+            font-size: 0.55rem;
+            font-weight: bold;
+            padding: 1px 4px;
+            margin-bottom: 3px;
+            border-radius: 2px;
+            text-align: center;
+            background: linear-gradient(90deg, #7c3aed, #a855f7);
+            color: white;
+            letter-spacing: 0.5px;
+        }
+        .calendar-day.b2b-day1 {
+            border-right: 2px solid #a855f7;
+        }
+        .calendar-day.b2b-day2 {
+            border-left: 2px solid #a855f7;
+        }
+        .calendar-day.b2b-day1.b2b-day2 {
+            border-left: 2px solid #a855f7;
+            border-right: 2px solid #a855f7;
+        }
         .calendar-game {
             background: var(--nuggets-navy);
             border-radius: 3px;
@@ -1856,6 +1877,15 @@
                         {% set month = month_key[5:7]|int %}
                         {% set month_names = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
 
+                        {# Build set of game dates for back-to-back detection #}
+                        {% set game_dates = [] %}
+                        {% for g in month_games %}
+                            {% set gdate = g.local_date if g.local_date else g.commence_time[:10] %}
+                            {% if gdate not in game_dates %}
+                                {% set _ = game_dates.append(gdate) %}
+                            {% endif %}
+                        {% endfor %}
+
                         <div class="calendar-month" data-month="{{ month_key }}" data-month-name="{{ month_names[month] }} {{ year }}">
                             <div class="calendar-header">{{ month_names[month] }} {{ year }}</div>
                             <div class="calendar-grid">
@@ -1882,8 +1912,24 @@
                                 {% endfor %}
                                 {% set is_today = day_str == now_date %}
 
-                                <div class="calendar-day {{ 'today' if is_today else '' }}">
+                                {# Back-to-back detection - check prev/next day within same month #}
+                                {% set prev_day_str = '%04d-%02d-%02d'|format(year, month, day - 1) if day > 1 else '' %}
+                                {% set next_day_str = '%04d-%02d-%02d'|format(year, month, day + 1) if day < days_in_month else '' %}
+                                {% set has_game = day_games|length > 0 %}
+                                {% set prev_has_game = prev_day_str in game_dates if prev_day_str else false %}
+                                {% set next_has_game = next_day_str in game_dates if next_day_str else false %}
+                                {% set is_b2b_day1 = has_game and next_has_game %}
+                                {% set is_b2b_day2 = has_game and prev_has_game %}
+
+                                <div class="calendar-day {{ 'today' if is_today else '' }} {{ 'b2b-day1' if is_b2b_day1 else '' }} {{ 'b2b-day2' if is_b2b_day2 else '' }}">
                                     <div class="calendar-day-num">{{ day }}</div>
+                                    {% if is_b2b_day1 and not is_b2b_day2 %}
+                                    <div class="b2b-indicator b2b-start" title="Back-to-back game (Day 1)">B2B →</div>
+                                    {% elif is_b2b_day2 and not is_b2b_day1 %}
+                                    <div class="b2b-indicator b2b-end" title="Back-to-back game (Day 2)">← B2B</div>
+                                    {% elif is_b2b_day1 and is_b2b_day2 %}
+                                    <div class="b2b-indicator b2b-middle" title="Back-to-back games (3+ in a row!)">←B2B→</div>
+                                    {% endif %}
                                     {% for game in day_games %}
                                     {% set opponent = game.away_team if game.is_home else game.home_team %}
                                     {% set opp_name = opponent.split()[-1] %}
