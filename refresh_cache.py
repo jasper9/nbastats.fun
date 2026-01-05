@@ -504,26 +504,18 @@ def refresh_nuggets_schedule():
 
         now = datetime.now()
 
-        # Get date range for calendar (previous month, current month, next month)
-        current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-
-        # Start from previous month
-        if now.month == 1:
-            calendar_start = current_month_start.replace(year=now.year - 1, month=12)
-        else:
-            calendar_start = current_month_start.replace(month=now.month - 1)
-
-        # End at the end of next month
-        if now.month == 12:
-            calendar_end = now.replace(year=now.year + 1, month=2, day=1)
-        elif now.month == 11:
-            calendar_end = now.replace(year=now.year + 1, month=1, day=1)
-        else:
-            calendar_end = now.replace(month=now.month + 2, day=1)
+        # Full season calendar - NBA season runs Oct to Apr/May
+        # For 2025-26 season: Oct 2025 to June 2026 (including playoffs)
+        if now.month >= 10:  # Oct-Dec: current season started
+            calendar_start = datetime(now.year, 10, 1)
+            calendar_end = datetime(now.year + 1, 7, 1)  # Through June
+        else:  # Jan-Sep: current season started last year
+            calendar_start = datetime(now.year - 1, 10, 1)
+            calendar_end = datetime(now.year, 7, 1)  # Through June
 
         all_nuggets_games = []
 
-        # Find all Nuggets games in date range
+        # Find all Nuggets games in the season
         for game_date in schedule_data.get('leagueSchedule', {}).get('gameDates', []):
             for game in game_date.get('games', []):
                 home_id = game.get('homeTeam', {}).get('teamId')
@@ -536,7 +528,7 @@ def refresh_nuggets_schedule():
                             game_time = datetime.fromisoformat(game_time_str.replace('Z', '+00:00'))
                             game_time_naive = game_time.replace(tzinfo=None)
 
-                            # Check if game is in our calendar range
+                            # Check if game is in our season range
                             if calendar_start <= game_time_naive < calendar_end:
                                 home_team = game.get('homeTeam', {})
                                 away_team = game.get('awayTeam', {})
