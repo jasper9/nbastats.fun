@@ -78,39 +78,6 @@
             border-bottom: 2px solid var(--border);
         }
 
-        /* Jokic Live Stats */
-        .jokic-live {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .jokic-live-title {
-            font-family: 'Oswald', sans-serif;
-            font-size: 1.2rem;
-            color: var(--text-muted);
-            margin-bottom: 15px;
-        }
-        .jokic-stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 15px;
-        }
-        .jokic-stat {
-            text-align: center;
-        }
-        .jokic-stat-value {
-            font-family: 'Oswald', sans-serif;
-            font-size: 2rem;
-            color: var(--nuggets-gold);
-        }
-        .jokic-stat-label {
-            color: var(--text-muted);
-            font-size: 0.8rem;
-            text-transform: uppercase;
-        }
-
         /* Recent Games */
         .games-table {
             width: 100%;
@@ -666,46 +633,6 @@
     </header>
 
     <div class="container">
-        {% if jokic_stats %}
-        <h2>Jokic 2025-26 Season Averages</h2>
-        <div class="jokic-live">
-            <div class="jokic-stats-grid">
-                <div class="jokic-stat">
-                    <div class="jokic-stat-value">{{ "%.1f"|format(jokic_stats.pts or 0) }}</div>
-                    <div class="jokic-stat-label">PPG</div>
-                </div>
-                <div class="jokic-stat">
-                    <div class="jokic-stat-value">{{ "%.1f"|format(jokic_stats.reb or 0) }}</div>
-                    <div class="jokic-stat-label">RPG</div>
-                </div>
-                <div class="jokic-stat">
-                    <div class="jokic-stat-value">{{ "%.1f"|format(jokic_stats.ast or 0) }}</div>
-                    <div class="jokic-stat-label">APG</div>
-                </div>
-                <div class="jokic-stat">
-                    <div class="jokic-stat-value">{{ "%.1f"|format(jokic_stats.stl or 0) }}</div>
-                    <div class="jokic-stat-label">SPG</div>
-                </div>
-                <div class="jokic-stat">
-                    <div class="jokic-stat-value">{{ "%.1f"|format(jokic_stats.blk or 0) }}</div>
-                    <div class="jokic-stat-label">BPG</div>
-                </div>
-                <div class="jokic-stat">
-                    <div class="jokic-stat-value">{{ "%.1f"|format((jokic_stats.fg_pct or 0) * 100) }}%</div>
-                    <div class="jokic-stat-label">FG%</div>
-                </div>
-                <div class="jokic-stat">
-                    <div class="jokic-stat-value">{{ "%.1f"|format((jokic_stats.fg3_pct or 0) * 100) }}%</div>
-                    <div class="jokic-stat-label">3P%</div>
-                </div>
-                <div class="jokic-stat">
-                    <div class="jokic-stat-value">{{ jokic_stats.games_played or 0 }}</div>
-                    <div class="jokic-stat-label">Games</div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
         {% if recent_games %}
         <h2>Recent Games</h2>
         <table class="games-table">

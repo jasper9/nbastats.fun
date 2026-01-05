@@ -198,6 +198,41 @@
             color: var(--text-muted);
             margin-top: 8px;
         }
+        /* Season Averages */
+        .season-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 2px;
+            background: var(--bg-primary);
+            margin: 0;
+        }
+        .season-stat {
+            background: var(--bg-card);
+            padding: 20px 10px;
+            text-align: center;
+        }
+        .season-stat-value {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .season-stat-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+        .season-header {
+            background: var(--bg-secondary);
+            padding: 12px 20px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: var(--nuggets-gold);
+            letter-spacing: 1px;
+        }
         /* Section styling */
         h2 {
             font-family: 'Oswald', sans-serif;
@@ -550,6 +585,44 @@
             <div class="stat-label">PPG Career Avg</div>
         </div>
     </div>
+
+    {% if jokic_stats %}
+    <div class="season-header">2025-26 Season Averages</div>
+    <div class="season-stats">
+        <div class="season-stat">
+            <div class="season-stat-value">{{ "%.1f"|format(jokic_stats.pts or 0) }}</div>
+            <div class="season-stat-label">PPG</div>
+        </div>
+        <div class="season-stat">
+            <div class="season-stat-value">{{ "%.1f"|format(jokic_stats.reb or 0) }}</div>
+            <div class="season-stat-label">RPG</div>
+        </div>
+        <div class="season-stat">
+            <div class="season-stat-value">{{ "%.1f"|format(jokic_stats.ast or 0) }}</div>
+            <div class="season-stat-label">APG</div>
+        </div>
+        <div class="season-stat">
+            <div class="season-stat-value">{{ "%.1f"|format(jokic_stats.stl or 0) }}</div>
+            <div class="season-stat-label">SPG</div>
+        </div>
+        <div class="season-stat">
+            <div class="season-stat-value">{{ "%.1f"|format(jokic_stats.blk or 0) }}</div>
+            <div class="season-stat-label">BPG</div>
+        </div>
+        <div class="season-stat">
+            <div class="season-stat-value">{{ "%.1f"|format((jokic_stats.fg_pct or 0) * 100) }}%</div>
+            <div class="season-stat-label">FG%</div>
+        </div>
+        <div class="season-stat">
+            <div class="season-stat-value">{{ "%.1f"|format((jokic_stats.fg3_pct or 0) * 100) }}%</div>
+            <div class="season-stat-label">3P%</div>
+        </div>
+        <div class="season-stat">
+            <div class="season-stat-value">{{ jokic_stats.games_played or 0 }}</div>
+            <div class="season-stat-label">Games</div>
+        </div>
+    </div>
+    {% endif %}
 
     <div class="container">
         {% if triple_doubles %}

@@ -429,6 +429,7 @@ def jokic():
     records_cache = load_cache('alltime_records.json')
     triple_doubles_cache = load_cache('triple_doubles.json')
     leaders_cache = load_cache('league_leaders.json')
+    jokic_live_cache = load_cache('jokic_live.json')
 
     if not career_cache:
         return """
@@ -464,11 +465,15 @@ def jokic():
 
     cache_time = career_cache.get('_cached_at', 'Unknown')
 
+    # Get current season stats
+    jokic_stats = jokic_live_cache.get('stats', {}) if jokic_live_cache else {}
+
     return render_template('jokic.html',
         career_totals=career_totals,
         jokic_ranks=jokic_ranks,
         records_watch=records_watch,
         triple_doubles=triple_doubles,
+        jokic_stats=jokic_stats,
         cache_time=cache_time
     )
 
