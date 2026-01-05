@@ -191,30 +191,6 @@
             position: relative;
             height: 300px;
         }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin: 15px 0;
-        }
-        .stat-card {
-            background: var(--bg-card);
-            border-radius: 8px;
-            padding: 12px;
-            text-align: center;
-            border: 1px solid var(--border);
-        }
-        .stat-value {
-            font-family: 'Oswald', sans-serif;
-            font-size: 1.5rem;
-            color: var(--nuggets-gold);
-        }
-        .stat-label {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            margin-top: 3px;
-        }
         .footer {
             text-align: center;
             padding: 20px;
@@ -231,9 +207,6 @@
             font-size: 0.9rem;
         }
         .back-link:hover { text-decoration: underline; }
-        @media (max-width: 600px) {
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-        }
 
         /* Player Stats Table */
         .player-stats-section {
@@ -442,31 +415,6 @@
             </table>
         </div>
         {% endif %}
-
-        <!-- Stats Grid -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value">{{ history.snapshots|length }}</div>
-                <div class="stat-label">Data Points</div>
-            </div>
-            <div class="stat-card">
-                {% set start_swing = (history.snapshots[0].consensus_prob - 50) * 2 %}
-                <div class="stat-value">{{ "%+.0f"|format(start_swing) }}%</div>
-                <div class="stat-label">Opening</div>
-            </div>
-            <div class="stat-card">
-                {% set end_swing = (history.snapshots[-1].consensus_prob - 50) * 2 %}
-                <div class="stat-value">{{ "%+.0f"|format(end_swing) }}%</div>
-                <div class="stat-label">Final</div>
-            </div>
-            <div class="stat-card">
-                {% set probs = history.snapshots|map(attribute='consensus_prob')|list %}
-                {% set max_prob = probs|max %}
-                {% set min_prob = probs|min %}
-                <div class="stat-value">{{ "%.0f"|format((max_prob - min_prob) * 2) }}%</div>
-                <div class="stat-label">Max Swing</div>
-            </div>
-        </div>
 
         <!-- Probability Chart -->
         <div class="chart-section">
