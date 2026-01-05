@@ -29,17 +29,14 @@ def main():
     )
 
     # Roster changes are rare (trades, signings)
-    print("\nRefreshing roster...")
     refresh_roster()
     time.sleep(1)
 
     # Contracts don't change often
-    print("\nRefreshing contracts...")
     refresh_contracts()
     time.sleep(1)
 
     # Salary cap status
-    print("\nRefreshing salary cap status...")
     refresh_salary_cap_status()
 
     print("\n" + "=" * 60)

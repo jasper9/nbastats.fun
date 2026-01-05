@@ -54,19 +54,15 @@ def main():
     time.sleep(1)
 
     # Odds data
-    print("\nRefreshing odds data...")
     from refresh_odds import refresh_odds
     refresh_odds()
     time.sleep(1)
 
-    # Injuries
-    print("\nRefreshing injuries...")
+    # Injuries and Jokic season stats
     from refresh_balldontlie import refresh_injuries, refresh_jokic_stats
     refresh_injuries()
     time.sleep(1)
 
-    # Jokic season stats
-    print("\nRefreshing Jokic stats...")
     refresh_jokic_stats()
 
     print("\n" + "=" * 60)

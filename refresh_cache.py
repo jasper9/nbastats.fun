@@ -37,7 +37,7 @@ def save_cache(filename, data):
 
 def refresh_jokic_career_stats():
     """Cache Jokic's career statistics."""
-    print("\n[1/6] Fetching Jokic career stats...")
+    print("\n[Jokic Career] Fetching career stats...")
     from nba_api.stats.endpoints import playercareerstats
 
     career = playercareerstats.PlayerCareerStats(player_id=JOKIC_PLAYER_ID, timeout=60)
@@ -56,7 +56,7 @@ def refresh_jokic_career_stats():
 
 def refresh_team_standings():
     """Cache current team standings."""
-    print("\n[2/6] Fetching team standings...")
+    print("\n[Standings] Fetching team standings...")
     from nba_api.stats.endpoints import leaguestandings
 
     standings = leaguestandings.LeagueStandings(season='2025-26', timeout=60)
@@ -80,7 +80,7 @@ def refresh_team_standings():
 
 def refresh_alltime_records():
     """Cache all-time records watch data."""
-    print("\n[3/6] Fetching all-time records...")
+    print("\n[All-Time Records] Fetching all-time records...")
     from nba_api.stats.endpoints import alltimeleadersgrids
 
     try:
@@ -258,7 +258,7 @@ def refresh_triple_doubles_baseline():
 
 def refresh_triple_doubles():
     """Cache triple-double data - only fetches CURRENT SEASON for active players."""
-    print("\n[4/6] Fetching triple-double data (current season only)...")
+    print("\n[Triple-Doubles] Fetching triple-double data (current season only)...")
     from nba_api.stats.endpoints import playergamelogs
 
     CURRENT_SEASON = "2025-26"
@@ -369,7 +369,7 @@ def refresh_triple_doubles():
 
 def refresh_league_leaders():
     """Cache league leaders for all stat categories (per-game averages)."""
-    print("\n[5/6] Fetching league leaders...")
+    print("\n[League Leaders] Fetching league leaders...")
     from nba_api.stats.endpoints import leagueleaders
 
     JOKIC_PLAYER_ID = 203999
@@ -414,7 +414,7 @@ def refresh_league_leaders():
 
 def refresh_nuggets_schedule():
     """Fetch upcoming Nuggets games with betting odds."""
-    print("\n[6/6] Fetching Nuggets schedule and odds...")
+    print("\n[Schedule] Fetching Nuggets schedule...")
 
     NUGGETS_TEAM_ID = 1610612743
     nuggets_games = []

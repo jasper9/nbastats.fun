@@ -26,7 +26,6 @@ def main():
     time.sleep(1)
 
     # Recent games - captures new completed games
-    print("\nRefreshing recent games...")
     from refresh_balldontlie import refresh_recent_games
     refresh_recent_games()
 
