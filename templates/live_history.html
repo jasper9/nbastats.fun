@@ -632,15 +632,15 @@
                 xMax: maxOppSwingIdx,
                 yMin: maxOppSwing,
                 yMax: 0,
-                borderColor: '#f87171',
+                borderColor: '#ef4444',
                 borderWidth: 3,
                 label: {
                     display: true,
                     content: `MAX +${Math.abs(maxOppSwing).toFixed(0)}%`,
                     position: 'start',
                     xAdjust: maxOppSwingIdx > lastIdx - 10 ? -25 : 25,
-                    backgroundColor: '#f87171',
-                    color: '#000000',
+                    backgroundColor: '#ef4444',
+                    color: '#ffffff',
                     font: { size: 10, weight: 'bold' },
                     padding: 3
                 }
@@ -775,15 +775,15 @@
                 xMax: maxOppLeadIdx,
                 yMin: opponentScores[maxOppLeadIdx] + maxOppLead,
                 yMax: opponentScores[maxOppLeadIdx],
-                borderColor: '#f87171',
+                borderColor: '#ef4444',
                 borderWidth: 3,
                 label: {
                     display: true,
                     content: `MAX +${Math.abs(maxOppLead)} ${oppAbbrev}`,
                     position: 'end',
                     xAdjust: maxOppLeadIdx > lastIdx - 10 ? -25 : 25,
-                    backgroundColor: '#f87171',
-                    color: '#000000',
+                    backgroundColor: '#ef4444',
+                    color: '#ffffff',
                     font: { size: 10, weight: 'bold' },
                     padding: 3
                 }
