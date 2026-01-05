@@ -910,9 +910,12 @@
                         label: 'Nuggets',
                         data: nuggetsScoreHistory,
                         borderColor: '#fec524',
-                        backgroundColor: 'rgba(254, 197, 36, 0.1)',
                         borderWidth: 2,
-                        fill: false,
+                        fill: {
+                            target: '+1',
+                            above: 'rgba(254, 197, 36, 0.4)',
+                            below: 'rgba(107, 114, 128, 0.4)',
+                        },
                         tension: 0.1,
                         pointRadius: 0,
                         pointHoverRadius: 4,
@@ -922,7 +925,6 @@
                         label: 'Opponent',
                         data: opponentScoreHistory,
                         borderColor: '#6b7280',
-                        backgroundColor: 'rgba(107, 114, 128, 0.1)',
                         borderWidth: 2,
                         fill: false,
                         tension: 0.1,
@@ -1547,9 +1549,10 @@
                     scoreChart.data.datasets[1].label = opponentName;
                     scoreChart.data.datasets[1].borderColor = opponentColor;
                     scoreChart.data.datasets[1].pointBackgroundColor = opponentColor;
-                    // Update probability chart fill color
+                    // Update chart fill colors
                     const colorWithAlpha = opponentColor + '66';  // Add 40% opacity
                     chart.data.datasets[0].fill.below = colorWithAlpha;
+                    scoreChart.data.datasets[0].fill.below = colorWithAlpha;
                 }
 
                 // Load historical snapshots
@@ -1685,9 +1688,10 @@
                     scoreChart.data.datasets[1].label = shortName;
                     scoreChart.data.datasets[1].borderColor = opponentColor;
                     scoreChart.data.datasets[1].pointBackgroundColor = opponentColor;
-                    // Update probability chart fill color
+                    // Update chart fill colors
                     const colorWithAlpha = opponentColor + '66';  // Add 40% opacity
                     chart.data.datasets[0].fill.below = colorWithAlpha;
+                    scoreChart.data.datasets[0].fill.below = colorWithAlpha;
                 }
             }
 
