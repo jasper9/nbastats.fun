@@ -613,6 +613,34 @@
             color: var(--nuggets-gold);
             border-bottom-color: var(--nuggets-gold);
         }
+        /* Live nav link styling */
+        .nav-live {
+            position: relative;
+        }
+        .nav-live:not(.is-live) {
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
+        .nav-live.is-live {
+            color: #ef4444 !important;
+            font-weight: 600;
+        }
+        .nav-live.is-live::before {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: pulse-live 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse-live {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+        }
     </style>
 </head>
 <body>
@@ -623,7 +651,7 @@
                 <a href="/">Home</a>
                 <a href="/jokic">Jokić</a>
                 <a href="/more" class="active">Nuggets</a>
-                <a href="/live">Live</a>
+                <a href="/live" class="nav-live {{ 'is-live' if is_game_live else '' }}">Live</a>
             </div>
         </div>
     </nav>

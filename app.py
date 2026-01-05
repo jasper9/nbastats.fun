@@ -67,10 +67,31 @@ STAT_NAMES = {
 
 app = Flask(__name__)
 
-# Make GA tracking ID available to all templates
+# Make GA tracking ID and live status available to all templates
 @app.context_processor
-def inject_ga():
-    return {'ga_tracking_id': os.getenv('GA_TRACKING_ID')}
+def inject_globals():
+    # Check if a game is currently live
+    live_status = load_cache('live_status.json')
+    is_live = False
+    if live_status:
+        is_live = live_status.get('is_live', False)
+        # Also check if status is stale (more than 2 minutes old)
+        updated_at = live_status.get('_updated_at')
+        if updated_at:
+            from datetime import datetime
+            try:
+                updated_time = datetime.fromisoformat(updated_at)
+                age_seconds = (datetime.now() - updated_time).total_seconds()
+                if age_seconds > 120:  # Stale after 2 minutes
+                    is_live = False
+            except Exception:
+                pass
+
+    return {
+        'ga_tracking_id': os.getenv('GA_TRACKING_ID'),
+        'is_game_live': is_live,
+        'live_status': live_status
+    }
 
 
 def load_cache(filename):

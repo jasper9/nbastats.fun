@@ -118,6 +118,25 @@ def save_live_history(game_id, data):
     atomic_write_json(history_file, data)
 
 
+def save_live_status(is_live, game_data=None):
+    """Save current live game status for the web UI.
+
+    This allows the nav bar to show when a game is live.
+    """
+    status = {
+        'is_live': is_live,
+        '_updated_at': datetime.now().isoformat()
+    }
+    if game_data:
+        status['game_id'] = game_data.get('game_id')
+        status['opponent'] = game_data.get('opponent_name')
+        status['nuggets_score'] = game_data.get('nuggets_score')
+        status['opponent_score'] = game_data.get('opponent_score')
+        status['period'] = game_data.get('period')
+        status['time_remaining'] = game_data.get('time_remaining')
+    atomic_write_json(CACHE_DIR / 'live_status.json', status)
+
+
 def ml_to_prob(ml):
     """Convert moneyline to implied probability."""
     if ml is None:
@@ -605,6 +624,7 @@ def run_daemon():
         sys.exit(1)
 
     ensure_dirs()
+    save_live_status(False)  # Initialize status as not live
     logger.info("Live daemon started")
     logger.info(f"Cache directory: {CACHE_DIR}")
 
@@ -661,6 +681,7 @@ def run_daemon():
 
                     game_finished = True
                     postgame_time = now + timedelta(seconds=POSTGAME_WAIT)
+                    save_live_status(False)  # Clear live status
                     logger.info(f"Final: DEN {data['nuggets_score']} - {data['opponent_name']} {data['opponent_score']}")
                     logger.info(f"Total snapshots: {len(load_live_history(game_id).get('snapshots', []))}")
 
@@ -676,6 +697,7 @@ def run_daemon():
                 current_game_id = game_id
                 data = fetch_live_data(api_key, game)
                 snapshot_count = save_snapshot(data)
+                save_live_status(True, data)  # Update live status for nav
 
                 logger.info(f"Q{data['period']} {data['time_remaining']} | "
                            f"DEN {data['nuggets_score']} - {data['opponent_name']} {data['opponent_score']} | "
