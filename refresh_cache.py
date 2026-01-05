@@ -419,6 +419,38 @@ def refresh_nuggets_schedule():
     NUGGETS_TEAM_ID = 1610612743
     nuggets_games = []
 
+    # Load existing schedule to preserve balldontlie_id mappings
+    existing_schedule = {}
+    existing_calendar = {}
+    schedule_file = CACHE_DIR / 'nuggets_schedule.json'
+    if schedule_file.exists():
+        with open(schedule_file, 'r') as f:
+            existing_data = json.load(f)
+            # Build lookup by NBA game ID and by local_date
+            for game in existing_data.get('games', []):
+                if game.get('id'):
+                    existing_schedule[game['id']] = game
+                if game.get('local_date'):
+                    existing_calendar[game['local_date']] = game
+            for game in existing_data.get('calendar_games', []):
+                if game.get('id'):
+                    existing_schedule[game['id']] = game
+                if game.get('local_date'):
+                    existing_calendar[game['local_date']] = game
+
+    # Also check live_history files for balldontlie_id mappings
+    live_history_dir = CACHE_DIR / 'live_history'
+    history_mappings = {}  # local_date -> balldontlie_id
+    if live_history_dir.exists():
+        for history_file in live_history_dir.glob('game_*.json'):
+            try:
+                with open(history_file, 'r') as f:
+                    history_data = json.load(f)
+                    if history_data.get('game_date') and history_data.get('balldontlie_id'):
+                        history_mappings[history_data['game_date']] = history_data['balldontlie_id']
+            except Exception:
+                pass
+
     # Load standings for team records
     standings_cache = None
     standings_file = CACHE_DIR / 'standings.json'
@@ -518,6 +550,14 @@ def refresh_nuggets_schedule():
                                     nuggets_score = home_score if home_id == NUGGETS_TEAM_ID else away_score
                                     opponent_score = away_score if home_id == NUGGETS_TEAM_ID else home_score
                                     game_data['result'] = 'W' if nuggets_score > opponent_score else 'L'
+
+                                # Preserve balldontlie_id from existing schedule or history files
+                                game_id = game.get('gameId')
+                                existing = existing_schedule.get(game_id) or existing_calendar.get(local_date)
+                                if existing and existing.get('balldontlie_id'):
+                                    game_data['balldontlie_id'] = existing['balldontlie_id']
+                                elif local_date in history_mappings:
+                                    game_data['balldontlie_id'] = history_mappings[local_date]
 
                                 all_nuggets_games.append(game_data)
                         except ValueError:
