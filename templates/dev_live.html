@@ -345,26 +345,58 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        /* Bot Legend */
-        .bot-legend {
+        /* Bot Filters */
+        .bot-filters {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
+            align-items: center;
             margin-top: 15px;
-            padding: 10px;
+            padding: 12px;
             background: var(--bg-card);
             border-radius: 6px;
         }
-        .legend-item {
+        .filter-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-right: 5px;
+        }
+        .filter-btn {
             display: flex;
             align-items: center;
             gap: 5px;
+            padding: 5px 10px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-muted);
             font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            opacity: 0.5;
         }
-        .legend-dot {
-            width: 10px;
-            height: 10px;
+        .filter-btn:hover {
+            border-color: var(--btn-color);
+        }
+        .filter-btn.active {
+            opacity: 1;
+            color: var(--text-primary);
+            border-color: var(--btn-color);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .filter-btn .filter-dot {
+            width: 8px;
+            height: 8px;
             border-radius: 2px;
+            background: var(--btn-color);
+            transition: opacity 0.2s;
+        }
+        .filter-btn:not(.active) .filter-dot {
+            opacity: 0.3;
+        }
+        /* Hide filtered messages */
+        .chat-message.filtered {
+            display: none !important;
         }
         @media (max-width: 600px) {
             .page-title { font-size: 1.4rem; }
@@ -431,27 +463,28 @@
             </div>
         </div>
 
-        <div class="bot-legend">
-            <div class="legend-item">
-                <div class="legend-dot" style="background: #ffffff;"></div>
-                <span>PlayByPlay - Scoring & plays</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-dot" style="background: #22d3ee;"></div>
-                <span>StatsNerd - Analytics</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-dot" style="background: #f97316;"></div>
-                <span>HypeMan - Highlights</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-dot" style="background: #a855f7;"></div>
-                <span>Historian - Context</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-dot" style="background: #60a5fa;"></div>
-                <span>AI - Claude commentary</span>
-            </div>
+        <div class="bot-filters">
+            <span class="filter-label">Filter voices:</span>
+            <button class="filter-btn active" data-bot="play_by_play" style="--btn-color: #ffffff;">
+                <span class="filter-dot"></span>
+                PlayByPlay
+            </button>
+            <button class="filter-btn active" data-bot="stats_nerd" style="--btn-color: #22d3ee;">
+                <span class="filter-dot"></span>
+                StatsNerd
+            </button>
+            <button class="filter-btn active" data-bot="hype_man" style="--btn-color: #f97316;">
+                <span class="filter-dot"></span>
+                HypeMan
+            </button>
+            <button class="filter-btn active" data-bot="historian" style="--btn-color: #a855f7;">
+                <span class="filter-dot"></span>
+                Historian
+            </button>
+            <button class="filter-btn active" data-bot="ai_commentator" style="--btn-color: #60a5fa;">
+                <span class="filter-dot"></span>
+                AI
+            </button>
         </div>
     </div>
 
@@ -483,6 +516,36 @@
         let lastActionNumber = 0;
         let pollInterval = null;
         let clientId = 'client_' + Math.random().toString(36).substr(2, 9);
+
+        // Track active filters (all active by default)
+        let activeFilters = new Set(['play_by_play', 'stats_nerd', 'hype_man', 'historian', 'ai_commentator']);
+
+        function toggleFilter(botType) {
+            if (activeFilters.has(botType)) {
+                activeFilters.delete(botType);
+            } else {
+                activeFilters.add(botType);
+            }
+            applyFilters();
+        }
+
+        function applyFilters() {
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                const bot = btn.dataset.bot;
+                btn.classList.toggle('active', activeFilters.has(bot));
+            });
+
+            // Filter existing messages
+            document.querySelectorAll('.chat-message').forEach(msg => {
+                const botType = Array.from(msg.classList)
+                    .find(c => c.startsWith('bot-'))
+                    ?.replace('bot-', '');
+                if (botType) {
+                    msg.classList.toggle('filtered', !activeFilters.has(botType));
+                }
+            });
+        }
 
         async function loadGames() {
             try {
@@ -593,6 +656,11 @@
             div.className = `chat-message bot-${msg.bot}`;
             if (msg.team) div.classList.add(`team-${msg.team}`);
 
+            // Apply filter immediately if this bot is filtered out
+            if (!activeFilters.has(msg.bot)) {
+                div.classList.add('filtered');
+            }
+
             const emoji = botEmojis[msg.bot] || '&#x1F4AC;';
             const botName = botNames[msg.bot] || msg.bot;
             const time = msg.clock ? `Q${msg.period} ${msg.clock}` : '';
@@ -615,6 +683,13 @@
         // Initialize
         document.getElementById('game-select').addEventListener('change', (e) => {
             selectGame(e.target.value);
+        });
+
+        // Filter button click handlers
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                toggleFilter(btn.dataset.bot);
+            });
         });
 
         loadGames();
