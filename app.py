@@ -1421,6 +1421,7 @@ def api_dev_live_games():
                 'home_team_name': g['homeTeam']['teamName'],
                 'away_team_name': g['awayTeam']['teamName'],
                 'status': g['gameStatusText'],
+                'game_time_utc': g.get('gameTimeUTC'),  # ISO 8601 UTC time for local conversion
                 'home_score': g['homeTeam'].get('score', 0),
                 'away_score': g['awayTeam'].get('score', 0),
                 'has_history': has_history,

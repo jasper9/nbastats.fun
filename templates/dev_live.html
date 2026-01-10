@@ -1100,6 +1100,40 @@
             });
         }
 
+        // Format UTC time to local time
+        function formatLocalTime(utcTimeStr) {
+            if (!utcTimeStr) return null;
+            try {
+                const date = new Date(utcTimeStr);
+                return date.toLocaleTimeString([], {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // Get game status text with local time
+        function getGameStatusText(game) {
+            // For live or finished games, use the status as-is
+            if (game.status === 'Final' || game.status === 'Final (Saved)' ||
+                game.status.includes('Q') || game.status === 'Half' ||
+                game.status.includes('OT')) {
+                return game.status;
+            }
+
+            // For upcoming games, convert to local time
+            const localTime = formatLocalTime(game.game_time_utc);
+            if (localTime) {
+                return localTime;
+            }
+
+            // Fallback to original status
+            return game.status;
+        }
+
         async function loadGames() {
             try {
                 const response = await fetch('/api/dev-live/games');
@@ -1118,7 +1152,8 @@
 
                         const option = document.createElement('option');
                         option.value = game.game_id;
-                        let text = `${game.away_team} @ ${game.home_team} - ${game.status}`;
+                        const statusText = getGameStatusText(game);
+                        let text = `${game.away_team} @ ${game.home_team} - ${statusText}`;
                         if (game.status.includes('Q') || game.status === 'Half') {
                             text += ` (${game.away_score}-${game.home_score})`;
                         } else if (game.status === 'Final' || game.status === 'Final (Saved)') {
