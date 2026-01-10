@@ -883,5 +883,264 @@ def live_history(game_id):
     return render_template('live_history.html', history=history)
 
 
+# ========== DEV LIVE CHAT FEED ==========
+# Track last seen action for incremental updates
+_dev_live_last_action = {'action_number': 0}
+
+# Bot personality definitions
+BOT_PERSONALITIES = {
+    'play_by_play': {
+        'name': 'PlayByPlay',
+        'emoji': '🏀',
+        'color': '#ffffff',
+        'triggers': ['2pt', '3pt', 'freethrow', 'block', 'steal'],
+    },
+    'stats_nerd': {
+        'name': 'StatsNerd',
+        'emoji': '📊',
+        'color': '#22d3ee',  # cyan
+        'triggers': ['milestone', 'streak', 'stat'],
+    },
+    'odds_shark': {
+        'name': 'OddsShark',
+        'emoji': '🎰',
+        'color': '#34d399',  # green
+        'triggers': ['odds', 'spread', 'probability'],
+    },
+    'hype_man': {
+        'name': 'HypeMan',
+        'emoji': '🔥',
+        'color': '#f97316',  # orange
+        'triggers': ['dunk', 'and1', 'buzzer', 'run'],
+    },
+    'historian': {
+        'name': 'Historian',
+        'emoji': '📜',
+        'color': '#a855f7',  # purple
+        'triggers': ['record', 'history', 'first'],
+    },
+}
+
+
+def generate_chat_message(action, game_info):
+    """Convert a play-by-play action into a chat message with personality."""
+    action_type = action.get('actionType', '')
+    sub_type = action.get('subType', '')
+    desc = action.get('description', '')
+    player = action.get('playerNameI', '')
+    team = action.get('teamTricode', '')
+    score_home = action.get('scoreHome', '0')
+    score_away = action.get('scoreAway', '0')
+    period = action.get('period', 1)
+    clock = action.get('clock', '')
+
+    # Parse clock (format: PT04M23.50S)
+    clock_display = ''
+    if clock and clock.startswith('PT'):
+        try:
+            import re
+            match = re.match(r'PT(\d+)M([\d.]+)S', clock)
+            if match:
+                mins, secs = match.groups()
+                clock_display = f"{mins}:{float(secs):05.2f}"[:5]
+        except:
+            pass
+
+    home_team = game_info.get('home_team', 'HOME')
+    away_team = game_info.get('away_team', 'AWAY')
+
+    messages = []
+
+    # Scoring plays - PlayByPlay bot
+    if action_type in ['2pt', '3pt'] and 'MISS' not in desc:
+        pts = '3' if action_type == '3pt' else '2'
+        shot_type = sub_type or 'shot'
+
+        msg = f"💥 {player} ({team}) hits the {shot_type.lower()}! {pts} points."
+        messages.append({
+            'bot': 'play_by_play',
+            'text': msg,
+            'type': 'score',
+            'team': team,
+        })
+
+        # HypeMan for dunks and highlight plays
+        if 'dunk' in shot_type.lower() or 'alley' in desc.lower():
+            messages.append({
+                'bot': 'hype_man',
+                'text': f"🔥🔥🔥 POSTER! {player} throws it DOWN!",
+                'type': 'hype',
+                'team': team,
+            })
+
+    # Made free throws
+    elif action_type == 'freethrow' and 'MISS' not in desc:
+        msg = f"✓ {player} ({team}) makes the free throw."
+        messages.append({
+            'bot': 'play_by_play',
+            'text': msg,
+            'type': 'freethrow',
+            'team': team,
+        })
+
+    # Blocks - exciting defensive play
+    elif action_type == 'block':
+        messages.append({
+            'bot': 'play_by_play',
+            'text': f"🚫 {player} ({team}) with the REJECTION!",
+            'type': 'block',
+            'team': team,
+        })
+
+    # Steals
+    elif action_type == 'steal':
+        messages.append({
+            'bot': 'play_by_play',
+            'text': f"👋 {player} ({team}) picks the pocket! Steal!",
+            'type': 'steal',
+            'team': team,
+        })
+
+    # Turnovers - when important
+    elif action_type == 'turnover':
+        if 'steal' not in desc.lower():  # Don't duplicate with steal
+            messages.append({
+                'bot': 'play_by_play',
+                'text': f"💨 Turnover by {player} ({team})",
+                'type': 'turnover',
+                'team': team,
+            })
+
+    # Period start/end
+    elif action_type == 'period':
+        if sub_type == 'end':
+            messages.append({
+                'bot': 'play_by_play',
+                'text': f"⏱️ End of Q{period}. Score: {away_team} {score_away} - {home_team} {score_home}",
+                'type': 'period',
+            })
+            # StatsNerd quarter summary
+            lead = int(score_home) - int(score_away)
+            leader = home_team if lead > 0 else away_team
+            messages.append({
+                'bot': 'stats_nerd',
+                'text': f"📊 Quarter {period} complete. {leader} leads by {abs(lead)}.",
+                'type': 'summary',
+            })
+        elif sub_type == 'start':
+            messages.append({
+                'bot': 'play_by_play',
+                'text': f"🏀 Quarter {period} is underway!",
+                'type': 'period',
+            })
+
+    # Add score context and timestamp to all messages
+    for msg in messages:
+        msg['score'] = f"{away_team} {score_away} - {home_team} {score_home}"
+        msg['clock'] = clock_display
+        msg['period'] = period
+        msg['timestamp'] = datetime.now().isoformat()
+        msg['action_number'] = action.get('actionNumber', 0)
+
+    return messages
+
+
+@app.route('/dev-live')
+def dev_live():
+    """Development live chat feed page."""
+    return render_template('dev_live.html')
+
+
+@app.route('/api/dev-live/games')
+def api_dev_live_games():
+    """Get current live NBA games."""
+    try:
+        from nba_api.live.nba.endpoints import scoreboard
+        sb = scoreboard.ScoreBoard()
+        games_data = sb.get_dict()['scoreboard']['games']
+
+        games = []
+        for g in games_data:
+            games.append({
+                'game_id': g['gameId'],
+                'home_team': g['homeTeam']['teamTricode'],
+                'away_team': g['awayTeam']['teamTricode'],
+                'home_team_name': g['homeTeam']['teamName'],
+                'away_team_name': g['awayTeam']['teamName'],
+                'status': g['gameStatusText'],
+                'home_score': g['homeTeam'].get('score', 0),
+                'away_score': g['awayTeam'].get('score', 0),
+            })
+
+        return jsonify({'games': games})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/dev-live/feed/<game_id>')
+def api_dev_live_feed(game_id):
+    """Get live chat feed for a specific game."""
+    try:
+        from nba_api.live.nba.endpoints import playbyplay, scoreboard
+
+        # Get last seen action number from query param
+        last_action = int(request.args.get('last_action', 0))
+
+        # Get game info from scoreboard (play-by-play doesn't include team names)
+        sb = scoreboard.ScoreBoard()
+        games_data = sb.get_dict()['scoreboard']['games']
+        game_match = next((g for g in games_data if g['gameId'] == game_id), None)
+
+        home_team = 'HOME'
+        away_team = 'AWAY'
+        if game_match:
+            home_team = game_match['homeTeam']['teamTricode']
+            away_team = game_match['awayTeam']['teamTricode']
+
+        # Get play-by-play
+        pbp = playbyplay.PlayByPlay(game_id)
+        data = pbp.get_dict()
+
+        game = data.get('game', {})
+        actions = game.get('actions', [])
+
+        game_info = {
+            'home_team': home_team,
+            'away_team': away_team,
+            'game_id': game_id,
+        }
+
+        # Filter to new actions only
+        new_actions = [a for a in actions if a.get('actionNumber', 0) > last_action]
+
+        # Generate chat messages
+        all_messages = []
+        for action in new_actions:
+            messages = generate_chat_message(action, game_info)
+            all_messages.extend(messages)
+
+        # Get current score from latest action
+        latest_score = {'home': 0, 'away': 0}
+        if actions:
+            last = actions[-1]
+            latest_score['home'] = int(last.get('scoreHome', 0) or 0)
+            latest_score['away'] = int(last.get('scoreAway', 0) or 0)
+
+        # Get the highest action number we've seen
+        max_action = max([a.get('actionNumber', 0) for a in actions]) if actions else 0
+
+        return jsonify({
+            'messages': all_messages,
+            'last_action': max_action,
+            'game_info': game_info,
+            'score': latest_score,
+            'total_actions': len(actions),
+        })
+
+    except Exception as e:
+        import traceback
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

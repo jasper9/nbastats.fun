@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dev Live Feed - NBA Stats Fun</title>
+    {% if ga_tracking_id %}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_tracking_id }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{ ga_tracking_id }}');
+    </script>
+    {% endif %}
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23f85' stroke='%23333' stroke-width='3'/><path d='M50 5 v90 M5 50 h90 M15 20 Q50 50 15 80 M85 20 Q50 50 85 80' fill='none' stroke='%23333' stroke-width='3'/></svg>">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: #1c2128;
+            --border: #30363d;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b8c1;
+            --text-muted: #6b7280;
+            --nuggets-gold: #fec524;
+            --nuggets-navy: #0d2240;
+            --positive: #34d399;
+            --negative: #f87171;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+        /* Navigation */
+        nav {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+        }
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .nav-brand {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--nuggets-gold);
+            text-decoration: none;
+            padding: 15px 0;
+        }
+        .nav-links {
+            display: flex;
+            gap: 5px;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 15px 15px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-links a:hover { color: var(--text-primary); }
+        .nav-links a.active {
+            color: var(--nuggets-gold);
+            border-bottom-color: var(--nuggets-gold);
+        }
+        /* Live nav link styling */
+        .nav-live {
+            position: relative;
+        }
+        .nav-live:not(.is-live) {
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
+        .nav-live.is-live {
+            color: #ef4444 !important;
+            font-weight: 600;
+        }
+        .nav-live.is-live::before {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: pulse-live 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse-live {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+        }
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--nuggets-navy) 0%, #1a3a5c 100%);
+            text-align: center;
+            padding: 12px 20px;
+            border-bottom: 3px solid var(--nuggets-gold);
+        }
+        .page-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-primary);
+        }
+        .page-subtitle {
+            color: var(--nuggets-gold);
+            font-size: 0.8rem;
+            margin-top: 3px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        /* Game Selector */
+        .game-selector {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .game-selector label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .game-selector select {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .game-selector select:focus {
+            outline: none;
+            border-color: var(--nuggets-gold);
+        }
+        /* Scoreboard */
+        .scoreboard {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+        }
+        .team-score {
+            text-align: center;
+        }
+        .team-abbrev {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+        }
+        .team-points {
+            font-family: 'Oswald', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+        }
+        .score-divider {
+            font-size: 2rem;
+            color: var(--text-muted);
+        }
+        /* Chat Feed */
+        .chat-container {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .chat-header {
+            background: var(--bg-card);
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .chat-status {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .chat-status.connected {
+            color: var(--positive);
+        }
+        .chat-feed {
+            height: 500px;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        /* Chat Messages */
+        .chat-message {
+            display: flex;
+            gap: 10px;
+            padding: 8px 12px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            animation: slideIn 0.3s ease-out;
+            border-left: 3px solid var(--border);
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .chat-message.bot-play_by_play {
+            border-left-color: #ffffff;
+        }
+        .chat-message.bot-stats_nerd {
+            border-left-color: #22d3ee;
+        }
+        .chat-message.bot-odds_shark {
+            border-left-color: #34d399;
+        }
+        .chat-message.bot-hype_man {
+            border-left-color: #f97316;
+        }
+        .chat-message.bot-historian {
+            border-left-color: #a855f7;
+        }
+        .msg-avatar {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        .msg-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .msg-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .msg-bot-name {
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        .msg-bot-name.bot-play_by_play { color: #ffffff; }
+        .msg-bot-name.bot-stats_nerd { color: #22d3ee; }
+        .msg-bot-name.bot-odds_shark { color: #34d399; }
+        .msg-bot-name.bot-hype_man { color: #f97316; }
+        .msg-bot-name.bot-historian { color: #a855f7; }
+        .msg-time {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        .msg-text {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        .msg-score {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        /* Team colors for messages */
+        .team-MIN .msg-avatar { color: #78BE20; }
+        .team-CLE .msg-avatar { color: #860038; }
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid var(--border);
+            border-top-color: var(--nuggets-gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* Bot Legend */
+        .bot-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 10px;
+            background: var(--bg-card);
+            border-radius: 6px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.75rem;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
+        @media (max-width: 600px) {
+            .page-title { font-size: 1.4rem; }
+            .chat-feed { height: 400px; }
+            .scoreboard { gap: 15px; }
+            .team-points { font-size: 2.5rem; }
+            .nav-links a { padding: 15px 10px; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="nav-brand">NBA Stats . Fun</a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/jokic">Jokic</a>
+                <a href="/more">Nuggets</a>
+                <a href="/live" class="nav-live {{ 'is-live' if is_game_live else '' }}">Live</a>
+                <a href="/dev-live" class="active" style="color: #f97316;">Dev</a>
+            </div>
+        </div>
+    </nav>
+
+    <header>
+        <div class="page-title">Live Play-by-Play Feed <span style="background: #f97316; color: white; font-size: 0.5em; padding: 3px 8px; border-radius: 4px; vertical-align: middle; margin-left: 10px;">DEV</span></div>
+        <div class="page-subtitle">Real-time game updates with personality</div>
+    </header>
+
+    <div class="container">
+        <div class="game-selector">
+            <label>Select a live game:</label>
+            <select id="game-select">
+                <option value="">Loading games...</option>
+            </select>
+        </div>
+
+        <div class="scoreboard" id="scoreboard" style="display: none;">
+            <div class="team-score">
+                <div class="team-abbrev" id="away-team">AWAY</div>
+                <div class="team-points" id="away-score">0</div>
+            </div>
+            <div class="score-divider">@</div>
+            <div class="team-score">
+                <div class="team-abbrev" id="home-team">HOME</div>
+                <div class="team-points" id="home-score">0</div>
+            </div>
+        </div>
+
+        <div class="chat-container" id="chat-container" style="display: none;">
+            <div class="chat-header">
+                <span class="chat-title">Live Feed</span>
+                <span class="chat-status" id="chat-status">Connecting...</span>
+            </div>
+            <div class="chat-feed" id="chat-feed">
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Waiting for game updates...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bot-legend">
+            <div class="legend-item">
+                <div class="legend-dot" style="background: #ffffff;"></div>
+                <span>PlayByPlay - Scoring & plays</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: #22d3ee;"></div>
+                <span>StatsNerd - Analytics</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: #f97316;"></div>
+                <span>HypeMan - Highlights</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: #a855f7;"></div>
+                <span>Historian - Context</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Development feature - Live play-by-play from NBA API</p>
+    </div>
+
+    <script>
+        // Bot emoji mapping
+        const botEmojis = {
+            'play_by_play': '&#x1F3C0;',
+            'stats_nerd': '&#x1F4CA;',
+            'odds_shark': '&#x1F3B0;',
+            'hype_man': '&#x1F525;',
+            'historian': '&#x1F4DC;'
+        };
+
+        const botNames = {
+            'play_by_play': 'PlayByPlay',
+            'stats_nerd': 'StatsNerd',
+            'odds_shark': 'OddsShark',
+            'hype_man': 'HypeMan',
+            'historian': 'Historian'
+        };
+
+        let currentGameId = null;
+        let lastActionNumber = 0;
+        let pollInterval = null;
+
+        async function loadGames() {
+            try {
+                const response = await fetch('/api/dev-live/games');
+                const data = await response.json();
+
+                const select = document.getElementById('game-select');
+                select.innerHTML = '<option value="">-- Select a game --</option>';
+
+                if (data.games && data.games.length > 0) {
+                    data.games.forEach(game => {
+                        const option = document.createElement('option');
+                        option.value = game.game_id;
+                        option.textContent = `${game.away_team} @ ${game.home_team} - ${game.status}`;
+                        if (game.status.includes('Q') || game.status === 'Half') {
+                            option.textContent += ` (${game.away_score}-${game.home_score})`;
+                        }
+                        select.appendChild(option);
+                    });
+                } else {
+                    select.innerHTML = '<option value="">No games available</option>';
+                }
+            } catch (error) {
+                console.error('Error loading games:', error);
+                document.getElementById('game-select').innerHTML = '<option value="">Error loading games</option>';
+            }
+        }
+
+        function selectGame(gameId) {
+            if (!gameId) {
+                document.getElementById('scoreboard').style.display = 'none';
+                document.getElementById('chat-container').style.display = 'none';
+                if (pollInterval) {
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                }
+                return;
+            }
+
+            currentGameId = gameId;
+            lastActionNumber = 0;
+
+            document.getElementById('scoreboard').style.display = 'flex';
+            document.getElementById('chat-container').style.display = 'block';
+            document.getElementById('chat-feed').innerHTML = '<div class="loading" id="loading"><div class="spinner"></div><p>Loading game feed...</p></div>';
+            document.getElementById('chat-status').textContent = 'Connecting...';
+            document.getElementById('chat-status').classList.remove('connected');
+
+            // Start polling
+            fetchFeed();
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(fetchFeed, 5000); // Poll every 5 seconds
+        }
+
+        async function fetchFeed() {
+            if (!currentGameId) return;
+
+            try {
+                const response = await fetch(`/api/dev-live/feed/${currentGameId}?last_action=${lastActionNumber}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    console.error('Feed error:', data.error);
+                    document.getElementById('chat-status').textContent = 'Error';
+                    return;
+                }
+
+                // Update status
+                document.getElementById('chat-status').textContent = `Live - ${data.total_actions} plays`;
+                document.getElementById('chat-status').classList.add('connected');
+
+                // Update scoreboard
+                if (data.game_info) {
+                    document.getElementById('home-team').textContent = data.game_info.home_team;
+                    document.getElementById('away-team').textContent = data.game_info.away_team;
+                }
+                if (data.score) {
+                    document.getElementById('home-score').textContent = data.score.home;
+                    document.getElementById('away-score').textContent = data.score.away;
+                }
+
+                // Update last action number
+                if (data.last_action > lastActionNumber) {
+                    lastActionNumber = data.last_action;
+                }
+
+                // Add new messages
+                if (data.messages && data.messages.length > 0) {
+                    const feed = document.getElementById('chat-feed');
+                    const loading = document.getElementById('loading');
+                    if (loading) loading.remove();
+
+                    data.messages.forEach(msg => {
+                        const msgEl = createMessageElement(msg);
+                        feed.appendChild(msgEl);
+                    });
+
+                    // Auto-scroll to bottom
+                    feed.scrollTop = feed.scrollHeight;
+                }
+
+            } catch (error) {
+                console.error('Error fetching feed:', error);
+                document.getElementById('chat-status').textContent = 'Connection error';
+                document.getElementById('chat-status').classList.remove('connected');
+            }
+        }
+
+        function createMessageElement(msg) {
+            const div = document.createElement('div');
+            div.className = `chat-message bot-${msg.bot}`;
+            if (msg.team) div.classList.add(`team-${msg.team}`);
+
+            const emoji = botEmojis[msg.bot] || '&#x1F4AC;';
+            const botName = botNames[msg.bot] || msg.bot;
+            const time = msg.clock ? `Q${msg.period} ${msg.clock}` : '';
+
+            div.innerHTML = `
+                <div class="msg-avatar">${emoji}</div>
+                <div class="msg-content">
+                    <div class="msg-header">
+                        <span class="msg-bot-name bot-${msg.bot}">${botName}</span>
+                        <span class="msg-time">${time}</span>
+                    </div>
+                    <div class="msg-text">${msg.text}</div>
+                    <div class="msg-score">${msg.score}</div>
+                </div>
+            `;
+
+            return div;
+        }
+
+        // Initialize
+        document.getElementById('game-select').addEventListener('change', (e) => {
+            selectGame(e.target.value);
+        });
+
+        loadGames();
+
+        // Refresh game list every 60 seconds
+        setInterval(loadGames, 60000);
+    </script>
+</body>
+</html>
