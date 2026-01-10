@@ -798,10 +798,17 @@
                     data.games.forEach(game => {
                         const option = document.createElement('option');
                         option.value = game.game_id;
-                        option.textContent = `${game.away_team} @ ${game.home_team} - ${game.status}`;
+                        let text = `${game.away_team} @ ${game.home_team} - ${game.status}`;
                         if (game.status.includes('Q') || game.status === 'Half') {
-                            option.textContent += ` (${game.away_score}-${game.home_score})`;
+                            text += ` (${game.away_score}-${game.home_score})`;
+                        } else if (game.status === 'Final' || game.status === 'Final (Saved)') {
+                            text += ` (${game.away_score}-${game.home_score})`;
                         }
+                        // Add history indicator
+                        if (game.has_history) {
+                            text += ' 📜';
+                        }
+                        option.textContent = text;
                         select.appendChild(option);
                     });
                 } else {
@@ -853,6 +860,15 @@
                     return;
                 }
 
+                // Check if this is historical data (completed game)
+                if (data.is_historical) {
+                    // Stop polling for completed games
+                    if (pollInterval) {
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+                    }
+                }
+
                 // Update scoreboard
                 if (data.game_info) {
                     document.getElementById('home-team').textContent = data.game_info.home_team;
@@ -861,15 +877,33 @@
                 if (data.score) {
                     document.getElementById('home-score').textContent = data.score.home;
                     document.getElementById('away-score').textContent = data.score.away;
-                    // Update header score
-                    document.getElementById('stat-score').textContent = `${data.game_info.away_team} ${data.score.away} - ${data.game_info.home_team} ${data.score.home}`;
-                    // Update charts
-                    updateCharts(data.score.home, data.score.away, data.game_info.home_team, data.game_info.away_team);
+                    // Update header score with status indicator
+                    let scoreText = `${data.game_info.away_team} ${data.score.away} - ${data.game_info.home_team} ${data.score.home}`;
+                    if (data.status === 'Final') {
+                        scoreText += ' (FINAL)';
+                    }
+                    document.getElementById('stat-score').textContent = scoreText;
+
+                    // For historical data, load all score history for charts
+                    if (data.is_historical && data.scores && data.scores.length > 0) {
+                        // Reconstruct charts from saved score history
+                        data.scores.forEach(s => {
+                            updateCharts(s.home, s.away, data.game_info.home_team, data.game_info.away_team);
+                        });
+                    } else {
+                        // Live update
+                        updateCharts(data.score.home, data.score.away, data.game_info.home_team, data.game_info.away_team);
+                    }
                 }
 
                 // Update stats in header
                 document.getElementById('stat-lead-changes').textContent = `🔄 ${data.lead_changes || 0}`;
-                document.getElementById('stat-viewers').textContent = `👁 ${data.viewer_count || 1}`;
+                // Show "FINAL" instead of viewer count for historical games
+                if (data.is_historical) {
+                    document.getElementById('stat-viewers').textContent = '📺 Replay';
+                } else {
+                    document.getElementById('stat-viewers').textContent = `👁 ${data.viewer_count || 1}`;
+                }
 
                 // Update last action number
                 if (data.last_action > lastActionNumber) {
@@ -889,6 +923,15 @@
 
                     // Auto-scroll to bottom
                     feed.scrollTop = feed.scrollHeight;
+                }
+
+                // Handle empty feed for completed games with no saved messages
+                if (data.is_historical && (!data.messages || data.messages.length === 0)) {
+                    const feed = document.getElementById('chat-feed');
+                    const loading = document.getElementById('loading');
+                    if (loading) {
+                        loading.innerHTML = '<p>No chat history available for this game.</p>';
+                    }
                 }
 
             } catch (error) {

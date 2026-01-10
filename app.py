@@ -904,6 +904,40 @@ _dev_live_lead_changes = {}  # game_id -> {'count': N, 'last_leader': 'TEAM'}
 # Track largest leads per game
 _dev_live_largest_leads = {}  # game_id -> {'home': N, 'away': N}
 
+# History storage for dev-live feed (persists chat messages and score progression)
+_dev_live_history = {}  # game_id -> {'messages': [], 'scores': [], 'game_info': {}, 'status': ''}
+DEV_LIVE_HISTORY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache', 'dev_live_history')
+
+def save_dev_live_history(game_id):
+    """Save game history to JSON file."""
+    if game_id not in _dev_live_history:
+        return
+
+    os.makedirs(DEV_LIVE_HISTORY_DIR, exist_ok=True)
+    filepath = os.path.join(DEV_LIVE_HISTORY_DIR, f'game_{game_id}.json')
+
+    # Atomic write
+    temp_path = filepath + '.tmp'
+    try:
+        with open(temp_path, 'w') as f:
+            json.dump(_dev_live_history[game_id], f)
+        os.rename(temp_path, filepath)
+    except Exception as e:
+        print(f"Error saving dev-live history: {e}")
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+def load_dev_live_history(game_id):
+    """Load game history from JSON file if it exists."""
+    filepath = os.path.join(DEV_LIVE_HISTORY_DIR, f'game_{game_id}.json')
+    if os.path.exists(filepath):
+        try:
+            with open(filepath, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading dev-live history: {e}")
+    return None
+
 # Bot personality definitions
 BOT_PERSONALITIES = {
     'play_by_play': {
@@ -1149,16 +1183,22 @@ def dev_live():
 
 @app.route('/api/dev-live/games')
 def api_dev_live_games():
-    """Get current live NBA games."""
+    """Get current live NBA games and games with saved history."""
     try:
         from nba_api.live.nba.endpoints import scoreboard
         sb = scoreboard.ScoreBoard()
         games_data = sb.get_dict()['scoreboard']['games']
 
         games = []
+        seen_game_ids = set()
+
         for g in games_data:
+            game_id = g['gameId']
+            seen_game_ids.add(game_id)
+            # Check if history exists for this game
+            has_history = os.path.exists(os.path.join(DEV_LIVE_HISTORY_DIR, f'game_{game_id}.json'))
             games.append({
-                'game_id': g['gameId'],
+                'game_id': game_id,
                 'home_team': g['homeTeam']['teamTricode'],
                 'away_team': g['awayTeam']['teamTricode'],
                 'home_team_name': g['homeTeam']['teamName'],
@@ -1166,7 +1206,33 @@ def api_dev_live_games():
                 'status': g['gameStatusText'],
                 'home_score': g['homeTeam'].get('score', 0),
                 'away_score': g['awayTeam'].get('score', 0),
+                'has_history': has_history,
             })
+
+        # Also include saved historical games not in today's scoreboard
+        if os.path.exists(DEV_LIVE_HISTORY_DIR):
+            for filename in os.listdir(DEV_LIVE_HISTORY_DIR):
+                if filename.startswith('game_') and filename.endswith('.json'):
+                    game_id = filename.replace('game_', '').replace('.json', '')
+                    if game_id not in seen_game_ids:
+                        try:
+                            history = load_dev_live_history(game_id)
+                            if history:
+                                game_info = history.get('game_info', {})
+                                final_score = history.get('final_score', {'home': 0, 'away': 0})
+                                games.append({
+                                    'game_id': game_id,
+                                    'home_team': game_info.get('home_team', 'HOME'),
+                                    'away_team': game_info.get('away_team', 'AWAY'),
+                                    'home_team_name': '',
+                                    'away_team_name': '',
+                                    'status': 'Final (Saved)',
+                                    'home_score': final_score.get('home', 0),
+                                    'away_score': final_score.get('away', 0),
+                                    'has_history': True,
+                                })
+                        except Exception:
+                            pass
 
         return jsonify({'games': games})
     except Exception as e:
@@ -1183,6 +1249,40 @@ def api_dev_live_feed(game_id):
         # Get last seen action number and client ID from query params
         last_action = int(request.args.get('last_action', 0))
         client_id = request.args.get('client_id', str(uuid.uuid4()))
+
+        # Check for saved history first (for completed games)
+        saved_history = load_dev_live_history(game_id)
+        if saved_history and saved_history.get('status') == 'Final':
+            # Return saved history for completed games
+            if last_action == 0:
+                # Fresh load - return all messages
+                return jsonify({
+                    'messages': saved_history.get('messages', []),
+                    'last_action': saved_history.get('last_action', 0),
+                    'game_info': saved_history.get('game_info', {}),
+                    'score': saved_history.get('final_score', {'home': 0, 'away': 0}),
+                    'scores': saved_history.get('scores', []),  # For chart reconstruction
+                    'total_actions': saved_history.get('total_actions', 0),
+                    'viewer_count': 0,
+                    'client_id': client_id,
+                    'lead_changes': saved_history.get('lead_changes', 0),
+                    'status': 'Final',
+                    'is_historical': True,
+                })
+            else:
+                # Incremental request on completed game - no new messages
+                return jsonify({
+                    'messages': [],
+                    'last_action': saved_history.get('last_action', 0),
+                    'game_info': saved_history.get('game_info', {}),
+                    'score': saved_history.get('final_score', {'home': 0, 'away': 0}),
+                    'total_actions': saved_history.get('total_actions', 0),
+                    'viewer_count': 0,
+                    'client_id': client_id,
+                    'lead_changes': saved_history.get('lead_changes', 0),
+                    'status': 'Final',
+                    'is_historical': True,
+                })
 
         # Track viewer heartbeat
         now = datetime.now()
@@ -1205,9 +1305,11 @@ def api_dev_live_feed(game_id):
 
         home_team = 'HOME'
         away_team = 'AWAY'
+        game_status = ''
         if game_match:
             home_team = game_match['homeTeam']['teamTricode']
             away_team = game_match['awayTeam']['teamTricode']
+            game_status = game_match.get('gameStatusText', '')
 
         # Get play-by-play
         pbp = playbyplay.PlayByPlay(game_id)
@@ -1319,6 +1421,110 @@ def api_dev_live_feed(game_id):
         # Get the highest action number we've seen
         max_action = max([a.get('actionNumber', 0) for a in actions]) if actions else 0
 
+        # === HISTORY STORAGE ===
+        # Initialize history for this game if not exists
+        if game_id not in _dev_live_history:
+            _dev_live_history[game_id] = {
+                'messages': [],
+                'scores': [],
+                'game_info': game_info,
+                'status': '',
+                'last_action': 0,
+                'lead_changes': 0,
+                'final_score': {'home': 0, 'away': 0},
+                'total_actions': 0,
+                'saved_action_numbers': set(),  # Track which actions we've stored
+            }
+
+        history = _dev_live_history[game_id]
+
+        # Add new messages to history
+        # Use message text + action_number as unique key since multiple messages per action
+        for msg in all_messages:
+            action_num = msg.get('action_number', 0)
+            msg_key = f"{action_num}_{msg.get('bot', '')}_{msg.get('type', '')}"
+            if msg_key not in history['saved_action_numbers']:
+                history['saved_action_numbers'].add(msg_key)
+                history['messages'].append(msg)
+
+        # Track score progression for charts (sample every few actions to avoid huge data)
+        if latest_score['home'] > 0 or latest_score['away'] > 0:
+            # Only add if score changed from last recorded score
+            if not history['scores'] or \
+               history['scores'][-1]['home'] != latest_score['home'] or \
+               history['scores'][-1]['away'] != latest_score['away']:
+                history['scores'].append({
+                    'home': latest_score['home'],
+                    'away': latest_score['away'],
+                    'action': max_action,
+                })
+
+        # Update history metadata
+        history['game_info'] = game_info
+        history['last_action'] = max_action
+        history['lead_changes'] = _dev_live_lead_changes[game_id]['count']
+        history['final_score'] = latest_score
+        history['total_actions'] = len(actions)
+
+        # Check if game just ended - save history (check BEFORE updating status)
+        prev_status = history.get('status', '')
+        if game_status == 'Final' and prev_status != 'Final':
+            history['status'] = 'Final'
+
+            # If we don't have any messages accumulated (e.g., game was already Final when first tracked),
+            # regenerate ALL messages from all actions before saving
+            if not history['messages'] and actions:
+                print(f"Regenerating messages for completed game {game_id}...")
+                full_messages = []
+                full_scores = []
+                prev_a = None
+                largest_leads_regen = {'home': 0, 'away': 0}
+
+                for i, a in enumerate(actions):
+                    # Track largest leads
+                    h = int(a.get('scoreHome', 0) or 0)
+                    aw = int(a.get('scoreAway', 0) or 0)
+                    if h > aw:
+                        largest_leads_regen['home'] = max(largest_leads_regen['home'], h - aw)
+                    elif aw > h:
+                        largest_leads_regen['away'] = max(largest_leads_regen['away'], aw - h)
+
+                    # Generate messages
+                    compare_a = prev_a if i > 0 else None
+                    msgs = generate_chat_message(a, game_info, compare_a, largest_leads_regen)
+
+                    for msg in msgs:
+                        msg['action_number'] = a.get('actionNumber', 0)
+                    full_messages.extend(msgs)
+
+                    # Track score at each action
+                    if h > 0 or aw > 0:
+                        full_scores.append({
+                            'home': h,
+                            'away': aw,
+                            'action': a.get('actionNumber', 0)
+                        })
+
+                    prev_a = a
+
+                history['messages'] = full_messages
+                # Deduplicate scores (only keep significant changes)
+                if full_scores:
+                    deduped_scores = [full_scores[0]]
+                    for s in full_scores[1:]:
+                        if s['home'] != deduped_scores[-1]['home'] or s['away'] != deduped_scores[-1]['away']:
+                            deduped_scores.append(s)
+                    history['scores'] = deduped_scores
+                print(f"Regenerated {len(history['messages'])} messages and {len(history['scores'])} score points")
+
+            # Convert set to list for JSON serialization before saving
+            history_to_save = {k: v for k, v in history.items() if k != 'saved_action_numbers'}
+            _dev_live_history[game_id] = history_to_save
+            save_dev_live_history(game_id)
+            print(f"Saved dev-live history for game {game_id}")
+        else:
+            history['status'] = game_status
+
         return jsonify({
             'messages': all_messages,
             'last_action': max_action,
@@ -1328,6 +1534,7 @@ def api_dev_live_feed(game_id):
             'viewer_count': viewer_count,
             'client_id': client_id,
             'lead_changes': _dev_live_lead_changes[game_id]['count'],
+            'status': game_status,
         })
 
     except Exception as e:
