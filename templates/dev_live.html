@@ -14,6 +14,7 @@
     </script>
     {% endif %}
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23f85' stroke='%23333' stroke-width='3'/><path d='M50 5 v90 M5 50 h90 M15 20 Q50 50 15 80 M85 20 Q50 50 85 80' fill='none' stroke='%23333' stroke-width='3'/></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
         :root {
@@ -181,6 +182,41 @@
         .score-divider {
             font-size: 2rem;
             color: var(--text-muted);
+        }
+        /* Mini Charts */
+        .mini-charts {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .mini-charts.visible {
+            display: grid;
+        }
+        .mini-chart {
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            padding: 10px;
+        }
+        .mini-chart-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        .mini-chart-container {
+            height: 100px;
+            position: relative;
+        }
+        @media (max-width: 600px) {
+            .mini-charts {
+                grid-template-columns: 1fr;
+            }
+            .mini-chart-container {
+                height: 80px;
+            }
         }
         /* Chat Feed */
         .chat-container {
@@ -446,6 +482,21 @@
             </div>
         </div>
 
+        <div class="mini-charts" id="mini-charts">
+            <div class="mini-chart">
+                <div class="mini-chart-title">Lead Differential</div>
+                <div class="mini-chart-container">
+                    <canvas id="leadChart"></canvas>
+                </div>
+            </div>
+            <div class="mini-chart">
+                <div class="mini-chart-title">Score Progression</div>
+                <div class="mini-chart-container">
+                    <canvas id="scoreChart"></canvas>
+                </div>
+            </div>
+        </div>
+
         <div class="chat-container" id="chat-container" style="display: none;">
             <div class="chat-header">
                 <span class="chat-title">Live Feed</span>
@@ -517,6 +568,194 @@
         let pollInterval = null;
         let clientId = 'client_' + Math.random().toString(36).substr(2, 9);
 
+        // Chart instances and data
+        let leadChart = null;
+        let scoreChart = null;
+        let chartData = {
+            labels: [],
+            homeScores: [],
+            awayScores: [],
+            leadDiffs: []  // positive = home leading
+        };
+
+        // NBA team colors
+        const teamColors = {
+            'MIN': '#78BE20', 'CLE': '#860038', 'BOS': '#007A33', 'MIA': '#98002E',
+            'IND': '#002D62', 'LAC': '#C8102E', 'DET': '#C8102E', 'SAS': '#C4CED4',
+            'DAL': '#00538C', 'CHI': '#CE1141', 'CHA': '#1D1160', 'UTA': '#002B5C',
+            'DEN': '#FEC524', 'LAL': '#552583', 'GSW': '#1D428A', 'PHX': '#E56020',
+            'ATL': '#E03A3E', 'BKN': '#FFFFFF', 'HOU': '#CE1141', 'MEM': '#5D76A9',
+            'MIL': '#00471B', 'NOP': '#C8102E', 'NYK': '#F58426', 'OKC': '#007AC1',
+            'ORL': '#0077C0', 'PHI': '#006BB6', 'POR': '#E03A3E', 'SAC': '#5A2D81',
+            'TOR': '#CE1141', 'WAS': '#002B5C'
+        };
+
+        function initCharts() {
+            // Destroy existing charts
+            if (leadChart) { leadChart.destroy(); leadChart = null; }
+            if (scoreChart) { scoreChart.destroy(); scoreChart = null; }
+
+            // Reset data
+            chartData = { labels: [], homeScores: [], awayScores: [], leadDiffs: [] };
+
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 0 },
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        display: false
+                    },
+                    y: {
+                        ticks: {
+                            font: { size: 9 },
+                            color: '#6b7280',
+                            maxTicksLimit: 5
+                        },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    }
+                }
+            };
+
+            // Lead Differential Chart
+            const leadCtx = document.getElementById('leadChart').getContext('2d');
+            leadChart = new Chart(leadCtx, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        data: chartData.leadDiffs,
+                        borderColor: '#fec524',
+                        borderWidth: 1.5,
+                        fill: {
+                            target: { value: 0 },
+                            above: 'rgba(134, 0, 56, 0.3)',  // home color
+                            below: 'rgba(120, 190, 32, 0.3)'  // away color
+                        },
+                        tension: 0.2,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        ...chartOptions.scales,
+                        y: {
+                            ...chartOptions.scales.y,
+                            ticks: {
+                                ...chartOptions.scales.y.ticks,
+                                callback: v => v > 0 ? `+${Math.round(v)}` : Math.round(v)
+                            },
+                            grid: {
+                                color: ctx => ctx.tick.value === 0 ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Score Progression Chart
+            const scoreCtx = document.getElementById('scoreChart').getContext('2d');
+            scoreChart = new Chart(scoreCtx, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [
+                        {
+                            label: 'Home',
+                            data: chartData.homeScores,
+                            borderColor: '#860038',
+                            borderWidth: 1.5,
+                            tension: 0.1,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Away',
+                            data: chartData.awayScores,
+                            borderColor: '#78BE20',
+                            borderWidth: 1.5,
+                            tension: 0.1,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        ...chartOptions.scales,
+                        y: {
+                            ...chartOptions.scales.y,
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                boxWidth: 8,
+                                boxHeight: 8,
+                                padding: 4,
+                                font: { size: 9 },
+                                color: '#b0b8c1'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Show charts
+            document.getElementById('mini-charts').classList.add('visible');
+        }
+
+        function updateCharts(homeScore, awayScore, homeTeam, awayTeam) {
+            if (!leadChart || !scoreChart) return;
+
+            // Add data point
+            const label = chartData.labels.length;
+            chartData.labels.push(label);
+            chartData.homeScores.push(homeScore);
+            chartData.awayScores.push(awayScore);
+            chartData.leadDiffs.push(homeScore - awayScore);
+
+            // Limit data points for performance (keep last 100)
+            const maxPoints = 100;
+            if (chartData.labels.length > maxPoints) {
+                chartData.labels.shift();
+                chartData.homeScores.shift();
+                chartData.awayScores.shift();
+                chartData.leadDiffs.shift();
+            }
+
+            // Update team colors in charts
+            const homeColor = teamColors[homeTeam] || '#860038';
+            const awayColor = teamColors[awayTeam] || '#78BE20';
+
+            // Update lead chart fill colors
+            leadChart.data.datasets[0].fill.above = homeColor + '4D';  // 30% opacity
+            leadChart.data.datasets[0].fill.below = awayColor + '4D';
+
+            // Update score chart line colors and data
+            scoreChart.data.datasets[0].borderColor = homeColor;
+            scoreChart.data.datasets[0].label = homeTeam;
+            scoreChart.data.datasets[1].borderColor = awayColor;
+            scoreChart.data.datasets[1].label = awayTeam;
+
+            // Sync chart data arrays with chartData (Chart.js needs direct reference updates)
+            leadChart.data.labels = chartData.labels;
+            leadChart.data.datasets[0].data = chartData.leadDiffs;
+            scoreChart.data.labels = chartData.labels;
+            scoreChart.data.datasets[0].data = chartData.homeScores;
+            scoreChart.data.datasets[1].data = chartData.awayScores;
+
+            // Update chart display
+            leadChart.update('none');
+            scoreChart.update('none');
+        }
+
         // Track active filters (all active by default)
         let activeFilters = new Set(['play_by_play', 'stats_nerd', 'hype_man', 'historian', 'ai_commentator']);
 
@@ -578,6 +817,7 @@
             if (!gameId) {
                 document.getElementById('scoreboard').style.display = 'none';
                 document.getElementById('chat-container').style.display = 'none';
+                document.getElementById('mini-charts').classList.remove('visible');
                 if (pollInterval) {
                     clearInterval(pollInterval);
                     pollInterval = null;
@@ -591,6 +831,9 @@
             document.getElementById('scoreboard').style.display = 'flex';
             document.getElementById('chat-container').style.display = 'block';
             document.getElementById('chat-feed').innerHTML = '<div class="loading" id="loading"><div class="spinner"></div><p>Loading game feed...</p></div>';
+
+            // Initialize charts
+            initCharts();
 
             // Start polling
             fetchFeed();
@@ -620,6 +863,8 @@
                     document.getElementById('away-score').textContent = data.score.away;
                     // Update header score
                     document.getElementById('stat-score').textContent = `${data.game_info.away_team} ${data.score.away} - ${data.game_info.home_team} ${data.score.home}`;
+                    // Update charts
+                    updateCharts(data.score.home, data.score.away, data.game_info.home_team, data.game_info.away_team);
                 }
 
                 // Update stats in header
