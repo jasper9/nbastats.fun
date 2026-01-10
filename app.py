@@ -1186,8 +1186,229 @@ BOT_PERSONALITIES = {
     },
 }
 
+# Track player stats per game for StatsNerd milestone detection
+_player_game_stats = {}  # {game_id: {player_id: {name, team, pts, reb, ast, stl, blk, fgm, fga, ftm, fta, 3pm}}}
 
-def generate_chat_message(action, game_info, prev_action=None, largest_leads=None):
+
+def reset_player_stats(game_id):
+    """Reset player stats for a game (used when starting fresh tracking)."""
+    _player_game_stats[game_id] = {}
+
+
+def get_player_stats(game_id, player_id):
+    """Get or initialize player stats for a game."""
+    if game_id not in _player_game_stats:
+        _player_game_stats[game_id] = {}
+    if player_id not in _player_game_stats[game_id]:
+        _player_game_stats[game_id][player_id] = {
+            'name': '', 'team': '',
+            'pts': 0, 'reb': 0, 'ast': 0, 'stl': 0, 'blk': 0,
+            'fgm': 0, 'fga': 0, 'ftm': 0, 'fta': 0, '3pm': 0,
+            'announced_dd': False, 'announced_td': False,
+            'announced_pts_20': False, 'announced_pts_30': False, 'announced_pts_40': False,
+        }
+    return _player_game_stats[game_id][player_id]
+
+
+def check_player_milestones(game_id, player_id, player_name, team):
+    """Check if player hit any milestones and return StatsNerd messages."""
+    stats = get_player_stats(game_id, player_id)
+    messages = []
+
+    pts, reb, ast, stl, blk = stats['pts'], stats['reb'], stats['ast'], stats['stl'], stats['blk']
+
+    # Count categories with 10+
+    double_cats = []
+    if pts >= 10:
+        double_cats.append(('points', pts))
+    if reb >= 10:
+        double_cats.append(('rebounds', reb))
+    if ast >= 10:
+        double_cats.append(('assists', ast))
+    if stl >= 10:
+        double_cats.append(('steals', stl))
+    if blk >= 10:
+        double_cats.append(('blocks', blk))
+
+    # Triple-double detection
+    if len(double_cats) >= 3 and not stats['announced_td']:
+        cats_str = ', '.join(f"{c[1]} {c[0]}" for c in double_cats[:3])
+        messages.append({
+            'bot': 'stats_nerd',
+            'text': f"🎯🎯🎯 TRIPLE-DOUBLE! {player_name} ({team}) has {cats_str}!",
+            'type': 'triple_double',
+            'team': team,
+            'is_milestone': True,
+        })
+        stats['announced_td'] = True
+        stats['announced_dd'] = True  # Don't also announce DD
+
+    # Double-double detection
+    elif len(double_cats) >= 2 and not stats['announced_dd']:
+        cats_str = ' and '.join(f"{c[1]} {c[0]}" for c in double_cats[:2])
+        messages.append({
+            'bot': 'stats_nerd',
+            'text': f"🎯🎯 DOUBLE-DOUBLE! {player_name} ({team}) has {cats_str}!",
+            'type': 'double_double',
+            'team': team,
+            'is_milestone': True,
+        })
+        stats['announced_dd'] = True
+
+    # Near triple-double (has DD and 1 away from TD)
+    elif len(double_cats) == 2 and not stats['announced_td']:
+        near_cats = []
+        if pts == 9:
+            near_cats.append('points')
+        if reb == 9:
+            near_cats.append('rebounds')
+        if ast == 9:
+            near_cats.append('assists')
+        if stl == 9:
+            near_cats.append('steals')
+        if blk == 9:
+            near_cats.append('blocks')
+        if near_cats:
+            messages.append({
+                'bot': 'stats_nerd',
+                'text': f"👀 {player_name} is 1 {near_cats[0][:-1]} away from a TRIPLE-DOUBLE!",
+                'type': 'near_triple_double',
+                'team': team,
+            })
+
+    # Near double-double (has 1 cat at 10+ and another at 9)
+    elif len(double_cats) == 1 and not stats['announced_dd']:
+        cat_at_10 = double_cats[0][0]
+        near_cats = []
+        if pts == 9 and cat_at_10 != 'points':
+            near_cats.append('points')
+        if reb == 9 and cat_at_10 != 'rebounds':
+            near_cats.append('rebounds')
+        if ast == 9 and cat_at_10 != 'assists':
+            near_cats.append('assists')
+        if near_cats:
+            messages.append({
+                'bot': 'stats_nerd',
+                'text': f"👀 {player_name} has {double_cats[0][1]} {cat_at_10} and 9 {near_cats[0]} - 1 away from a double-double!",
+                'type': 'near_double_double',
+                'team': team,
+            })
+
+    # High scoring milestones
+    if pts >= 40 and not stats['announced_pts_40']:
+        messages.append({
+            'bot': 'stats_nerd',
+            'text': f"🔥 {player_name} is ON FIRE with {pts} POINTS! Scoring explosion!",
+            'type': 'high_scorer',
+            'team': team,
+        })
+        stats['announced_pts_40'] = True
+        stats['announced_pts_30'] = True
+        stats['announced_pts_20'] = True
+    elif pts >= 30 and not stats['announced_pts_30']:
+        messages.append({
+            'bot': 'stats_nerd',
+            'text': f"🔥 {player_name} is cooking! {pts} points and counting!",
+            'type': 'high_scorer',
+            'team': team,
+        })
+        stats['announced_pts_30'] = True
+        stats['announced_pts_20'] = True
+    elif pts >= 20 and not stats['announced_pts_20']:
+        messages.append({
+            'bot': 'stats_nerd',
+            'text': f"📊 {player_name} ({team}) now has {pts} points tonight.",
+            'type': 'scoring_update',
+            'team': team,
+        })
+        stats['announced_pts_20'] = True
+
+    # Rare defensive stats (5+ blocks or steals)
+    if blk == 5:
+        messages.append({
+            'bot': 'stats_nerd',
+            'text': f"🚫 {player_name} with {blk} BLOCKS! Protecting the rim!",
+            'type': 'defensive_milestone',
+            'team': team,
+        })
+    if stl == 5:
+        messages.append({
+            'bot': 'stats_nerd',
+            'text': f"👋 {player_name} with {stl} STEALS! Picking pockets all night!",
+            'type': 'defensive_milestone',
+            'team': team,
+        })
+
+    return messages
+
+
+def update_player_stats(game_id, action):
+    """Update player stats based on an action and return any milestone messages."""
+    action_type = action.get('actionType', '')
+    player_id = action.get('personId')
+    player_name = action.get('playerNameI', '')
+    team = action.get('teamTricode', '')
+    desc = action.get('description', '')
+
+    if not player_id:
+        return []
+
+    stats = get_player_stats(game_id, player_id)
+    stats['name'] = player_name
+    stats['team'] = team
+
+    messages = []
+
+    # Update stats based on action type
+    if action_type == '2pt':
+        stats['fga'] += 1
+        if 'MISS' not in desc:
+            stats['fgm'] += 1
+            stats['pts'] += 2
+            messages = check_player_milestones(game_id, player_id, player_name, team)
+
+    elif action_type == '3pt':
+        stats['fga'] += 1
+        if 'MISS' not in desc:
+            stats['fgm'] += 1
+            stats['3pm'] += 1
+            stats['pts'] += 3
+            messages = check_player_milestones(game_id, player_id, player_name, team)
+
+    elif action_type == 'freethrow':
+        stats['fta'] += 1
+        if 'MISS' not in desc:
+            stats['ftm'] += 1
+            stats['pts'] += 1
+            messages = check_player_milestones(game_id, player_id, player_name, team)
+
+    elif action_type == 'rebound':
+        stats['reb'] += 1
+        messages = check_player_milestones(game_id, player_id, player_name, team)
+
+    elif action_type == 'steal':
+        stats['stl'] += 1
+        messages = check_player_milestones(game_id, player_id, player_name, team)
+
+    elif action_type == 'block':
+        stats['blk'] += 1
+        messages = check_player_milestones(game_id, player_id, player_name, team)
+
+    # Check for assists on made shots
+    assist_player_id = action.get('assistPersonId')
+    if assist_player_id and action_type in ['2pt', '3pt'] and 'MISS' not in desc:
+        assist_name = action.get('assistPlayerNameInitial', '')
+        assist_stats = get_player_stats(game_id, assist_player_id)
+        assist_stats['name'] = assist_name
+        assist_stats['team'] = team
+        assist_stats['ast'] += 1
+        assist_messages = check_player_milestones(game_id, assist_player_id, assist_name, team)
+        messages.extend(assist_messages)
+
+    return messages
+
+
+def generate_chat_message(action, game_info, prev_action=None, largest_leads=None, player_stats_tracker=None):
     """Convert a play-by-play action into a chat message with personality."""
     action_type = action.get('actionType', '')
     sub_type = action.get('subType', '')
@@ -1371,6 +1592,12 @@ def generate_chat_message(action, game_info, prev_action=None, largest_leads=Non
                     'lead_amount': away_lead,
                 })
             largest_leads['away'] = away_lead
+
+    # Track player stats and check for milestones (StatsNerd individual player commentary)
+    game_id = game_info.get('game_id', '')
+    if game_id:
+        player_milestone_msgs = update_player_stats(game_id, action)
+        messages.extend(player_milestone_msgs)
 
     # Add score context and timestamp to all messages
     for msg in messages:
@@ -1592,6 +1819,7 @@ def api_dev_live_feed(game_id):
             prev_a = None
             largest_leads_regen = {'home': 0, 'away': 0}
             lead_change_count = 0
+            reset_player_stats(game_id)  # Reset player stats for fresh tracking
 
             for i, a in enumerate(actions):
                 # Track largest leads
@@ -1699,7 +1927,9 @@ def api_dev_live_feed(game_id):
                 prev_action = prev_actions[0]
 
         # Calculate largest leads from history if this is a fresh load
+        # Note: Player stats are tracked via generate_chat_message -> update_player_stats
         if last_action == 0 and len(actions) > 0:
+            reset_player_stats(game_id)  # Start fresh for player stat tracking
             for a in actions:
                 h = int(a.get('scoreHome', 0) or 0)
                 aw = int(a.get('scoreAway', 0) or 0)
@@ -1833,6 +2063,7 @@ def api_dev_live_feed(game_id):
                 full_scores = []
                 prev_a = None
                 largest_leads_regen = {'home': 0, 'away': 0}
+                reset_player_stats(game_id)  # Reset player stats for fresh tracking
 
                 for i, a in enumerate(actions):
                     # Track largest leads
