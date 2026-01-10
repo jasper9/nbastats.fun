@@ -188,7 +188,7 @@
             display: none;
             background: var(--bg-secondary);
             border-radius: 8px;
-            padding: 12px 15px;
+            padding: 15px;
             margin-bottom: 15px;
         }
         .odds-section.visible {
@@ -197,8 +197,8 @@
         .odds-row {
             display: flex;
             justify-content: center;
-            align-items: center;
-            gap: 20px;
+            align-items: flex-start;
+            gap: 25px;
             flex-wrap: wrap;
         }
         .odds-item {
@@ -209,51 +209,100 @@
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            margin-bottom: 4px;
         }
         .odds-value {
             font-family: 'Oswald', sans-serif;
             font-size: 1.1rem;
-            color: var(--nuggets-gold);
+            color: var(--text-primary);
         }
-        .odds-prob {
+        .odds-value .team-abbrev {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-right: 4px;
+        }
+        .odds-moneyline {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            gap: 12px;
+            justify-content: center;
         }
-        .prob-team {
+        .ml-team {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 50px;
+        }
+        .ml-abbrev {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        .ml-value {
             font-family: 'Oswald', sans-serif;
-            font-size: 0.9rem;
-            width: 35px;
+            font-size: 1rem;
+        }
+        .ml-value.favorite {
+            color: var(--positive);
+        }
+        .ml-value.underdog {
+            color: var(--text-secondary);
+        }
+        /* Win Probability Bar */
+        .prob-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 200px;
         }
         .prob-bar-container {
-            width: 120px;
-            height: 20px;
+            width: 100%;
+            height: 24px;
             background: var(--bg-card);
-            border-radius: 10px;
+            border-radius: 12px;
             overflow: hidden;
+            display: flex;
             position: relative;
         }
         .prob-bar {
             height: 100%;
             transition: width 0.3s ease;
-        }
-        .prob-bar.home {
-            background: linear-gradient(to right, var(--nuggets-gold), #ffd966);
-            float: right;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.75rem;
+            color: var(--bg-primary);
+            font-weight: 600;
+            min-width: 40px;
         }
         .prob-bar.away {
-            background: linear-gradient(to left, #ef4444, #f87171);
-            float: left;
+            border-radius: 12px 0 0 12px;
         }
-        .prob-value {
+        .prob-bar.home {
+            border-radius: 0 12px 12px 0;
+        }
+        .prob-labels {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 4px;
+        }
+        .prob-label {
             font-family: 'Oswald', sans-serif;
-            font-size: 0.9rem;
-            width: 45px;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .prob-label .team-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
         }
         .odds-vendor-count {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: var(--text-muted);
-            margin-top: 3px;
+            text-align: center;
+            margin-top: 8px;
         }
         /* Mini Charts */
         .mini-charts {
@@ -565,19 +614,37 @@
                     <div class="odds-value" id="odds-total">--</div>
                 </div>
                 <div class="odds-item">
-                    <div class="odds-prob">
-                        <div class="prob-team" id="away-team-prob">AWAY</div>
-                        <div class="prob-value" id="away-prob-value" style="text-align: right;">--</div>
-                        <div class="prob-bar-container">
-                            <div class="prob-bar away" id="away-prob-bar" style="width: 0%;"></div>
-                            <div class="prob-bar home" id="home-prob-bar" style="width: 0%;"></div>
+                    <div class="odds-label">Moneyline</div>
+                    <div class="odds-moneyline" id="odds-moneyline">
+                        <div class="ml-team">
+                            <span class="ml-abbrev" id="ml-away-abbrev">AWAY</span>
+                            <span class="ml-value" id="ml-away-value">--</span>
                         </div>
-                        <div class="prob-value" id="home-prob-value">--</div>
-                        <div class="prob-team" id="home-team-prob" style="text-align: right;">HOME</div>
+                        <div class="ml-team">
+                            <span class="ml-abbrev" id="ml-home-abbrev">HOME</span>
+                            <span class="ml-value" id="ml-home-value">--</span>
+                        </div>
                     </div>
-                    <div class="odds-vendor-count" id="odds-vendor-count"></div>
+                </div>
+                <div class="odds-item prob-display">
+                    <div class="odds-label">Win Probability</div>
+                    <div class="prob-bar-container">
+                        <div class="prob-bar away" id="away-prob-bar"></div>
+                        <div class="prob-bar home" id="home-prob-bar"></div>
+                    </div>
+                    <div class="prob-labels">
+                        <span class="prob-label" id="away-prob-label">
+                            <span class="team-dot" id="away-dot"></span>
+                            <span id="away-prob-text">AWAY 50%</span>
+                        </span>
+                        <span class="prob-label" id="home-prob-label">
+                            <span id="home-prob-text">HOME 50%</span>
+                            <span class="team-dot" id="home-dot"></span>
+                        </span>
+                    </div>
                 </div>
             </div>
+            <div class="odds-vendor-count" id="odds-vendor-count"></div>
         </div>
 
         <div class="mini-charts" id="mini-charts">
@@ -868,6 +935,11 @@
             probChart.update('none');
         }
 
+        function formatMoneyline(ml) {
+            if (ml === null || ml === undefined) return '--';
+            return ml > 0 ? `+${ml}` : ml.toString();
+        }
+
         function updateOddsDisplay(odds, homeTeam, awayTeam) {
             const oddsSection = document.getElementById('odds-section');
             if (!odds || !odds.consensus) {
@@ -879,12 +951,16 @@
             currentOdds = odds;
 
             const consensus = odds.consensus;
+            const homeColor = teamColors[homeTeam] || '#fec524';
+            const awayColor = teamColors[awayTeam] || '#ef4444';
 
-            // Update spread
+            // Update spread (show which team is favored)
             const spreadEl = document.getElementById('odds-spread');
             if (consensus.spread !== null && consensus.spread !== undefined) {
                 const spreadVal = consensus.spread;
-                spreadEl.textContent = spreadVal > 0 ? `+${spreadVal}` : spreadVal.toString();
+                const favoredTeam = spreadVal < 0 ? homeTeam : awayTeam;
+                const spreadDisplay = Math.abs(spreadVal);
+                spreadEl.innerHTML = `<span class="team-abbrev">${favoredTeam}</span>-${spreadDisplay}`;
             } else {
                 spreadEl.textContent = '--';
             }
@@ -893,24 +969,53 @@
             const totalEl = document.getElementById('odds-total');
             totalEl.textContent = consensus.total ? `O/U ${consensus.total}` : '--';
 
-            // Update probability display
+            // Update moneylines
+            const awayMl = consensus.away_ml;
+            const homeMl = consensus.home_ml;
+            document.getElementById('ml-away-abbrev').textContent = awayTeam;
+            document.getElementById('ml-home-abbrev').textContent = homeTeam;
+
+            const awayMlEl = document.getElementById('ml-away-value');
+            const homeMlEl = document.getElementById('ml-home-value');
+            awayMlEl.textContent = formatMoneyline(awayMl);
+            homeMlEl.textContent = formatMoneyline(homeMl);
+
+            // Style favorite vs underdog
+            if (awayMl !== null && homeMl !== null) {
+                awayMlEl.className = 'ml-value ' + (awayMl < homeMl ? 'favorite' : 'underdog');
+                homeMlEl.className = 'ml-value ' + (homeMl < awayMl ? 'favorite' : 'underdog');
+            }
+
+            // Update probability display with team colors
             const homeProb = consensus.home_prob || 50;
             const awayProb = consensus.away_prob || 50;
 
-            document.getElementById('away-team-prob').textContent = awayTeam;
-            document.getElementById('home-team-prob').textContent = homeTeam;
-            document.getElementById('away-prob-value').textContent = `${awayProb.toFixed(0)}%`;
-            document.getElementById('home-prob-value').textContent = `${homeProb.toFixed(0)}%`;
+            // Normalize to 100% total (remove vig)
+            const totalProb = homeProb + awayProb;
+            const normalizedHomeProb = Math.round((homeProb / totalProb) * 100);
+            const normalizedAwayProb = 100 - normalizedHomeProb;
 
-            // Update probability bars (each bar shows distance from 50%)
-            const awayBarWidth = Math.max(0, 50 - homeProb);  // away favored
-            const homeBarWidth = Math.max(0, homeProb - 50);  // home favored
-            document.getElementById('away-prob-bar').style.width = `${awayBarWidth}%`;
-            document.getElementById('home-prob-bar').style.width = `${homeBarWidth}%`;
+            // Update probability bar with team colors
+            const awayBar = document.getElementById('away-prob-bar');
+            const homeBar = document.getElementById('home-prob-bar');
+
+            awayBar.style.width = `${normalizedAwayProb}%`;
+            awayBar.style.background = awayColor;
+            awayBar.textContent = normalizedAwayProb >= 20 ? `${normalizedAwayProb}%` : '';
+
+            homeBar.style.width = `${normalizedHomeProb}%`;
+            homeBar.style.background = homeColor;
+            homeBar.textContent = normalizedHomeProb >= 20 ? `${normalizedHomeProb}%` : '';
+
+            // Update labels with team colors
+            document.getElementById('away-dot').style.background = awayColor;
+            document.getElementById('home-dot').style.background = homeColor;
+            document.getElementById('away-prob-text').textContent = `${awayTeam} ${normalizedAwayProb}%`;
+            document.getElementById('home-prob-text').textContent = `${homeTeam} ${normalizedHomeProb}%`;
 
             // Update vendor count
             document.getElementById('odds-vendor-count').textContent =
-                consensus.vendor_count ? `${consensus.vendor_count} bookmakers` : '';
+                consensus.vendor_count ? `Consensus from ${consensus.vendor_count} bookmakers` : '';
         }
 
         // Track active filters (all active by default)

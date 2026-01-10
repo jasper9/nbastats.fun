@@ -987,6 +987,8 @@ def fetch_dev_live_odds(game_ids, game_date=None):
             vendors = []
             spreads = []
             totals = []
+            home_mls = []
+            away_mls = []
 
             for o in odds_list:
                 home_ml = o.get('moneyline_home_odds')
@@ -1001,6 +1003,8 @@ def fetch_dev_live_odds(game_ids, game_date=None):
                 if home_prob:
                     home_probs.append(home_prob * 100)
                     away_probs.append((away_prob or (1 - home_prob)) * 100)
+                    home_mls.append(float(home_ml))
+                    away_mls.append(float(away_ml))
                     vendors.append({
                         'name': o.get('vendor', 'Unknown'),
                         'home_ml': home_ml,
@@ -1023,6 +1027,8 @@ def fetch_dev_live_odds(game_ids, game_date=None):
                         'vendor_count': len(vendors),
                         'spread': round(sum(spreads) / len(spreads), 1) if spreads else None,
                         'total': round(sum(totals) / len(totals), 1) if totals else None,
+                        'home_ml': round(sum(home_mls) / len(home_mls)) if home_mls else None,
+                        'away_ml': round(sum(away_mls) / len(away_mls)) if away_mls else None,
                     },
                     'updated_at': datetime.now().isoformat(),
                 }
@@ -1430,6 +1436,8 @@ def api_dev_live_games():
                         'vendor_count': consensus.get('vendor_count', 0),
                         'spread': consensus.get('spread'),
                         'total': consensus.get('total'),
+                        'home_ml': consensus.get('home_ml'),
+                        'away_ml': consensus.get('away_ml'),
                     }
                 }
 
