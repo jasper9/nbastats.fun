@@ -196,6 +196,27 @@
             justify-content: space-between;
             align-items: center;
         }
+        .chat-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 0.85rem;
+        }
+        .stat-item {
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+        .stat-item#stat-score {
+            color: var(--nuggets-gold);
+            font-weight: 600;
+        }
+        .stat-item#stat-lead-changes {
+            color: #f97316;
+        }
+        .stat-item#stat-viewers {
+            color: var(--positive);
+        }
         .chat-title {
             font-family: 'Oswald', sans-serif;
             font-size: 1rem;
@@ -391,7 +412,11 @@
         <div class="chat-container" id="chat-container" style="display: none;">
             <div class="chat-header">
                 <span class="chat-title">Live Feed</span>
-                <span class="chat-status" id="chat-status">Connecting...</span>
+                <div class="chat-stats">
+                    <span class="stat-item" id="stat-score">0-0</span>
+                    <span class="stat-item" id="stat-lead-changes">🔄 0</span>
+                    <span class="stat-item" id="stat-viewers">👁 1</span>
+                </div>
             </div>
             <div class="chat-feed" id="chat-feed">
                 <div class="loading" id="loading">
@@ -446,6 +471,7 @@
         let currentGameId = null;
         let lastActionNumber = 0;
         let pollInterval = null;
+        let clientId = 'client_' + Math.random().toString(36).substr(2, 9);
 
         async function loadGames() {
             try {
@@ -491,8 +517,6 @@
             document.getElementById('scoreboard').style.display = 'flex';
             document.getElementById('chat-container').style.display = 'block';
             document.getElementById('chat-feed').innerHTML = '<div class="loading" id="loading"><div class="spinner"></div><p>Loading game feed...</p></div>';
-            document.getElementById('chat-status').textContent = 'Connecting...';
-            document.getElementById('chat-status').classList.remove('connected');
 
             // Start polling
             fetchFeed();
@@ -504,18 +528,13 @@
             if (!currentGameId) return;
 
             try {
-                const response = await fetch(`/api/dev-live/feed/${currentGameId}?last_action=${lastActionNumber}`);
+                const response = await fetch(`/api/dev-live/feed/${currentGameId}?last_action=${lastActionNumber}&client_id=${clientId}`);
                 const data = await response.json();
 
                 if (data.error) {
                     console.error('Feed error:', data.error);
-                    document.getElementById('chat-status').textContent = 'Error';
                     return;
                 }
-
-                // Update status
-                document.getElementById('chat-status').textContent = `Live - ${data.total_actions} plays`;
-                document.getElementById('chat-status').classList.add('connected');
 
                 // Update scoreboard
                 if (data.game_info) {
@@ -525,7 +544,13 @@
                 if (data.score) {
                     document.getElementById('home-score').textContent = data.score.home;
                     document.getElementById('away-score').textContent = data.score.away;
+                    // Update header score
+                    document.getElementById('stat-score').textContent = `${data.game_info.away_team} ${data.score.away} - ${data.game_info.home_team} ${data.score.home}`;
                 }
+
+                // Update stats in header
+                document.getElementById('stat-lead-changes').textContent = `🔄 ${data.lead_changes || 0}`;
+                document.getElementById('stat-viewers').textContent = `👁 ${data.viewer_count || 1}`;
 
                 // Update last action number
                 if (data.last_action > lastActionNumber) {
@@ -549,8 +574,6 @@
 
             } catch (error) {
                 console.error('Error fetching feed:', error);
-                document.getElementById('chat-status').textContent = 'Connection error';
-                document.getElementById('chat-status').classList.remove('connected');
             }
         }
 

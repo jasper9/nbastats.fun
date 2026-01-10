@@ -5,7 +5,7 @@ import math
 import os
 import re
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -887,6 +887,16 @@ def live_history(game_id):
 # Track last seen action for incremental updates
 _dev_live_last_action = {'action_number': 0}
 
+# Track viewers per game (game_id -> {client_id: last_seen_timestamp})
+_dev_live_viewers = {}
+VIEWER_TIMEOUT = 15  # seconds before a viewer is considered gone
+
+# Track lead changes per game
+_dev_live_lead_changes = {}  # game_id -> {'count': N, 'last_leader': 'TEAM'}
+
+# Track largest leads per game
+_dev_live_largest_leads = {}  # game_id -> {'home': N, 'away': N}
+
 # Bot personality definitions
 BOT_PERSONALITIES = {
     'play_by_play': {
@@ -922,7 +932,7 @@ BOT_PERSONALITIES = {
 }
 
 
-def generate_chat_message(action, game_info):
+def generate_chat_message(action, game_info, prev_action=None, largest_leads=None):
     """Convert a play-by-play action into a chat message with personality."""
     action_type = action.get('actionType', '')
     sub_type = action.get('subType', '')
@@ -933,6 +943,16 @@ def generate_chat_message(action, game_info):
     score_away = action.get('scoreAway', '0')
     period = action.get('period', 1)
     clock = action.get('clock', '')
+
+    # Get previous scores for lead change detection
+    prev_home = int(prev_action.get('scoreHome', '0') or 0) if prev_action else 0
+    prev_away = int(prev_action.get('scoreAway', '0') or 0) if prev_action else 0
+    curr_home = int(score_home or 0)
+    curr_away = int(score_away or 0)
+
+    # Track largest leads
+    if largest_leads is None:
+        largest_leads = {'home': 0, 'away': 0}
 
     # Parse clock (format: PT04M23.50S)
     clock_display = ''
@@ -1034,6 +1054,69 @@ def generate_chat_message(action, game_info):
                 'type': 'period',
             })
 
+    # Detect lead changes (only on scoring plays)
+    if action_type in ['2pt', '3pt', 'freethrow'] and 'MISS' not in desc:
+        # Determine previous and current leaders
+        prev_diff = prev_away - prev_home  # positive = away leading
+        curr_diff = curr_away - curr_home
+
+        # Lead change: one team was ahead, now the other is
+        if prev_diff > 0 and curr_diff < 0:
+            # Away was leading, now home leads
+            messages.append({
+                'bot': 'hype_man',
+                'text': f"🔄 LEAD CHANGE! {home_team} takes the lead!",
+                'type': 'lead_change',
+                'team': home_team,
+                'is_lead_change': True,
+            })
+        elif prev_diff < 0 and curr_diff > 0:
+            # Home was leading, now away leads
+            messages.append({
+                'bot': 'hype_man',
+                'text': f"🔄 LEAD CHANGE! {away_team} takes the lead!",
+                'type': 'lead_change',
+                'team': away_team,
+                'is_lead_change': True,
+            })
+        # Tie game detection
+        elif curr_diff == 0 and prev_diff != 0:
+            messages.append({
+                'bot': 'hype_man',
+                'text': f"⚖️ TIE GAME! {curr_away}-{curr_home}",
+                'type': 'tie',
+            })
+
+        # Largest lead detection
+        home_lead = curr_home - curr_away
+        away_lead = curr_away - curr_home
+
+        if home_lead > 0 and home_lead > largest_leads.get('home', 0):
+            # New largest lead for home team
+            if home_lead >= 5:  # Only announce if lead is 5+
+                messages.append({
+                    'bot': 'stats_nerd',
+                    'text': f"📈 {home_team} extends to their LARGEST LEAD of the game: +{home_lead}!",
+                    'type': 'largest_lead',
+                    'team': home_team,
+                    'is_largest_lead': True,
+                    'lead_amount': home_lead,
+                })
+            largest_leads['home'] = home_lead
+
+        if away_lead > 0 and away_lead > largest_leads.get('away', 0):
+            # New largest lead for away team
+            if away_lead >= 5:  # Only announce if lead is 5+
+                messages.append({
+                    'bot': 'stats_nerd',
+                    'text': f"📈 {away_team} extends to their LARGEST LEAD of the game: +{away_lead}!",
+                    'type': 'largest_lead',
+                    'team': away_team,
+                    'is_largest_lead': True,
+                    'lead_amount': away_lead,
+                })
+            largest_leads['away'] = away_lead
+
     # Add score context and timestamp to all messages
     for msg in messages:
         msg['score'] = f"{away_team} {score_away} - {home_team} {score_home}"
@@ -1082,9 +1165,25 @@ def api_dev_live_feed(game_id):
     """Get live chat feed for a specific game."""
     try:
         from nba_api.live.nba.endpoints import playbyplay, scoreboard
+        import uuid
 
-        # Get last seen action number from query param
+        # Get last seen action number and client ID from query params
         last_action = int(request.args.get('last_action', 0))
+        client_id = request.args.get('client_id', str(uuid.uuid4()))
+
+        # Track viewer heartbeat
+        now = datetime.now()
+        if game_id not in _dev_live_viewers:
+            _dev_live_viewers[game_id] = {}
+        _dev_live_viewers[game_id][client_id] = now
+
+        # Clean up stale viewers
+        cutoff = now - timedelta(seconds=VIEWER_TIMEOUT)
+        _dev_live_viewers[game_id] = {
+            cid: ts for cid, ts in _dev_live_viewers[game_id].items()
+            if ts > cutoff
+        }
+        viewer_count = len(_dev_live_viewers[game_id])
 
         # Get game info from scoreboard (play-by-play doesn't include team names)
         sb = scoreboard.ScoreBoard()
@@ -1110,14 +1209,67 @@ def api_dev_live_feed(game_id):
             'game_id': game_id,
         }
 
+        # Initialize lead change tracking for this game
+        if game_id not in _dev_live_lead_changes:
+            _dev_live_lead_changes[game_id] = {'count': 0, 'last_leader': None}
+
+        # Initialize largest lead tracking for this game
+        if game_id not in _dev_live_largest_leads:
+            _dev_live_largest_leads[game_id] = {'home': 0, 'away': 0}
+
         # Filter to new actions only
         new_actions = [a for a in actions if a.get('actionNumber', 0) > last_action]
 
-        # Generate chat messages
+        # Generate chat messages with lead change detection
         all_messages = []
-        for action in new_actions:
-            messages = generate_chat_message(action, game_info)
+        lead_changes_in_batch = 0
+
+        # Get the action just before the new ones for lead change detection
+        prev_action = None
+        if last_action > 0:
+            prev_actions = [a for a in actions if a.get('actionNumber', 0) == last_action]
+            if prev_actions:
+                prev_action = prev_actions[0]
+
+        # Calculate largest leads from history if this is a fresh load
+        if last_action == 0 and len(actions) > 0:
+            for a in actions:
+                h = int(a.get('scoreHome', 0) or 0)
+                aw = int(a.get('scoreAway', 0) or 0)
+                if h > aw:
+                    _dev_live_largest_leads[game_id]['home'] = max(_dev_live_largest_leads[game_id]['home'], h - aw)
+                elif aw > h:
+                    _dev_live_largest_leads[game_id]['away'] = max(_dev_live_largest_leads[game_id]['away'], aw - h)
+
+        for i, action in enumerate(new_actions):
+            # Use previous action for comparison (either from before batch or previous in batch)
+            compare_action = prev_action if i == 0 else new_actions[i - 1]
+            messages = generate_chat_message(action, game_info, compare_action, _dev_live_largest_leads[game_id])
+
+            # Count lead changes
+            for msg in messages:
+                if msg.get('is_lead_change'):
+                    lead_changes_in_batch += 1
+                    _dev_live_lead_changes[game_id]['count'] += 1
+
             all_messages.extend(messages)
+
+        # Count total lead changes from all actions if this is a fresh load
+        if last_action == 0 and len(actions) > 1:
+            lead_change_count = 0
+            for i in range(1, len(actions)):
+                prev = actions[i - 1]
+                curr = actions[i]
+                prev_home = int(prev.get('scoreHome', 0) or 0)
+                prev_away = int(prev.get('scoreAway', 0) or 0)
+                curr_home = int(curr.get('scoreHome', 0) or 0)
+                curr_away = int(curr.get('scoreAway', 0) or 0)
+                prev_diff = prev_away - prev_home
+                curr_diff = curr_away - curr_home
+                # Lead change: sign changed and neither is zero (tie doesn't count as lead)
+                if (prev_diff > 0 and curr_diff < 0) or (prev_diff < 0 and curr_diff > 0):
+                    lead_change_count += 1
+            _dev_live_lead_changes[game_id]['count'] = lead_change_count
 
         # Get current score from latest action
         latest_score = {'home': 0, 'away': 0}
@@ -1135,6 +1287,9 @@ def api_dev_live_feed(game_id):
             'game_info': game_info,
             'score': latest_score,
             'total_actions': len(actions),
+            'viewer_count': viewer_count,
+            'client_id': client_id,
+            'lead_changes': _dev_live_lead_changes[game_id]['count'],
         })
 
     except Exception as e:
