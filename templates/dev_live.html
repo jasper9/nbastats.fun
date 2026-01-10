@@ -273,6 +273,10 @@
         .chat-message.bot-historian {
             border-left-color: #a855f7;
         }
+        .chat-message.bot-ai_commentator {
+            border-left-color: #60a5fa;
+            background: linear-gradient(90deg, rgba(96, 165, 250, 0.1), var(--bg-card));
+        }
         .msg-avatar {
             font-size: 1.5rem;
             flex-shrink: 0;
@@ -296,6 +300,7 @@
         .msg-bot-name.bot-odds_shark { color: #34d399; }
         .msg-bot-name.bot-hype_man { color: #f97316; }
         .msg-bot-name.bot-historian { color: #a855f7; }
+        .msg-bot-name.bot-ai_commentator { color: #60a5fa; }
         .msg-time {
             font-size: 0.7rem;
             color: var(--text-muted);
@@ -443,6 +448,10 @@
                 <div class="legend-dot" style="background: #a855f7;"></div>
                 <span>Historian - Context</span>
             </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: #60a5fa;"></div>
+                <span>AI - Claude commentary</span>
+            </div>
         </div>
     </div>
 
@@ -457,7 +466,8 @@
             'stats_nerd': '&#x1F4CA;',
             'odds_shark': '&#x1F3B0;',
             'hype_man': '&#x1F525;',
-            'historian': '&#x1F4DC;'
+            'historian': '&#x1F4DC;',
+            'ai_commentator': '&#x1F916;'
         };
 
         const botNames = {
@@ -465,7 +475,8 @@
             'stats_nerd': 'StatsNerd',
             'odds_shark': 'OddsShark',
             'hype_man': 'HypeMan',
-            'historian': 'Historian'
+            'historian': 'Historian',
+            'ai_commentator': 'AI'
         };
 
         let currentGameId = null;

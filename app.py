@@ -9,6 +9,13 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+# LLM commentary for exciting events (optional)
+try:
+    from llm_commentary import enhance_message_with_llm, get_cached_or_generate
+    LLM_AVAILABLE = True
+except ImportError:
+    LLM_AVAILABLE = False
+
 # Load .env file if python-dotenv is available
 try:
     from dotenv import load_dotenv
@@ -929,6 +936,12 @@ BOT_PERSONALITIES = {
         'color': '#a855f7',  # purple
         'triggers': ['record', 'history', 'first'],
     },
+    'ai_commentator': {
+        'name': 'AI',
+        'emoji': '🤖',
+        'color': '#60a5fa',  # blue
+        'triggers': ['llm', 'ai'],
+    },
 }
 
 
@@ -1251,6 +1264,31 @@ def api_dev_live_feed(game_id):
                 if msg.get('is_lead_change'):
                     lead_changes_in_batch += 1
                     _dev_live_lead_changes[game_id]['count'] += 1
+
+            # Try to add LLM commentary for exciting events
+            if LLM_AVAILABLE:
+                for msg in messages:
+                    # Only enhance lead changes, largest leads, dunks, ties, quarter summaries
+                    if msg.get('is_lead_change') or msg.get('is_largest_lead') or \
+                       msg.get('type') == 'tie' or \
+                       (msg.get('type') == 'hype' and 'POSTER' in msg.get('text', '')) or \
+                       (msg.get('type') == 'summary' and 'Quarter' in msg.get('text', '')):
+                        try:
+                            llm_text = enhance_message_with_llm(msg, game_info)
+                            if llm_text:
+                                ai_msg = {
+                                    'bot': 'ai_commentator',
+                                    'text': llm_text,
+                                    'type': 'ai_commentary',
+                                    'score': msg.get('score'),
+                                    'clock': msg.get('clock'),
+                                    'period': msg.get('period'),
+                                    'timestamp': datetime.now().isoformat(),
+                                    'action_number': msg.get('action_number'),
+                                }
+                                messages.append(ai_msg)
+                        except Exception as e:
+                            print(f"LLM enhancement error: {e}")
 
             all_messages.extend(messages)
 

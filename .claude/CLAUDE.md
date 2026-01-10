@@ -227,3 +227,44 @@ load_dotenv()
 # ... test API calls
 "
 ```
+
+## Work In Progress: Live Chat Feed
+
+### Current Implementation (`/dev-live`)
+A real-time play-by-play chat feed with bot "personalities":
+- **Files**: `templates/dev_live.html`, `llm_commentary.py`, routes in `app.py`
+- **Data Source**: NBA Live API `playbyplay.PlayByPlay(game_id)`
+- **Polling**: Every 5 seconds for new plays
+
+**Bot Personalities**:
+- 🏀 **PlayByPlay** (white) - Scoring plays, blocks, steals, turnovers
+- 📊 **StatsNerd** (cyan) - Quarter summaries, largest lead announcements
+- 🔥 **HypeMan** (orange) - Dunks, lead changes, tie games
+- 📜 **Historian** (purple) - Historical context (future)
+- 🤖 **AI** (blue) - Claude Haiku LLM-generated commentary for exciting events
+
+**Stats Tracked**:
+- Lead changes count (detected per scoring play)
+- Largest lead for each team (announced when 5+ points)
+- Viewer count (heartbeat-based, 15s timeout)
+
+### LLM-Enhanced Commentary (Implemented)
+
+Uses Claude Haiku for cost-effective trigger-based commentary on exciting events.
+
+**Trigger Events** (only calls LLM for these):
+- Lead changes
+- Largest leads (5+ points)
+- Dunks/highlight plays
+- Tie games
+- End of quarters (summary)
+
+**Implementation Details**:
+- Module: `llm_commentary.py` with prompts for each event type
+- Model: `claude-3-5-haiku-latest` for fast, cheap responses
+- Max tokens: 50 (keeps responses short and punchy)
+- Graceful degradation: Works without API key (just skips AI commentary)
+
+**Estimated Cost**: $0.01-0.05 per game (5-15 LLM calls)
+
+**API Key**: Requires `ANTHROPIC_API_KEY` in `.env`
