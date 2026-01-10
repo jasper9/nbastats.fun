@@ -13,6 +13,7 @@ A Flask-based dashboard for tracking Nikola Jokić and Denver Nuggets stats, sta
 - `templates/leaders.html` - League leaders by stat category
 - `templates/live.html` - Live game win probability tracker
 - `templates/live_history.html` - Historical game recap with charts and player stats
+- `templates/dev_live.html` - Development live chat feed with play-by-play bots
 
 ### Data Refresh Scripts
 - `refresh_cache.py` - **Full refresh** - runs all data refreshes (for manual use)
@@ -38,6 +39,8 @@ A Flask-based dashboard for tracking Nikola Jokić and Denver Nuggets stats, sta
 - `live_status.json` - Current game status (is_live flag for nav indicator)
 - `live_history/game_*.json` - Win probability snapshots and player stats for completed games
 - `historical_odds.json` - Pre-game odds archive for ATS tracking
+- `dev_live_history/game_*.json` - Dev-live chat messages and scores for completed games
+- `dev_live_odds.json` - Cached odds for dev-live games (balldontlie v2 API)
 
 ### Static Data Files (in `data/`)
 - `special_events.json` - Promotional events/giveaways for home games
@@ -248,9 +251,18 @@ A real-time play-by-play chat feed with bot "personalities":
 - Largest lead for each team (announced when 5+ points)
 - Viewer count (heartbeat-based, 15s timeout)
 
-**Mini Charts** (below scoreboard):
+**Consensus Odds Display** (below scoreboard):
+- Shows spread, total (O/U), and win probability from balldontlie v2 API
+- Consensus calculated from 11-12+ bookmakers
+- Visual probability bar showing home/away win chances
+- Pre-fetched with games list for instant display
+- Available for both upcoming and completed games
+
+**Mini Charts** (below odds):
 - **Lead Differential** - Shows which team is ahead with colored fill
-- **Score Progression** - Both teams' scores over time with team colors
+- **Win Probability** - 100-EVEN-100 scale showing home/away advantage
+  - Gold fill when home team favored
+  - Red fill when away team favored
 - Real-time updates every 5 seconds (synchronized with polling)
 - Responsive layout (side-by-side on desktop, stacked on mobile)
 - Uses Chart.js with NBA team color palette
@@ -259,6 +271,12 @@ A real-time play-by-play chat feed with bot "personalities":
 - Filter buttons to show/hide specific bot personalities
 - Toggles apply to both past and future messages
 - Active filters persist during session
+
+**History Persistence**:
+- Chat messages and scores saved to `cache/dev_live_history/game_*.json`
+- Completed games regenerate full message history without LLM calls
+- Pre-game status returns early (no API calls for future games)
+- Dropdown shows 📜 icon for games with saved history
 
 ### LLM-Enhanced Commentary (Implemented)
 
