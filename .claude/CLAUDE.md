@@ -248,6 +248,18 @@ A real-time play-by-play chat feed with bot "personalities":
 - Largest lead for each team (announced when 5+ points)
 - Viewer count (heartbeat-based, 15s timeout)
 
+**Mini Charts** (below scoreboard):
+- **Lead Differential** - Shows which team is ahead with colored fill
+- **Score Progression** - Both teams' scores over time with team colors
+- Real-time updates every 5 seconds (synchronized with polling)
+- Responsive layout (side-by-side on desktop, stacked on mobile)
+- Uses Chart.js with NBA team color palette
+
+**Voice Filters**:
+- Filter buttons to show/hide specific bot personalities
+- Toggles apply to both past and future messages
+- Active filters persist during session
+
 ### LLM-Enhanced Commentary (Implemented)
 
 Uses Claude Haiku for cost-effective trigger-based commentary on exciting events.
