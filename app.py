@@ -1618,12 +1618,13 @@ def api_dev_live_feed(game_id):
                     msg['action_number'] = a.get('actionNumber', 0)
                 full_messages.extend(msgs)
 
-                # Track score at each action
+                # Track score at each action (include period for quarter markers)
                 if h > 0 or aw > 0:
                     full_scores.append({
                         'home': h,
                         'away': aw,
-                        'action': a.get('actionNumber', 0)
+                        'action': a.get('actionNumber', 0),
+                        'period': a.get('period', 1)
                     })
 
                 prev_a = a
@@ -1798,7 +1799,8 @@ def api_dev_live_feed(game_id):
                 history['saved_action_numbers'].add(msg_key)
                 history['messages'].append(msg)
 
-        # Track score progression for charts (sample every few actions to avoid huge data)
+        # Track score progression for charts (include period for quarter markers)
+        current_period = actions[-1].get('period', 1) if actions else 1
         if latest_score['home'] > 0 or latest_score['away'] > 0:
             # Only add if score changed from last recorded score
             if not history['scores'] or \
@@ -1808,6 +1810,7 @@ def api_dev_live_feed(game_id):
                     'home': latest_score['home'],
                     'away': latest_score['away'],
                     'action': max_action,
+                    'period': current_period,
                 })
 
         # Update history metadata
@@ -1848,12 +1851,13 @@ def api_dev_live_feed(game_id):
                         msg['action_number'] = a.get('actionNumber', 0)
                     full_messages.extend(msgs)
 
-                    # Track score at each action
+                    # Track score at each action (include period for quarter markers)
                     if h > 0 or aw > 0:
                         full_scores.append({
                             'home': h,
                             'away': aw,
-                            'action': a.get('actionNumber', 0)
+                            'action': a.get('actionNumber', 0),
+                            'period': a.get('period', 1)
                         })
 
                     prev_a = a
@@ -1886,6 +1890,7 @@ def api_dev_live_feed(game_id):
             'client_id': client_id,
             'lead_changes': _dev_live_lead_changes[game_id]['count'],
             'status': game_status,
+            'period': current_period,  # Current quarter for chart quarter markers
         })
 
     except Exception as e:

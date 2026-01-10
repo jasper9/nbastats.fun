@@ -741,8 +741,53 @@
             homeScores: [],
             awayScores: [],
             leadDiffs: [],  // positive = home leading
-            homeProbs: []   // home team win probability (0-100)
+            homeProbs: [],  // home team win probability (0-100)
+            quarterMarkers: [],  // indices where quarters start
+            quarterLabels: []    // labels for quarter markers (Q1, Q2, etc.)
         };
+        let lastPeriod = 0;  // Track current period for quarter markers
+
+        // Custom Chart.js plugin to draw vertical quarter lines
+        const quarterLinesPlugin = {
+            id: 'quarterLines',
+            afterDraw: (chart) => {
+                const ctx = chart.ctx;
+                const xAxis = chart.scales.x;
+                const yAxis = chart.scales.y;
+
+                if (!chartData.quarterMarkers.length) return;
+
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 3]);
+
+                chartData.quarterMarkers.forEach((index, i) => {
+                    // Skip if index is out of bounds
+                    if (index < 0 || index >= chartData.labels.length) return;
+
+                    const x = xAxis.getPixelForValue(index);
+
+                    ctx.beginPath();
+                    ctx.moveTo(x, yAxis.top);
+                    ctx.lineTo(x, yAxis.bottom);
+                    ctx.stroke();
+
+                    // Draw quarter label at top
+                    if (chartData.quarterLabels[i]) {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                        ctx.font = '8px Oswald';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(chartData.quarterLabels[i], x, yAxis.top - 2);
+                    }
+                });
+
+                ctx.restore();
+            }
+        };
+
+        // Register the plugin globally
+        Chart.register(quarterLinesPlugin);
 
         // Current game odds
         let currentOdds = null;
@@ -818,15 +863,32 @@
             if (leadChart) { leadChart.destroy(); leadChart = null; }
             if (probChart) { probChart.destroy(); probChart = null; }
 
-            // Reset data
-            chartData = { labels: [], homeScores: [], awayScores: [], leadDiffs: [], homeProbs: [] };
+            // Reset data including quarter markers
+            chartData = { labels: [], homeScores: [], awayScores: [], leadDiffs: [], homeProbs: [], quarterMarkers: [], quarterLabels: [] };
+            lastPeriod = 0;
 
             const chartOptions = {
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: { duration: 0 },
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: 'rgba(13, 17, 23, 0.9)',
+                        titleColor: '#fec524',
+                        bodyColor: '#ffffff',
+                        borderColor: '#30363d',
+                        borderWidth: 1,
+                        padding: 8,
+                        displayColors: false,
+                        titleFont: { family: 'Oswald', size: 11 },
+                        bodyFont: { family: 'Roboto', size: 11 }
+                    }
                 },
                 scales: {
                     x: {
@@ -859,11 +921,33 @@
                             below: 'rgba(120, 190, 32, 0.3)'  // away color
                         },
                         tension: 0.2,
-                        pointRadius: 0
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        pointHoverBackgroundColor: '#fec524'
                     }]
                 },
                 options: {
                     ...chartOptions,
+                    plugins: {
+                        ...chartOptions.plugins,
+                        tooltip: {
+                            ...chartOptions.plugins.tooltip,
+                            callbacks: {
+                                title: (items) => {
+                                    const idx = items[0]?.dataIndex;
+                                    if (idx === undefined) return '';
+                                    const home = chartData.homeScores[idx] || 0;
+                                    const away = chartData.awayScores[idx] || 0;
+                                    return `Score: ${away} - ${home}`;
+                                },
+                                label: (ctx) => {
+                                    const val = ctx.parsed.y;
+                                    if (val === 0) return 'Tied';
+                                    return val > 0 ? `Home +${val}` : `Away +${Math.abs(val)}`;
+                                }
+                            }
+                        }
+                    },
                     scales: {
                         ...chartOptions.scales,
                         y: {
@@ -897,7 +981,9 @@
                             below: 'rgba(239, 68, 68, 0.3)'   // away favored (red)
                         },
                         tension: 0.2,
-                        pointRadius: 0
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        pointHoverBackgroundColor: '#fec524'
                     }]
                 },
                 options: {
@@ -924,7 +1010,26 @@
                         }
                     },
                     plugins: {
-                        legend: { display: false }
+                        ...chartOptions.plugins,
+                        tooltip: {
+                            ...chartOptions.plugins.tooltip,
+                            callbacks: {
+                                title: (items) => {
+                                    const idx = items[0]?.dataIndex;
+                                    if (idx === undefined) return '';
+                                    const home = chartData.homeScores[idx] || 0;
+                                    const away = chartData.awayScores[idx] || 0;
+                                    return `Score: ${away} - ${home}`;
+                                },
+                                label: (ctx) => {
+                                    // Convert swing value back to probability
+                                    const swingVal = ctx.parsed.y;
+                                    const homeProb = Math.round(50 + swingVal / 2);
+                                    const awayProb = 100 - homeProb;
+                                    return `Home ${homeProb}% | Away ${awayProb}%`;
+                                }
+                            }
+                        }
                     }
                 }
             });
@@ -933,8 +1038,16 @@
             document.getElementById('mini-charts').classList.add('visible');
         }
 
-        function updateCharts(homeScore, awayScore, homeTeam, awayTeam, homeProb = null) {
+        function updateCharts(homeScore, awayScore, homeTeam, awayTeam, homeProb = null, period = null) {
             if (!leadChart || !probChart) return;
+
+            // Check for quarter change - add marker at start of each quarter
+            if (period && period > lastPeriod) {
+                const markerIndex = chartData.labels.length;  // Current position before adding
+                chartData.quarterMarkers.push(markerIndex);
+                chartData.quarterLabels.push(period <= 4 ? `Q${period}` : `OT${period - 4}`);
+                lastPeriod = period;
+            }
 
             // Add data point
             const label = chartData.labels.length;
@@ -965,6 +1078,20 @@
                 chartData.awayScores.shift();
                 chartData.leadDiffs.shift();
                 chartData.homeProbs.shift();
+
+                // Adjust quarter markers when data shifts (decrement all indices by 1)
+                // Filter both markers and labels together
+                const newMarkers = [];
+                const newLabels = [];
+                for (let i = 0; i < chartData.quarterMarkers.length; i++) {
+                    const newIdx = chartData.quarterMarkers[i] - 1;
+                    if (newIdx >= 0) {
+                        newMarkers.push(newIdx);
+                        newLabels.push(chartData.quarterLabels[i]);
+                    }
+                }
+                chartData.quarterMarkers = newMarkers;
+                chartData.quarterLabels = newLabels;
             }
 
             // Update team colors in charts (use contrasting colors)
@@ -1289,13 +1416,14 @@
 
                     // For historical data, load all score history for charts
                     if (data.is_historical && data.scores && data.scores.length > 0) {
-                        // Reconstruct charts from saved score history
+                        // Reconstruct charts from saved score history (with period info for quarter lines)
                         data.scores.forEach(s => {
-                            updateCharts(s.home, s.away, data.game_info.home_team, data.game_info.away_team);
+                            updateCharts(s.home, s.away, data.game_info.home_team, data.game_info.away_team, null, s.period);
                         });
                     } else {
-                        // Live update
-                        updateCharts(data.score.home, data.score.away, data.game_info.home_team, data.game_info.away_team);
+                        // Live update - pass current period for quarter tracking
+                        const currentPeriod = data.period || null;
+                        updateCharts(data.score.home, data.score.away, data.game_info.home_team, data.game_info.away_team, null, currentPeriod);
                     }
                 }
 
