@@ -1306,23 +1306,137 @@ def api_dev_live_feed(game_id):
         home_team = 'HOME'
         away_team = 'AWAY'
         game_status = ''
+        home_score = 0
+        away_score = 0
         if game_match:
             home_team = game_match['homeTeam']['teamTricode']
             away_team = game_match['awayTeam']['teamTricode']
             game_status = game_match.get('gameStatusText', '')
-
-        # Get play-by-play
-        pbp = playbyplay.PlayByPlay(game_id)
-        data = pbp.get_dict()
-
-        game = data.get('game', {})
-        actions = game.get('actions', [])
+            home_score = game_match['homeTeam'].get('score', 0) or 0
+            away_score = game_match['awayTeam'].get('score', 0) or 0
 
         game_info = {
             'home_team': home_team,
             'away_team': away_team,
             'game_id': game_id,
         }
+
+        # For games that haven't started yet, return early with empty data (before calling play-by-play API)
+        # Check: not Final, not in a quarter (Q1-Q4), and no scores yet
+        is_pregame = game_status and game_status != 'Final' and 'Q' not in game_status and home_score == 0 and away_score == 0
+        if is_pregame:
+            return jsonify({
+                'messages': [],
+                'last_action': 0,
+                'game_info': game_info,
+                'score': {'home': 0, 'away': 0},
+                'scores': [],
+                'total_actions': 0,
+                'viewer_count': 0,
+                'client_id': client_id,
+                'lead_changes': 0,
+                'status': game_status,
+                'is_historical': False,
+            })
+
+        # Get play-by-play (only for games that have started or finished)
+        pbp = playbyplay.PlayByPlay(game_id)
+        data = pbp.get_dict()
+
+        game = data.get('game', {})
+        actions = game.get('actions', [])
+
+        # For completed games without saved history, generate and save immediately (no LLM)
+        # This avoids expensive LLM calls on page load for historical games
+        if game_status == 'Final' and not saved_history and actions:
+            print(f"Generating history for completed game {game_id} (no LLM)...")
+            full_messages = []
+            full_scores = []
+            prev_a = None
+            largest_leads_regen = {'home': 0, 'away': 0}
+            lead_change_count = 0
+
+            for i, a in enumerate(actions):
+                # Track largest leads
+                h = int(a.get('scoreHome', 0) or 0)
+                aw = int(a.get('scoreAway', 0) or 0)
+                if h > aw:
+                    largest_leads_regen['home'] = max(largest_leads_regen['home'], h - aw)
+                elif aw > h:
+                    largest_leads_regen['away'] = max(largest_leads_regen['away'], aw - h)
+
+                # Count lead changes
+                if prev_a:
+                    prev_h = int(prev_a.get('scoreHome', 0) or 0)
+                    prev_aw = int(prev_a.get('scoreAway', 0) or 0)
+                    prev_diff = prev_aw - prev_h
+                    curr_diff = aw - h
+                    if (prev_diff > 0 and curr_diff < 0) or (prev_diff < 0 and curr_diff > 0):
+                        lead_change_count += 1
+
+                # Generate messages (no LLM)
+                compare_a = prev_a if i > 0 else None
+                msgs = generate_chat_message(a, game_info, compare_a, largest_leads_regen)
+                for msg in msgs:
+                    msg['action_number'] = a.get('actionNumber', 0)
+                full_messages.extend(msgs)
+
+                # Track score at each action
+                if h > 0 or aw > 0:
+                    full_scores.append({
+                        'home': h,
+                        'away': aw,
+                        'action': a.get('actionNumber', 0)
+                    })
+
+                prev_a = a
+
+            # Deduplicate scores
+            deduped_scores = []
+            if full_scores:
+                deduped_scores = [full_scores[0]]
+                for s in full_scores[1:]:
+                    if s['home'] != deduped_scores[-1]['home'] or s['away'] != deduped_scores[-1]['away']:
+                        deduped_scores.append(s)
+
+            # Get final score
+            final_score = {'home': 0, 'away': 0}
+            if actions:
+                last = actions[-1]
+                final_score['home'] = int(last.get('scoreHome', 0) or 0)
+                final_score['away'] = int(last.get('scoreAway', 0) or 0)
+
+            max_action = max([a.get('actionNumber', 0) for a in actions]) if actions else 0
+
+            # Save to history
+            history_data = {
+                'messages': full_messages,
+                'scores': deduped_scores,
+                'game_info': game_info,
+                'status': 'Final',
+                'last_action': max_action,
+                'lead_changes': lead_change_count,
+                'final_score': final_score,
+                'total_actions': len(actions),
+            }
+            _dev_live_history[game_id] = history_data
+            save_dev_live_history(game_id)
+            print(f"Saved history: {len(full_messages)} messages, {len(deduped_scores)} scores")
+
+            # Return the generated history
+            return jsonify({
+                'messages': full_messages,
+                'last_action': max_action,
+                'game_info': game_info,
+                'score': final_score,
+                'scores': deduped_scores,
+                'total_actions': len(actions),
+                'viewer_count': 0,
+                'client_id': client_id,
+                'lead_changes': lead_change_count,
+                'status': 'Final',
+                'is_historical': True,
+            })
 
         # Initialize lead change tracking for this game
         if game_id not in _dev_live_lead_changes:
