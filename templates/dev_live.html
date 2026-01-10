@@ -1134,13 +1134,21 @@
                 } else {
                     select.innerHTML = '<option value="">No games available</option>';
                 }
+
+                // Check URL for game parameter and auto-select
+                const urlParams = new URLSearchParams(window.location.search);
+                const gameFromUrl = urlParams.get('game');
+                if (gameFromUrl && gamesData[gameFromUrl]) {
+                    select.value = gameFromUrl;
+                    selectGame(gameFromUrl, false);  // Don't update URL again
+                }
             } catch (error) {
                 console.error('Error loading games:', error);
                 document.getElementById('game-select').innerHTML = '<option value="">Error loading games</option>';
             }
         }
 
-        function selectGame(gameId) {
+        function selectGame(gameId, updateUrl = true) {
             if (!gameId) {
                 document.getElementById('scoreboard').style.display = 'none';
                 document.getElementById('chat-container').style.display = 'none';
@@ -1150,10 +1158,19 @@
                     clearInterval(pollInterval);
                     pollInterval = null;
                 }
+                // Clear URL parameter
+                if (updateUrl) {
+                    window.history.replaceState({}, '', '/dev-live');
+                }
                 return;
             }
 
             currentGameId = gameId;
+
+            // Update URL with game ID (allows refresh and sharing)
+            if (updateUrl) {
+                window.history.replaceState({}, '', `/dev-live?game=${gameId}`);
+            }
             lastActionNumber = 0;
 
             document.getElementById('scoreboard').style.display = 'flex';
