@@ -585,7 +585,7 @@
 
     <div class="container">
         <div class="game-selector">
-            <label>Select a live game:</label>
+            <label>Select a live game: <span id="timezone-label" style="font-weight: normal; opacity: 0.7;"></span></label>
             <select id="game-select">
                 <option value="">Loading games...</option>
             </select>
@@ -1370,6 +1370,16 @@
                 toggleFilter(btn.dataset.bot);
             });
         });
+
+        // Display user's timezone
+        function getTimezoneAbbreviation() {
+            const date = new Date();
+            const timeStr = date.toLocaleTimeString('en-US', { timeZoneName: 'short' });
+            // Extract timezone abbreviation (e.g., "MST", "EST", "PST")
+            const match = timeStr.match(/[A-Z]{2,5}$/);
+            return match ? match[0] : Intl.DateTimeFormat().resolvedOptions().timeZone;
+        }
+        document.getElementById('timezone-label').textContent = `(${getTimezoneAbbreviation()})`;
 
         loadGames();
 
