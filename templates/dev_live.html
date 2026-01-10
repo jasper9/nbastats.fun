@@ -990,7 +990,7 @@
             return ml > 0 ? `+${ml}` : ml.toString();
         }
 
-        function updateOddsDisplay(odds, homeTeam, awayTeam) {
+        function updateOddsDisplay(odds, homeTeam, awayTeam, homeCity = null, awayCity = null) {
             const oddsSection = document.getElementById('odds-section');
             if (!odds || !odds.consensus) {
                 oddsSection.classList.remove('visible');
@@ -1004,13 +1004,17 @@
             // Get colors that are different enough to distinguish
             const { awayColor, homeColor } = getTeamColors(awayTeam, homeTeam);
 
+            // Use city names if available, fallback to abbreviations
+            const homeDisplay = homeCity || homeTeam;
+            const awayDisplay = awayCity || awayTeam;
+
             // Update spread (show which team is favored)
             const spreadEl = document.getElementById('odds-spread');
             if (consensus.spread !== null && consensus.spread !== undefined) {
                 const spreadVal = consensus.spread;
-                const favoredTeam = spreadVal < 0 ? homeTeam : awayTeam;
+                const favoredDisplay = spreadVal < 0 ? homeDisplay : awayDisplay;
                 const spreadDisplay = Math.abs(spreadVal);
-                spreadEl.innerHTML = `<span class="team-abbrev">${favoredTeam}</span>-${spreadDisplay}`;
+                spreadEl.innerHTML = `<span class="team-abbrev">${favoredDisplay}</span> -${spreadDisplay}`;
             } else {
                 spreadEl.textContent = '--';
             }
@@ -1019,11 +1023,11 @@
             const totalEl = document.getElementById('odds-total');
             totalEl.textContent = consensus.total ? `O/U ${consensus.total}` : '--';
 
-            // Update moneylines
+            // Update moneylines (use city names)
             const awayMl = consensus.away_ml;
             const homeMl = consensus.home_ml;
-            document.getElementById('ml-away-abbrev').textContent = awayTeam;
-            document.getElementById('ml-home-abbrev').textContent = homeTeam;
+            document.getElementById('ml-away-abbrev').textContent = awayDisplay;
+            document.getElementById('ml-home-abbrev').textContent = homeDisplay;
 
             const awayMlEl = document.getElementById('ml-away-value');
             const homeMlEl = document.getElementById('ml-home-value');
@@ -1059,11 +1063,11 @@
             homeBar.style.color = isColorDark(homeColor) ? '#ffffff' : '#0d1117';
             homeBar.textContent = normalizedHomeProb >= 20 ? `${normalizedHomeProb}%` : '';
 
-            // Update labels with team colors
+            // Update labels with team colors (use city names)
             document.getElementById('away-dot').style.background = awayColor;
             document.getElementById('home-dot').style.background = homeColor;
-            document.getElementById('away-prob-text').textContent = `${awayTeam} ${normalizedAwayProb}%`;
-            document.getElementById('home-prob-text').textContent = `${homeTeam} ${normalizedHomeProb}%`;
+            document.getElementById('away-prob-text').textContent = `${awayDisplay} ${normalizedAwayProb}%`;
+            document.getElementById('home-prob-text').textContent = `${homeDisplay} ${normalizedHomeProb}%`;
 
             // Update vendor count
             document.getElementById('odds-vendor-count').textContent =
@@ -1153,7 +1157,10 @@
                         const option = document.createElement('option');
                         option.value = game.game_id;
                         const statusText = getGameStatusText(game);
-                        let text = `${game.away_team} @ ${game.home_team} - ${statusText}`;
+                        // Use full team names: "Miami Heat @ Indiana Pacers"
+                        const awayFull = `${game.away_team_city} ${game.away_team_name}`;
+                        const homeFull = `${game.home_team_city} ${game.home_team_name}`;
+                        let text = `${awayFull} @ ${homeFull} - ${statusText}`;
                         if (game.status.includes('Q') || game.status === 'Half') {
                             text += ` (${game.away_score}-${game.home_score})`;
                         } else if (game.status === 'Final' || game.status === 'Final (Saved)') {
@@ -1217,14 +1224,15 @@
 
             // Update scoreboard immediately from stored data
             if (gameData) {
-                document.getElementById('home-team').textContent = gameData.home_team;
-                document.getElementById('away-team').textContent = gameData.away_team;
+                // Show city names in scoreboard
+                document.getElementById('home-team').textContent = gameData.home_team_city || gameData.home_team;
+                document.getElementById('away-team').textContent = gameData.away_team_city || gameData.away_team;
                 document.getElementById('home-score').textContent = gameData.home_score || 0;
                 document.getElementById('away-score').textContent = gameData.away_score || 0;
 
-                // Display odds if available
+                // Display odds if available (pass both abbrev and city for display flexibility)
                 if (gameData.odds) {
-                    updateOddsDisplay(gameData.odds, gameData.home_team, gameData.away_team);
+                    updateOddsDisplay(gameData.odds, gameData.home_team, gameData.away_team, gameData.home_team_city, gameData.away_team_city);
                 } else {
                     document.getElementById('odds-section').classList.remove('visible');
                 }
@@ -1260,16 +1268,20 @@
                     }
                 }
 
-                // Update scoreboard
+                // Update scoreboard (use city names from stored game data)
+                const storedGame = gamesData[currentGameId];
+                const homeCity = storedGame?.home_team_city || data.game_info?.home_team;
+                const awayCity = storedGame?.away_team_city || data.game_info?.away_team;
+
                 if (data.game_info) {
-                    document.getElementById('home-team').textContent = data.game_info.home_team;
-                    document.getElementById('away-team').textContent = data.game_info.away_team;
+                    document.getElementById('home-team').textContent = homeCity;
+                    document.getElementById('away-team').textContent = awayCity;
                 }
                 if (data.score) {
                     document.getElementById('home-score').textContent = data.score.home;
                     document.getElementById('away-score').textContent = data.score.away;
-                    // Update header score with status indicator
-                    let scoreText = `${data.game_info.away_team} ${data.score.away} - ${data.game_info.home_team} ${data.score.home}`;
+                    // Update header score with city names
+                    let scoreText = `${awayCity} ${data.score.away} - ${homeCity} ${data.score.home}`;
                     if (data.status === 'Final') {
                         scoreText += ' (FINAL)';
                     }
