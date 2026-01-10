@@ -183,6 +183,78 @@
             font-size: 2rem;
             color: var(--text-muted);
         }
+        /* Odds Display */
+        .odds-section {
+            display: none;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+        }
+        .odds-section.visible {
+            display: block;
+        }
+        .odds-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .odds-item {
+            text-align: center;
+        }
+        .odds-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .odds-value {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.1rem;
+            color: var(--nuggets-gold);
+        }
+        .odds-prob {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .prob-team {
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.9rem;
+            width: 35px;
+        }
+        .prob-bar-container {
+            width: 120px;
+            height: 20px;
+            background: var(--bg-card);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        .prob-bar {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        .prob-bar.home {
+            background: linear-gradient(to right, var(--nuggets-gold), #ffd966);
+            float: right;
+        }
+        .prob-bar.away {
+            background: linear-gradient(to left, #ef4444, #f87171);
+            float: left;
+        }
+        .prob-value {
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.9rem;
+            width: 45px;
+        }
+        .odds-vendor-count {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
         /* Mini Charts */
         .mini-charts {
             display: none;
@@ -482,6 +554,32 @@
             </div>
         </div>
 
+        <div class="odds-section" id="odds-section">
+            <div class="odds-row">
+                <div class="odds-item">
+                    <div class="odds-label">Spread</div>
+                    <div class="odds-value" id="odds-spread">--</div>
+                </div>
+                <div class="odds-item">
+                    <div class="odds-label">Total</div>
+                    <div class="odds-value" id="odds-total">--</div>
+                </div>
+                <div class="odds-item">
+                    <div class="odds-prob">
+                        <div class="prob-team" id="away-team-prob">AWAY</div>
+                        <div class="prob-value" id="away-prob-value" style="text-align: right;">--</div>
+                        <div class="prob-bar-container">
+                            <div class="prob-bar away" id="away-prob-bar" style="width: 0%;"></div>
+                            <div class="prob-bar home" id="home-prob-bar" style="width: 0%;"></div>
+                        </div>
+                        <div class="prob-value" id="home-prob-value">--</div>
+                        <div class="prob-team" id="home-team-prob" style="text-align: right;">HOME</div>
+                    </div>
+                    <div class="odds-vendor-count" id="odds-vendor-count"></div>
+                </div>
+            </div>
+        </div>
+
         <div class="mini-charts" id="mini-charts">
             <div class="mini-chart">
                 <div class="mini-chart-title">Lead Differential</div>
@@ -490,9 +588,9 @@
                 </div>
             </div>
             <div class="mini-chart">
-                <div class="mini-chart-title">Score Progression</div>
+                <div class="mini-chart-title">Win Probability</div>
                 <div class="mini-chart-container">
-                    <canvas id="scoreChart"></canvas>
+                    <canvas id="probChart"></canvas>
                 </div>
             </div>
         </div>
@@ -570,13 +668,20 @@
 
         // Chart instances and data
         let leadChart = null;
-        let scoreChart = null;
+        let probChart = null;
         let chartData = {
             labels: [],
             homeScores: [],
             awayScores: [],
-            leadDiffs: []  // positive = home leading
+            leadDiffs: [],  // positive = home leading
+            homeProbs: []   // home team win probability (0-100)
         };
+
+        // Current game odds
+        let currentOdds = null;
+
+        // Store games for accessing odds when selecting
+        let gamesData = {};
 
         // NBA team colors
         const teamColors = {
@@ -593,10 +698,10 @@
         function initCharts() {
             // Destroy existing charts
             if (leadChart) { leadChart.destroy(); leadChart = null; }
-            if (scoreChart) { scoreChart.destroy(); scoreChart = null; }
+            if (probChart) { probChart.destroy(); probChart = null; }
 
             // Reset data
-            chartData = { labels: [], homeScores: [], awayScores: [], leadDiffs: [] };
+            chartData = { labels: [], homeScores: [], awayScores: [], leadDiffs: [], homeProbs: [] };
 
             const chartOptions = {
                 responsive: true,
@@ -657,52 +762,51 @@
                 }
             });
 
-            // Score Progression Chart
-            const scoreCtx = document.getElementById('scoreChart').getContext('2d');
-            scoreChart = new Chart(scoreCtx, {
+            // Win Probability Chart (100 - EVEN - 100 format, using swing scale: 50% → 0, 100% → +100, 0% → -100)
+            const probCtx = document.getElementById('probChart').getContext('2d');
+            probChart = new Chart(probCtx, {
                 type: 'line',
                 data: {
                     labels: chartData.labels,
-                    datasets: [
-                        {
-                            label: 'Home',
-                            data: chartData.homeScores,
-                            borderColor: '#860038',
-                            borderWidth: 1.5,
-                            tension: 0.1,
-                            pointRadius: 0
+                    datasets: [{
+                        label: 'Win Prob',
+                        data: chartData.homeProbs,
+                        borderColor: '#fec524',
+                        borderWidth: 1.5,
+                        fill: {
+                            target: { value: 0 },
+                            above: 'rgba(254, 197, 36, 0.3)',  // home favored (gold)
+                            below: 'rgba(239, 68, 68, 0.3)'   // away favored (red)
                         },
-                        {
-                            label: 'Away',
-                            data: chartData.awayScores,
-                            borderColor: '#78BE20',
-                            borderWidth: 1.5,
-                            tension: 0.1,
-                            pointRadius: 0
-                        }
-                    ]
+                        tension: 0.2,
+                        pointRadius: 0
+                    }]
                 },
                 options: {
                     ...chartOptions,
                     scales: {
                         ...chartOptions.scales,
                         y: {
-                            ...chartOptions.scales.y,
-                            beginAtZero: true
+                            min: -100,
+                            max: 100,
+                            ticks: {
+                                font: { size: 8 },
+                                color: '#6b7280',
+                                stepSize: 50,
+                                callback: v => {
+                                    if (v === 100) return 'HOME';
+                                    if (v === 0) return 'EVEN';
+                                    if (v === -100) return 'AWAY';
+                                    return '';
+                                }
+                            },
+                            grid: {
+                                color: ctx => ctx.tick.value === 0 ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.1)'
+                            }
                         }
                     },
                     plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top',
-                            labels: {
-                                boxWidth: 8,
-                                boxHeight: 8,
-                                padding: 4,
-                                font: { size: 9 },
-                                color: '#b0b8c1'
-                            }
-                        }
+                        legend: { display: false }
                     }
                 }
             });
@@ -711,8 +815,8 @@
             document.getElementById('mini-charts').classList.add('visible');
         }
 
-        function updateCharts(homeScore, awayScore, homeTeam, awayTeam) {
-            if (!leadChart || !scoreChart) return;
+        function updateCharts(homeScore, awayScore, homeTeam, awayTeam, homeProb = null) {
+            if (!leadChart || !probChart) return;
 
             // Add data point
             const label = chartData.labels.length;
@@ -721,6 +825,20 @@
             chartData.awayScores.push(awayScore);
             chartData.leadDiffs.push(homeScore - awayScore);
 
+            // Add probability data point (convert to swing scale: 50% → 0, 100% → +100, 0% → -100)
+            if (homeProb !== null) {
+                const swingValue = (homeProb - 50) * 2;  // 50% → 0, 75% → +50, 25% → -50
+                chartData.homeProbs.push(swingValue);
+            } else if (currentOdds && currentOdds.consensus) {
+                // Use current odds as default probability
+                const prob = currentOdds.consensus.home_prob || 50;
+                const swingValue = (prob - 50) * 2;
+                chartData.homeProbs.push(swingValue);
+            } else {
+                // No probability data - use 0 (even)
+                chartData.homeProbs.push(0);
+            }
+
             // Limit data points for performance (keep last 100)
             const maxPoints = 100;
             if (chartData.labels.length > maxPoints) {
@@ -728,6 +846,7 @@
                 chartData.homeScores.shift();
                 chartData.awayScores.shift();
                 chartData.leadDiffs.shift();
+                chartData.homeProbs.shift();
             }
 
             // Update team colors in charts
@@ -738,22 +857,60 @@
             leadChart.data.datasets[0].fill.above = homeColor + '4D';  // 30% opacity
             leadChart.data.datasets[0].fill.below = awayColor + '4D';
 
-            // Update score chart line colors and data
-            scoreChart.data.datasets[0].borderColor = homeColor;
-            scoreChart.data.datasets[0].label = homeTeam;
-            scoreChart.data.datasets[1].borderColor = awayColor;
-            scoreChart.data.datasets[1].label = awayTeam;
-
             // Sync chart data arrays with chartData (Chart.js needs direct reference updates)
             leadChart.data.labels = chartData.labels;
             leadChart.data.datasets[0].data = chartData.leadDiffs;
-            scoreChart.data.labels = chartData.labels;
-            scoreChart.data.datasets[0].data = chartData.homeScores;
-            scoreChart.data.datasets[1].data = chartData.awayScores;
+            probChart.data.labels = chartData.labels;
+            probChart.data.datasets[0].data = chartData.homeProbs;
 
             // Update chart display
             leadChart.update('none');
-            scoreChart.update('none');
+            probChart.update('none');
+        }
+
+        function updateOddsDisplay(odds, homeTeam, awayTeam) {
+            const oddsSection = document.getElementById('odds-section');
+            if (!odds || !odds.consensus) {
+                oddsSection.classList.remove('visible');
+                return;
+            }
+
+            oddsSection.classList.add('visible');
+            currentOdds = odds;
+
+            const consensus = odds.consensus;
+
+            // Update spread
+            const spreadEl = document.getElementById('odds-spread');
+            if (consensus.spread !== null && consensus.spread !== undefined) {
+                const spreadVal = consensus.spread;
+                spreadEl.textContent = spreadVal > 0 ? `+${spreadVal}` : spreadVal.toString();
+            } else {
+                spreadEl.textContent = '--';
+            }
+
+            // Update total
+            const totalEl = document.getElementById('odds-total');
+            totalEl.textContent = consensus.total ? `O/U ${consensus.total}` : '--';
+
+            // Update probability display
+            const homeProb = consensus.home_prob || 50;
+            const awayProb = consensus.away_prob || 50;
+
+            document.getElementById('away-team-prob').textContent = awayTeam;
+            document.getElementById('home-team-prob').textContent = homeTeam;
+            document.getElementById('away-prob-value').textContent = `${awayProb.toFixed(0)}%`;
+            document.getElementById('home-prob-value').textContent = `${homeProb.toFixed(0)}%`;
+
+            // Update probability bars (each bar shows distance from 50%)
+            const awayBarWidth = Math.max(0, 50 - homeProb);  // away favored
+            const homeBarWidth = Math.max(0, homeProb - 50);  // home favored
+            document.getElementById('away-prob-bar').style.width = `${awayBarWidth}%`;
+            document.getElementById('home-prob-bar').style.width = `${homeBarWidth}%`;
+
+            // Update vendor count
+            document.getElementById('odds-vendor-count').textContent =
+                consensus.vendor_count ? `${consensus.vendor_count} bookmakers` : '';
         }
 
         // Track active filters (all active by default)
@@ -794,8 +951,14 @@
                 const select = document.getElementById('game-select');
                 select.innerHTML = '<option value="">-- Select a game --</option>';
 
+                // Reset games data store
+                gamesData = {};
+
                 if (data.games && data.games.length > 0) {
                     data.games.forEach(game => {
+                        // Store game data for later access
+                        gamesData[game.game_id] = game;
+
                         const option = document.createElement('option');
                         option.value = game.game_id;
                         let text = `${game.away_team} @ ${game.home_team} - ${game.status}`;
@@ -825,6 +988,7 @@
                 document.getElementById('scoreboard').style.display = 'none';
                 document.getElementById('chat-container').style.display = 'none';
                 document.getElementById('mini-charts').classList.remove('visible');
+                document.getElementById('odds-section').classList.remove('visible');
                 if (pollInterval) {
                     clearInterval(pollInterval);
                     pollInterval = null;
@@ -838,6 +1002,24 @@
             document.getElementById('scoreboard').style.display = 'flex';
             document.getElementById('chat-container').style.display = 'block';
             document.getElementById('chat-feed').innerHTML = '<div class="loading" id="loading"><div class="spinner"></div><p>Loading game feed...</p></div>';
+
+            // Get game data from stored games
+            const gameData = gamesData[gameId];
+
+            // Update scoreboard immediately from stored data
+            if (gameData) {
+                document.getElementById('home-team').textContent = gameData.home_team;
+                document.getElementById('away-team').textContent = gameData.away_team;
+                document.getElementById('home-score').textContent = gameData.home_score || 0;
+                document.getElementById('away-score').textContent = gameData.away_score || 0;
+
+                // Display odds if available
+                if (gameData.odds) {
+                    updateOddsDisplay(gameData.odds, gameData.home_team, gameData.away_team);
+                } else {
+                    document.getElementById('odds-section').classList.remove('visible');
+                }
+            }
 
             // Initialize charts
             initCharts();

@@ -908,6 +908,208 @@ _dev_live_largest_leads = {}  # game_id -> {'home': N, 'away': N}
 _dev_live_history = {}  # game_id -> {'messages': [], 'scores': [], 'game_info': {}, 'status': ''}
 DEV_LIVE_HISTORY_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache', 'dev_live_history')
 
+# Odds cache for dev-live games
+_dev_live_odds_cache = {}  # game_id -> {'odds': [], 'consensus': {}, 'updated_at': timestamp}
+DEV_LIVE_ODDS_CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache', 'dev_live_odds.json')
+DEV_LIVE_ODDS_CACHE_TTL = 60  # seconds before refreshing odds
+
+# Probability history per game (for charts)
+_dev_live_prob_history = {}  # game_id -> [{'home_prob': N, 'away_prob': N, 'home_score': N, 'away_score': N, 'action': N}]
+
+
+def ml_to_prob(ml):
+    """Convert moneyline odds to implied probability."""
+    if ml is None:
+        return None
+    try:
+        ml = float(ml)
+        if ml > 0:
+            return 100 / (ml + 100)
+        else:
+            return abs(ml) / (abs(ml) + 100)
+    except (ValueError, ZeroDivisionError):
+        return None
+
+
+def fetch_dev_live_odds(game_ids, game_date=None):
+    """Fetch odds for multiple games from balldontlie API.
+    Returns dict with both game_id and team-pair keys for flexible matching."""
+    api_key = os.getenv('BALLDONTLIE_API_KEY')
+    if not api_key:
+        return {}
+
+    if not game_date:
+        game_date = datetime.now().strftime('%Y-%m-%d')
+
+    try:
+        response = requests.get(
+            'https://api.balldontlie.io/v2/odds',
+            params={'dates[]': game_date, 'per_page': 100},
+            headers={'Authorization': api_key},
+            timeout=15
+        )
+        response.raise_for_status()
+        all_odds = response.json().get('data', [])
+
+        # Group by game_id
+        odds_by_game = {}
+        for o in all_odds:
+            gid = str(o.get('game_id'))
+            if gid not in odds_by_game:
+                odds_by_game[gid] = []
+            odds_by_game[gid].append(o)
+
+        # Get game details to map to teams (for cross-API matching)
+        game_teams = {}
+        if odds_by_game:
+            try:
+                games_resp = requests.get(
+                    'https://api.balldontlie.io/v1/games',
+                    params={'dates[]': game_date, 'per_page': 100},
+                    headers={'Authorization': api_key},
+                    timeout=15
+                )
+                games_resp.raise_for_status()
+                for game in games_resp.json().get('data', []):
+                    gid = str(game.get('id'))
+                    game_teams[gid] = {
+                        'home': game.get('home_team', {}).get('abbreviation', ''),
+                        'away': game.get('visitor_team', {}).get('abbreviation', ''),
+                    }
+            except Exception:
+                pass
+
+        # Calculate consensus for each game
+        result = {}
+        for gid, odds_list in odds_by_game.items():
+            home_probs = []
+            away_probs = []
+            vendors = []
+            spreads = []
+            totals = []
+
+            for o in odds_list:
+                home_ml = o.get('moneyline_home_odds')
+                away_ml = o.get('moneyline_away_odds')
+
+                if home_ml is None:
+                    continue
+
+                home_prob = ml_to_prob(home_ml)
+                away_prob = ml_to_prob(away_ml)
+
+                if home_prob:
+                    home_probs.append(home_prob * 100)
+                    away_probs.append((away_prob or (1 - home_prob)) * 100)
+                    vendors.append({
+                        'name': o.get('vendor', 'Unknown'),
+                        'home_ml': home_ml,
+                        'away_ml': away_ml,
+                        'home_prob': round(home_prob * 100, 1),
+                        'spread_home': o.get('spread_home_value'),
+                        'total': o.get('total_value'),
+                    })
+                    if o.get('spread_home_value') is not None:
+                        spreads.append(float(o.get('spread_home_value')))
+                    if o.get('total_value') is not None:
+                        totals.append(float(o.get('total_value')))
+
+            if home_probs:
+                odds_data = {
+                    'vendors': vendors,
+                    'consensus': {
+                        'home_prob': round(sum(home_probs) / len(home_probs), 1),
+                        'away_prob': round(sum(away_probs) / len(away_probs), 1),
+                        'vendor_count': len(vendors),
+                        'spread': round(sum(spreads) / len(spreads), 1) if spreads else None,
+                        'total': round(sum(totals) / len(totals), 1) if totals else None,
+                    },
+                    'updated_at': datetime.now().isoformat(),
+                }
+
+                # Store by balldontlie game_id
+                result[gid] = odds_data
+
+                # Also store by team pair for cross-API matching
+                teams = game_teams.get(gid)
+                if teams:
+                    team_key = f"{teams['away']}@{teams['home']}"
+                    result[team_key] = odds_data
+
+        return result
+
+    except Exception as e:
+        print(f"Error fetching dev-live odds: {e}")
+        return {}
+
+
+def get_cached_odds(game_id, game_date=None):
+    """Get odds from cache or fetch fresh."""
+    global _dev_live_odds_cache
+
+    now = datetime.now()
+
+    # Check memory cache first
+    if game_id in _dev_live_odds_cache:
+        cached = _dev_live_odds_cache[game_id]
+        cache_time = datetime.fromisoformat(cached.get('updated_at', '2000-01-01'))
+        if (now - cache_time).total_seconds() < DEV_LIVE_ODDS_CACHE_TTL:
+            return cached
+
+    # Check file cache
+    if os.path.exists(DEV_LIVE_ODDS_CACHE_FILE):
+        try:
+            with open(DEV_LIVE_ODDS_CACHE_FILE, 'r') as f:
+                file_cache = json.load(f)
+                if game_id in file_cache:
+                    cached = file_cache[game_id]
+                    cache_time = datetime.fromisoformat(cached.get('updated_at', '2000-01-01'))
+                    if (now - cache_time).total_seconds() < DEV_LIVE_ODDS_CACHE_TTL:
+                        _dev_live_odds_cache[game_id] = cached
+                        return cached
+        except Exception:
+            pass
+
+    # Fetch fresh odds for all games on this date (more efficient than per-game)
+    fresh_odds = fetch_dev_live_odds([game_id], game_date)
+
+    if fresh_odds:
+        # Update both memory and file cache
+        _dev_live_odds_cache.update(fresh_odds)
+
+        # Save to file
+        try:
+            os.makedirs(os.path.dirname(DEV_LIVE_ODDS_CACHE_FILE), exist_ok=True)
+            # Load existing, merge, and save
+            existing = {}
+            if os.path.exists(DEV_LIVE_ODDS_CACHE_FILE):
+                with open(DEV_LIVE_ODDS_CACHE_FILE, 'r') as f:
+                    existing = json.load(f)
+            existing.update(fresh_odds)
+            with open(DEV_LIVE_ODDS_CACHE_FILE, 'w') as f:
+                json.dump(existing, f)
+        except Exception as e:
+            print(f"Error saving odds cache: {e}")
+
+    return _dev_live_odds_cache.get(game_id)
+
+
+def save_prob_snapshot(game_id, home_prob, away_prob, home_score, away_score, action_num):
+    """Save probability snapshot for chart history."""
+    global _dev_live_prob_history
+
+    if game_id not in _dev_live_prob_history:
+        _dev_live_prob_history[game_id] = []
+
+    _dev_live_prob_history[game_id].append({
+        'home_prob': home_prob,
+        'away_prob': away_prob,
+        'home_score': home_score,
+        'away_score': away_score,
+        'action': action_num,
+        'timestamp': datetime.now().isoformat(),
+    })
+
 def save_dev_live_history(game_id):
     """Save game history to JSON file."""
     if game_id not in _dev_live_history:
@@ -1189,6 +1391,10 @@ def api_dev_live_games():
         sb = scoreboard.ScoreBoard()
         games_data = sb.get_dict()['scoreboard']['games']
 
+        # Pre-fetch odds for all games (single API call)
+        game_date = datetime.now().strftime('%Y-%m-%d')
+        all_odds = fetch_dev_live_odds([], game_date)
+
         games = []
         seen_game_ids = set()
 
@@ -1197,7 +1403,12 @@ def api_dev_live_games():
             seen_game_ids.add(game_id)
             # Check if history exists for this game
             has_history = os.path.exists(os.path.join(DEV_LIVE_HISTORY_DIR, f'game_{game_id}.json'))
-            games.append({
+
+            # Get odds for this game - match by team pair since IDs differ between APIs
+            team_key = f"{g['awayTeam']['teamTricode']}@{g['homeTeam']['teamTricode']}"
+            game_odds = all_odds.get(team_key, {})
+
+            game_data = {
                 'game_id': game_id,
                 'home_team': g['homeTeam']['teamTricode'],
                 'away_team': g['awayTeam']['teamTricode'],
@@ -1207,7 +1418,22 @@ def api_dev_live_games():
                 'home_score': g['homeTeam'].get('score', 0),
                 'away_score': g['awayTeam'].get('score', 0),
                 'has_history': has_history,
-            })
+            }
+
+            # Add odds if available
+            if game_odds:
+                consensus = game_odds.get('consensus', {})
+                game_data['odds'] = {
+                    'consensus': {
+                        'home_prob': consensus.get('home_prob'),
+                        'away_prob': consensus.get('away_prob'),
+                        'vendor_count': consensus.get('vendor_count', 0),
+                        'spread': consensus.get('spread'),
+                        'total': consensus.get('total'),
+                    }
+                }
+
+            games.append(game_data)
 
         # Also include saved historical games not in today's scoreboard
         if os.path.exists(DEV_LIVE_HISTORY_DIR):
