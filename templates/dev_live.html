@@ -649,7 +649,20 @@
         .player-stats-table td.player-col {
             text-align: left;
             padding-left: 10px;
-            min-width: 120px;
+            min-width: 100px;
+            position: sticky;
+            left: 0;
+            background: var(--bg-card);
+            z-index: 1;
+        }
+        .player-stats-table td.player-col {
+            background: var(--bg-secondary);
+        }
+        .player-stats-table tr:hover td.player-col {
+            background: rgba(255,255,255,0.06);
+        }
+        .player-stats-table tr.totals-row td.player-col {
+            background: var(--bg-card);
         }
         .player-stats-table td {
             padding: 8px 6px;
@@ -847,12 +860,19 @@
                             <th>AST</th>
                             <th>STL</th>
                             <th>BLK</th>
+                            <th>TOV</th>
+                            <th>PF</th>
                             <th>FGM</th>
                             <th>FGA</th>
                             <th>FG%</th>
                             <th>3PM</th>
+                            <th>3PA</th>
+                            <th>3P%</th>
                             <th>FTM</th>
                             <th>FTA</th>
+                            <th>FT%</th>
+                            <th>OREB</th>
+                            <th>DREB</th>
                         </tr>
                     </thead>
                     <tbody id="player-stats-body">
@@ -1475,16 +1495,18 @@
             const tbody = document.getElementById('player-stats-body');
 
             if (players.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="12" style="text-align: center; padding: 20px; color: var(--text-muted);">No player stats yet</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="19" style="text-align: center; padding: 20px; color: var(--text-muted);">No player stats yet</td></tr>';
                 return;
             }
 
             // Calculate totals
-            const totals = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, fg3m: 0, ftm: 0, fta: 0 };
+            const totals = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0 };
 
             let html = '';
             players.forEach(p => {
                 const fgPct = p.fga > 0 ? (p.fgm / p.fga * 100).toFixed(1) : '0.0';
+                const fg3Pct = p.fg3a > 0 ? (p.fg3m / p.fg3a * 100).toFixed(1) : '0.0';
+                const ftPct = p.fta > 0 ? (p.ftm / p.fta * 100).toFixed(1) : '0.0';
                 const ptsClass = p.pts >= 20 ? 'highlight' : '';
 
                 html += `<tr>
@@ -1494,12 +1516,19 @@
                     <td>${p.ast}</td>
                     <td>${p.stl}</td>
                     <td>${p.blk}</td>
+                    <td>${p.tov || 0}</td>
+                    <td>${p.pf || 0}</td>
                     <td>${p.fgm}</td>
                     <td>${p.fga}</td>
                     <td class="pct">${fgPct}</td>
                     <td>${p.fg3m}</td>
+                    <td>${p.fg3a || 0}</td>
+                    <td class="pct">${fg3Pct}</td>
                     <td>${p.ftm}</td>
                     <td>${p.fta}</td>
+                    <td class="pct">${ftPct}</td>
+                    <td>${p.oreb || 0}</td>
+                    <td>${p.dreb || 0}</td>
                 </tr>`;
 
                 // Add to totals
@@ -1508,15 +1537,22 @@
                 totals.ast += p.ast || 0;
                 totals.stl += p.stl || 0;
                 totals.blk += p.blk || 0;
+                totals.tov += p.tov || 0;
+                totals.pf += p.pf || 0;
                 totals.fgm += p.fgm || 0;
                 totals.fga += p.fga || 0;
                 totals.fg3m += p.fg3m || 0;
+                totals.fg3a += p.fg3a || 0;
                 totals.ftm += p.ftm || 0;
                 totals.fta += p.fta || 0;
+                totals.oreb += p.oreb || 0;
+                totals.dreb += p.dreb || 0;
             });
 
             // Add totals row
             const totalFgPct = totals.fga > 0 ? (totals.fgm / totals.fga * 100).toFixed(1) : '0.0';
+            const totalFg3Pct = totals.fg3a > 0 ? (totals.fg3m / totals.fg3a * 100).toFixed(1) : '0.0';
+            const totalFtPct = totals.fta > 0 ? (totals.ftm / totals.fta * 100).toFixed(1) : '0.0';
             html += `<tr class="totals-row">
                 <td class="player-col">TOTAL</td>
                 <td>${totals.pts}</td>
@@ -1524,12 +1560,19 @@
                 <td>${totals.ast}</td>
                 <td>${totals.stl}</td>
                 <td>${totals.blk}</td>
+                <td>${totals.tov}</td>
+                <td>${totals.pf}</td>
                 <td>${totals.fgm}</td>
                 <td>${totals.fga}</td>
                 <td class="pct">${totalFgPct}</td>
                 <td>${totals.fg3m}</td>
+                <td>${totals.fg3a}</td>
+                <td class="pct">${totalFg3Pct}</td>
                 <td>${totals.ftm}</td>
                 <td>${totals.fta}</td>
+                <td class="pct">${totalFtPct}</td>
+                <td>${totals.oreb}</td>
+                <td>${totals.dreb}</td>
             </tr>`;
 
             tbody.innerHTML = html;

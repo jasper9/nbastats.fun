@@ -1465,7 +1465,10 @@ def get_player_stats(game_id, player_id):
         _player_game_stats[game_id][player_id] = {
             'name': '', 'team': '',
             'pts': 0, 'reb': 0, 'ast': 0, 'stl': 0, 'blk': 0,
-            'fgm': 0, 'fga': 0, 'ftm': 0, 'fta': 0, '3pm': 0,
+            'fgm': 0, 'fga': 0, 'ftm': 0, 'fta': 0,
+            '3pm': 0, '3pa': 0,  # 3-point made/attempted
+            'oreb': 0, 'dreb': 0,  # Offensive/defensive rebounds
+            'tov': 0, 'pf': 0,  # Turnovers, personal fouls
             'announced_dd': False, 'announced_td': False,
             'announced_pts_20': False, 'announced_pts_30': False, 'announced_pts_40': False,
         }
@@ -1673,6 +1676,7 @@ def update_player_stats(game_id, action):
 
     elif action_type == '3pt':
         stats['fga'] += 1
+        stats['3pa'] += 1  # Track 3-point attempts
         if 'MISS' not in desc:
             stats['fgm'] += 1
             stats['3pm'] += 1
@@ -1688,6 +1692,12 @@ def update_player_stats(game_id, action):
 
     elif action_type == 'rebound':
         stats['reb'] += 1
+        # Check for offensive vs defensive rebound
+        sub_type = action.get('subType', '').lower()
+        if 'offensive' in sub_type or 'off' in desc.lower():
+            stats['oreb'] += 1
+        else:
+            stats['dreb'] += 1
         messages = check_player_milestones(game_id, player_id, player_name, team)
 
     elif action_type == 'steal':
@@ -1697,6 +1707,12 @@ def update_player_stats(game_id, action):
     elif action_type == 'block':
         stats['blk'] += 1
         messages = check_player_milestones(game_id, player_id, player_name, team)
+
+    elif action_type == 'turnover':
+        stats['tov'] += 1
+
+    elif action_type == 'foul':
+        stats['pf'] += 1
 
     # Check for assists on made shots
     assist_player_id = action.get('assistPersonId')
@@ -2527,6 +2543,11 @@ def api_dev_live_feed(game_id):
                         'ftm': stats['ftm'],
                         'fta': stats['fta'],
                         'fg3m': stats['3pm'],
+                        'fg3a': stats['3pa'],
+                        'oreb': stats['oreb'],
+                        'dreb': stats['dreb'],
+                        'tov': stats['tov'],
+                        'pf': stats['pf'],
                     }
                     # Group by home/away
                     if stats['team'] == home_team:
