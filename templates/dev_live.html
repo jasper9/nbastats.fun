@@ -2098,9 +2098,14 @@
                 isLoadingFullHistory = false;
                 document.getElementById('load-more-container').style.display = 'none';
 
-                // Clear chart data for new game
+                // Hide odds section until new game's odds load
+                document.getElementById('odds-section').classList.remove('visible');
+
+                // Clear chart data for new game (including elapsed time arrays)
                 chartData = {
                     labels: [],
+                    elapsed: [],
+                    clocks: [],
                     homeScores: [],
                     awayScores: [],
                     leadDiffs: [],
