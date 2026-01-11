@@ -953,6 +953,98 @@ def prob_to_ml(prob):
         return None
 
 
+def parse_nba_minutes(min_str):
+    """Parse NBA API minutes format 'PT14M11.00S' to 'MM:SS' or 'MM' string."""
+    if not min_str:
+        return '-'
+    try:
+        # Format: PT{minutes}M{seconds}.00S
+        import re
+        match = re.match(r'PT(\d+)M([\d.]+)S', min_str)
+        if match:
+            mins = int(match.group(1))
+            secs = int(float(match.group(2)))
+            if secs > 0:
+                return f"{mins:02d}:{secs:02d}"
+            return f"{mins:02d}"
+        return '-'
+    except Exception:
+        return '-'
+
+
+def get_player_stats_from_nba_boxscore(bs_data, home_team_tricode):
+    """
+    Extract player stats from NBA API boxscore data.
+    Returns dict with 'home' and 'away' lists of player stats.
+    This provides more complete data than BallDontLie API.
+    """
+    result = {'home': [], 'away': []}
+
+    game_data = bs_data.get('game', {})
+    home_team = game_data.get('homeTeam', {})
+    away_team = game_data.get('awayTeam', {})
+
+    # Process home team
+    for player in home_team.get('players', []):
+        stats = player.get('statistics', {})
+        player_stat = {
+            'name': player.get('name', ''),
+            'team': home_team.get('teamTricode', ''),
+            'min': parse_nba_minutes(stats.get('minutes', '')),
+            'pts': stats.get('points', 0),
+            'reb': stats.get('reboundsTotal', 0),
+            'ast': stats.get('assists', 0),
+            'stl': stats.get('steals', 0),
+            'blk': stats.get('blocks', 0),
+            'fgm': stats.get('fieldGoalsMade', 0),
+            'fga': stats.get('fieldGoalsAttempted', 0),
+            'fg3m': stats.get('threePointersMade', 0),
+            'fg3a': stats.get('threePointersAttempted', 0),
+            'ftm': stats.get('freeThrowsMade', 0),
+            'fta': stats.get('freeThrowsAttempted', 0),
+            'oreb': stats.get('reboundsOffensive', 0),
+            'dreb': stats.get('reboundsDefensive', 0),
+            'tov': stats.get('turnovers', 0),
+            'pf': stats.get('foulsPersonal', 0),
+            'plus_minus': stats.get('plusMinusPoints', 0),
+            'starter': player.get('starter') == '1' or player.get('starter') == 1,
+        }
+        result['home'].append(player_stat)
+
+    # Process away team
+    for player in away_team.get('players', []):
+        stats = player.get('statistics', {})
+        player_stat = {
+            'name': player.get('name', ''),
+            'team': away_team.get('teamTricode', ''),
+            'min': parse_nba_minutes(stats.get('minutes', '')),
+            'pts': stats.get('points', 0),
+            'reb': stats.get('reboundsTotal', 0),
+            'ast': stats.get('assists', 0),
+            'stl': stats.get('steals', 0),
+            'blk': stats.get('blocks', 0),
+            'fgm': stats.get('fieldGoalsMade', 0),
+            'fga': stats.get('fieldGoalsAttempted', 0),
+            'fg3m': stats.get('threePointersMade', 0),
+            'fg3a': stats.get('threePointersAttempted', 0),
+            'ftm': stats.get('freeThrowsMade', 0),
+            'fta': stats.get('freeThrowsAttempted', 0),
+            'oreb': stats.get('reboundsOffensive', 0),
+            'dreb': stats.get('reboundsDefensive', 0),
+            'tov': stats.get('turnovers', 0),
+            'pf': stats.get('foulsPersonal', 0),
+            'plus_minus': stats.get('plusMinusPoints', 0),
+            'starter': player.get('starter') == '1' or player.get('starter') == 1,
+        }
+        result['away'].append(player_stat)
+
+    # Sort by points descending within each team
+    result['home'].sort(key=lambda x: x['pts'], reverse=True)
+    result['away'].sort(key=lambda x: x['pts'], reverse=True)
+
+    return result
+
+
 def fetch_dev_live_odds(game_ids, game_date=None):
     """Fetch odds for multiple games from balldontlie API.
     Returns dict with both game_id and team-pair keys for flexible matching."""
@@ -2435,11 +2527,8 @@ def api_dev_live_feed(game_id):
 
             max_action = max([p.get('order', 0) for p in plays]) if plays else 0
 
-            # Get player stats from BallDontLie (with MIN and plus_minus)
-            player_stats_raw = bdl.get_player_stats(bdl_game_id)
-            player_stats_by_team = bdl.format_player_stats_for_frontend(player_stats_raw, home_team_id)
-
-            # Try to add starter info from NBA API boxscore
+            # Get player stats from NBA API (more complete than BallDontLie)
+            player_stats_by_team = {'home': [], 'away': []}
             try:
                 from nba_api.live.nba.endpoints import scoreboard, boxscore
                 sb = scoreboard.ScoreBoard()
@@ -2455,18 +2544,12 @@ def api_dev_live_feed(game_id):
                 if nba_game_id:
                     bs = boxscore.BoxScore(nba_game_id)
                     bs_data = bs.get_dict()
-                    starters = set()
-                    for team_key in ['homeTeam', 'awayTeam']:
-                        team_data = bs_data.get('game', {}).get(team_key, {})
-                        for player in team_data.get('players', []):
-                            if player.get('starter') == '1' or player.get('starter') == 1:
-                                starters.add(player.get('name', '').strip())
-
-                    for team in ['home', 'away']:
-                        for p in player_stats_by_team.get(team, []):
-                            p['starter'] = p.get('name', '') in starters
+                    player_stats_by_team = get_player_stats_from_nba_boxscore(bs_data, home_team)
             except Exception as e:
-                print(f"NBA API boxscore for starters (regen) failed: {e}")
+                print(f"NBA API boxscore for stats (regen) failed: {e}")
+                # Fall back to BallDontLie if NBA API fails
+                player_stats_raw = bdl.get_player_stats(bdl_game_id)
+                player_stats_by_team = bdl.format_player_stats_for_frontend(player_stats_raw, home_team_id)
 
             # Save to history
             history_data = {
@@ -2742,11 +2825,7 @@ def api_dev_live_feed(game_id):
                     history['scores'] = deduped_scores
                 print(f"Regenerated {len(history['messages'])} messages and {len(history['scores'])} score points")
 
-            # Get player stats from BallDontLie (with MIN and plus_minus) before saving
-            player_stats_raw = bdl.get_player_stats(bdl_game_id)
-            history['player_stats'] = bdl.format_player_stats_for_frontend(player_stats_raw, home_team_id)
-
-            # Try to add starter info from NBA API boxscore before saving
+            # Get player stats from NBA API (more complete than BallDontLie) before saving
             try:
                 from nba_api.live.nba.endpoints import boxscore
                 nba_game_id = None
@@ -2759,18 +2838,16 @@ def api_dev_live_feed(game_id):
                 if nba_game_id:
                     bs = boxscore.BoxScore(nba_game_id)
                     bs_data = bs.get_dict()
-                    starters = set()
-                    for team_key in ['homeTeam', 'awayTeam']:
-                        team_data = bs_data.get('game', {}).get(team_key, {})
-                        for player in team_data.get('players', []):
-                            if player.get('starter') == '1' or player.get('starter') == 1:
-                                starters.add(player.get('name', '').strip())
-
-                    for team in ['home', 'away']:
-                        for p in history['player_stats'].get(team, []):
-                            p['starter'] = p.get('name', '') in starters
+                    history['player_stats'] = get_player_stats_from_nba_boxscore(bs_data, home_team)
+                else:
+                    # Fall back to BallDontLie if NBA game not found
+                    player_stats_raw = bdl.get_player_stats(bdl_game_id)
+                    history['player_stats'] = bdl.format_player_stats_for_frontend(player_stats_raw, home_team_id)
             except Exception as e:
-                print(f"NBA API boxscore for starters (save) failed: {e}")
+                print(f"NBA API boxscore for stats (save) failed: {e}")
+                # Fall back to BallDontLie if NBA API fails
+                player_stats_raw = bdl.get_player_stats(bdl_game_id)
+                history['player_stats'] = bdl.format_player_stats_for_frontend(player_stats_raw, home_team_id)
 
             # Convert set to list for JSON serialization before saving
             history_to_save = {k: v for k, v in history.items() if k != 'saved_action_numbers'}
@@ -2780,11 +2857,8 @@ def api_dev_live_feed(game_id):
         else:
             history['status'] = game_status
 
-        # Get player stats from BallDontLie API (includes MIN and plus_minus)
-        player_stats_raw = bdl.get_player_stats(bdl_game_id)
-        player_stats_by_team = bdl.format_player_stats_for_frontend(player_stats_raw, home_team_id)
-
-        # Try to get starter info from NBA API boxscore
+        # Get player stats from NBA API (more complete than BallDontLie)
+        player_stats_by_team = {'home': [], 'away': []}
         try:
             from nba_api.live.nba.endpoints import boxscore
 
@@ -2799,26 +2873,16 @@ def api_dev_live_feed(game_id):
             if nba_game_id:
                 bs = boxscore.BoxScore(nba_game_id)
                 bs_data = bs.get_dict()
-
-                # Build starter lookup by player name
-                starters = set()
-                for team_key in ['homeTeam', 'awayTeam']:
-                    team_data = bs_data.get('game', {}).get(team_key, {})
-                    for player in team_data.get('players', []):
-                        if player.get('starter') == '1' or player.get('starter') == 1:
-                            # Use name for matching
-                            starters.add(player.get('name', '').strip())
-
-                # Add starter field to player stats
-                for team in ['home', 'away']:
-                    for p in player_stats_by_team.get(team, []):
-                        p['starter'] = p.get('name', '') in starters
+                player_stats_by_team = get_player_stats_from_nba_boxscore(bs_data, home_team)
+            else:
+                # Fall back to BallDontLie if NBA game not found
+                player_stats_raw = bdl.get_player_stats(bdl_game_id)
+                player_stats_by_team = bdl.format_player_stats_for_frontend(player_stats_raw, home_team_id)
         except Exception as e:
-            # If NBA API fails, mark all players as non-starters
-            print(f"NBA API boxscore for starters failed: {e}")
-            for team in ['home', 'away']:
-                for p in player_stats_by_team.get(team, []):
-                    p['starter'] = False
+            print(f"NBA API boxscore for stats failed: {e}")
+            # Fall back to BallDontLie if NBA API fails
+            player_stats_raw = bdl.get_player_stats(bdl_game_id)
+            player_stats_by_team = bdl.format_player_stats_for_frontend(player_stats_raw, home_team_id)
 
         # Build response
         response_data = {
