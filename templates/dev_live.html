@@ -1213,9 +1213,24 @@
         }
 
         // Estimate win probability based on score and game progress
-        // Uses a simple model: each point of lead shifts probability, with more impact as game progresses
+        // Uses pre-game odds as baseline, then adjusts based on score differential
         function estimateWinProbability(homeScore, awayScore, period) {
             const lead = homeScore - awayScore;
+
+            // Get baseline probability from pre-game odds (locked at first load)
+            let baseProb = 50;
+            if (preGameOdds && preGameOdds.consensus) {
+                const homeProb = preGameOdds.consensus.home_prob || 50;
+                const awayProb = preGameOdds.consensus.away_prob || 50;
+                // Normalize to remove vig
+                const totalProb = homeProb + awayProb;
+                baseProb = (homeProb / totalProb) * 100;
+            }
+
+            // If game hasn't started (no score), return pre-game odds
+            if (homeScore === 0 && awayScore === 0 && (!period || period === 0)) {
+                return baseProb;
+            }
 
             // Estimate game progress (0-1 scale based on period)
             let gameProgress = 0.25;  // Default to early game
@@ -1228,14 +1243,18 @@
             }
 
             // Each point shifts probability more as game progresses
-            // Early game: ~2% per point, Late game: ~5% per point
-            const pointValue = 2 + gameProgress * 3;
+            // Early game: ~1.5% per point, Late game: ~4% per point
+            const pointValue = 1.5 + gameProgress * 2.5;
             let probAdjust = lead * pointValue;
 
-            // Cap at reasonable bounds (-45 to +45 around 50%)
-            probAdjust = Math.max(-45, Math.min(45, probAdjust));
+            // Cap adjustment to keep probability in reasonable range
+            probAdjust = Math.max(-40, Math.min(40, probAdjust));
 
-            return 50 + probAdjust;
+            // Apply adjustment to baseline (pre-game odds), not 50%
+            let finalProb = baseProb + probAdjust;
+
+            // Clamp to valid probability range
+            return Math.max(5, Math.min(95, finalProb));
         }
 
         function updateCharts(homeScore, awayScore, homeTeam, awayTeam, homeProb = null, period = null) {
@@ -1745,7 +1764,7 @@
                         });
                     } else {
                         // Live update - pass current period for quarter tracking
-                        // Note: Chart shows in-game probability based on score/time, NOT pre-game bookmaker odds
+                        // Note: Chart uses pre-game odds as baseline, then adjusts based on score/time
                         const currentPeriod = data.period || null;
                         updateCharts(data.score.home, data.score.away, data.game_info.home_team, data.game_info.away_team, null, currentPeriod);
                     }
