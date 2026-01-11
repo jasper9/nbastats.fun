@@ -933,6 +933,331 @@ DEV_LIVE_ODDS_CACHE_TTL = 60  # seconds before refreshing odds
 # Probability history per game (for charts)
 _dev_live_prob_history = {}  # game_id -> [{'home_prob': N, 'away_prob': N, 'home_score': N, 'away_score': N, 'action': N}]
 
+# Player stats tracking per game for milestone detection
+# game_id -> player_name -> {'pts': N, 'reb': N, 'ast': N, 'blk': N, 'stl': N, 'team': 'XXX'}
+_dev_live_player_stats = {}
+
+# Track which milestones have already been announced per game
+# game_id -> set of milestone keys like "LeBron_triple_double", "Curry_30pts"
+_dev_live_announced_milestones = {}
+
+# Player season averages cache (player_name -> {'ppg': N, 'rpg': N, 'apg': N, 'bpg': N, 'spg': N})
+_player_season_averages = {}
+PLAYER_AVERAGES_CACHE_TTL = 3600  # 1 hour cache for season averages
+
+
+def get_player_season_averages(player_name, team_abbrev=None):
+    """
+    Get player season averages from BallDontLie API.
+    Falls back to hardcoded star player averages if API fails.
+    """
+    global _player_season_averages
+
+    if player_name in _player_season_averages:
+        cached = _player_season_averages[player_name]
+        if (datetime.now() - cached.get('cached_at', datetime.min)).total_seconds() < PLAYER_AVERAGES_CACHE_TTL:
+            return cached
+
+    # Hardcoded fallback averages for star players (2024-25 season estimates)
+    star_averages = {
+        'LeBron James': {'ppg': 25.5, 'rpg': 7.5, 'apg': 8.0, 'bpg': 0.5, 'spg': 1.0},
+        'Nikola Jokic': {'ppg': 27.0, 'rpg': 12.5, 'apg': 9.5, 'bpg': 0.7, 'spg': 1.3},
+        'Luka Doncic': {'ppg': 34.0, 'rpg': 9.0, 'apg': 9.5, 'bpg': 0.5, 'spg': 1.5},
+        'Giannis Antetokounmpo': {'ppg': 31.0, 'rpg': 12.0, 'apg': 6.0, 'bpg': 1.0, 'spg': 1.0},
+        'Stephen Curry': {'ppg': 23.0, 'rpg': 4.5, 'apg': 5.0, 'bpg': 0.2, 'spg': 0.8},
+        'Kevin Durant': {'ppg': 27.0, 'rpg': 6.5, 'apg': 5.0, 'bpg': 1.2, 'spg': 0.8},
+        'Jayson Tatum': {'ppg': 27.0, 'rpg': 8.5, 'apg': 5.0, 'bpg': 0.6, 'spg': 1.0},
+        'Shai Gilgeous-Alexander': {'ppg': 31.0, 'rpg': 5.5, 'apg': 6.0, 'bpg': 1.0, 'spg': 2.0},
+        'Anthony Edwards': {'ppg': 26.0, 'rpg': 5.5, 'apg': 5.0, 'bpg': 0.6, 'spg': 1.3},
+        'Joel Embiid': {'ppg': 27.0, 'rpg': 11.0, 'apg': 4.5, 'bpg': 1.7, 'spg': 1.0},
+        'Trae Young': {'ppg': 25.0, 'rpg': 3.0, 'apg': 11.0, 'bpg': 0.1, 'spg': 1.0},
+        'Ja Morant': {'ppg': 21.0, 'rpg': 5.0, 'apg': 8.0, 'bpg': 0.3, 'spg': 1.0},
+        'Tyrese Haliburton': {'ppg': 18.0, 'rpg': 4.0, 'apg': 9.0, 'bpg': 0.5, 'spg': 1.2},
+        'Damian Lillard': {'ppg': 25.0, 'rpg': 4.5, 'apg': 7.0, 'bpg': 0.3, 'spg': 1.0},
+        'Anthony Davis': {'ppg': 24.0, 'rpg': 12.5, 'apg': 3.5, 'bpg': 2.3, 'spg': 1.2},
+        'Domantas Sabonis': {'ppg': 19.0, 'rpg': 14.0, 'apg': 8.0, 'bpg': 0.5, 'spg': 1.0},
+        'Victor Wembanyama': {'ppg': 22.0, 'rpg': 10.5, 'apg': 3.5, 'bpg': 3.5, 'spg': 1.0},
+        'Karl-Anthony Towns': {'ppg': 25.0, 'rpg': 11.0, 'apg': 3.0, 'bpg': 0.7, 'spg': 0.7},
+        'Chet Holmgren': {'ppg': 16.0, 'rpg': 8.0, 'apg': 2.5, 'bpg': 2.5, 'spg': 1.0},
+        'Jamal Murray': {'ppg': 21.0, 'rpg': 4.0, 'apg': 6.5, 'bpg': 0.3, 'spg': 1.0},
+        'Michael Porter Jr.': {'ppg': 15.0, 'rpg': 7.0, 'apg': 1.5, 'bpg': 0.5, 'spg': 0.8},
+        'Russell Westbrook': {'ppg': 11.0, 'rpg': 5.0, 'apg': 4.5, 'bpg': 0.2, 'spg': 0.9},
+    }
+
+    # Check for partial name matches
+    for known_name, avgs in star_averages.items():
+        if player_name in known_name or known_name in player_name:
+            result = avgs.copy()
+            result['cached_at'] = datetime.now()
+            _player_season_averages[player_name] = result
+            return result
+
+    # Default averages for unknown players
+    default = {'ppg': 10.0, 'rpg': 4.0, 'apg': 2.5, 'bpg': 0.5, 'spg': 0.7, 'cached_at': datetime.now()}
+    _player_season_averages[player_name] = default
+    return default
+
+
+def track_player_stats_from_play(game_id, play):
+    """
+    Track cumulative player stats from a play for milestone detection.
+    Updates _dev_live_player_stats with running totals.
+    """
+    global _dev_live_player_stats
+
+    if game_id not in _dev_live_player_stats:
+        _dev_live_player_stats[game_id] = {}
+
+    text = play.get('text', '')
+    play_type = play.get('type', '').lower()
+    team_obj = play.get('team') or {}
+    team = team_obj.get('abbreviation', '')
+    is_scoring = play.get('scoring_play', False)
+    score_value = play.get('score_value', 0) or 0
+
+    # Extract player name
+    from balldontlie_live import extract_player_from_text
+    player = extract_player_from_text(text)
+
+    if not player:
+        return None
+
+    # Initialize player stats if needed
+    if player not in _dev_live_player_stats[game_id]:
+        _dev_live_player_stats[game_id][player] = {
+            'pts': 0, 'reb': 0, 'ast': 0, 'blk': 0, 'stl': 0, 'team': team
+        }
+
+    stats = _dev_live_player_stats[game_id][player]
+    stats['team'] = team or stats['team']
+
+    # Update stats based on play type
+    if is_scoring:
+        stats['pts'] += score_value
+
+    if 'rebound' in play_type:
+        stats['reb'] += 1
+
+    if 'assist' in text.lower() or 'ast' in play_type:
+        # Look for assisted by pattern
+        import re
+        assist_match = re.search(r'(?:assist|assisted)\s+by\s+([A-Z][a-z\']+(?:\s+[A-Z][a-z\']+)+)', text, re.IGNORECASE)
+        if assist_match:
+            assister = assist_match.group(1).strip()
+            if assister not in _dev_live_player_stats[game_id]:
+                _dev_live_player_stats[game_id][assister] = {
+                    'pts': 0, 'reb': 0, 'ast': 0, 'blk': 0, 'stl': 0, 'team': team
+                }
+            _dev_live_player_stats[game_id][assister]['ast'] += 1
+
+    if 'block' in play_type:
+        stats['blk'] += 1
+
+    if 'steal' in play_type:
+        stats['stl'] += 1
+
+    return player
+
+
+def check_stat_milestones(game_id, player, game_info):
+    """
+    Check if a player has hit any stat milestones.
+    Returns list of milestone messages to add.
+    """
+    global _dev_live_announced_milestones
+
+    if game_id not in _dev_live_player_stats:
+        return []
+
+    if player not in _dev_live_player_stats[game_id]:
+        return []
+
+    if game_id not in _dev_live_announced_milestones:
+        _dev_live_announced_milestones[game_id] = set()
+
+    stats = _dev_live_player_stats[game_id][player]
+    announced = _dev_live_announced_milestones[game_id]
+    messages = []
+
+    pts = stats.get('pts', 0)
+    reb = stats.get('reb', 0)
+    ast = stats.get('ast', 0)
+    blk = stats.get('blk', 0)
+    stl = stats.get('stl', 0)
+    team = stats.get('team', '')
+
+    # Get player averages for context
+    avgs = get_player_season_averages(player, team)
+
+    # Check triple-double (10+ in 3 categories)
+    categories_10 = sum([1 for v in [pts, reb, ast] if v >= 10])
+    if categories_10 >= 3:
+        milestone_key = f"{player}_triple_double"
+        if milestone_key not in announced:
+            announced.add(milestone_key)
+            season_avg = f"{avgs.get('ppg', 0):.1f}/{avgs.get('rpg', 0):.1f}/{avgs.get('apg', 0):.1f}"
+            msg = generate_historian_milestone_message(
+                'triple_double', player, team,
+                {'pts': pts, 'reb': reb, 'ast': ast, 'season_avg': season_avg},
+                game_info
+            )
+            if msg:
+                messages.append(msg)
+
+    # Check double-double (10+ in 2 categories)
+    categories_10_dd = sum([1 for v in [pts, reb, ast, blk, stl] if v >= 10])
+    if categories_10_dd >= 2 and categories_10 < 3:  # Not if it's a triple-double
+        milestone_key = f"{player}_double_double"
+        if milestone_key not in announced:
+            announced.add(milestone_key)
+            # Find the two highest categories
+            stat_pairs = [('pts', pts), ('reb', reb), ('ast', ast), ('blk', blk), ('stl', stl)]
+            stat_pairs.sort(key=lambda x: x[1], reverse=True)
+            stat1_name, stat1_val = stat_pairs[0]
+            stat2_name, stat2_val = stat_pairs[1]
+            season_avg = f"{avgs.get('ppg', 0):.1f}/{avgs.get('rpg', 0):.1f}/{avgs.get('apg', 0):.1f}"
+            msg = generate_historian_milestone_message(
+                'double_double', player, team,
+                {'stat1_name': stat1_name.upper(), 'stat1_val': stat1_val,
+                 'stat2_name': stat2_name.upper(), 'stat2_val': stat2_val,
+                 'season_avg': season_avg},
+                game_info
+            )
+            if msg:
+                messages.append(msg)
+
+    # Check scoring milestones: 30+, 40+, 50+, 60+
+    for threshold in [30, 40, 50, 60]:
+        if pts >= threshold:
+            milestone_key = f"{player}_{threshold}pts"
+            if milestone_key not in announced:
+                announced.add(milestone_key)
+                msg = generate_historian_milestone_message(
+                    'scoring_milestone', player, team,
+                    {'pts': pts, 'milestone': threshold, 'ppg': avgs.get('ppg', 0)},
+                    game_info
+                )
+                if msg:
+                    messages.append(msg)
+                break  # Only announce highest threshold
+
+    # Check blocks milestones: 5+, 10+, 15+, 20+
+    for threshold in [5, 10, 15, 20]:
+        if blk >= threshold:
+            milestone_key = f"{player}_{threshold}blk"
+            if milestone_key not in announced:
+                announced.add(milestone_key)
+                msg = generate_historian_milestone_message(
+                    'blocks_milestone', player, team,
+                    {'blocks': blk, 'milestone': threshold, 'bpg': avgs.get('bpg', 0)},
+                    game_info
+                )
+                if msg:
+                    messages.append(msg)
+                break  # Only announce highest threshold
+
+    # Check steals milestones: 5+, 10+, 15+, 20+
+    for threshold in [5, 10, 15, 20]:
+        if stl >= threshold:
+            milestone_key = f"{player}_{threshold}stl"
+            if milestone_key not in announced:
+                announced.add(milestone_key)
+                msg = generate_historian_milestone_message(
+                    'steals_milestone', player, team,
+                    {'steals': stl, 'milestone': threshold, 'spg': avgs.get('spg', 0)},
+                    game_info
+                )
+                if msg:
+                    messages.append(msg)
+                break  # Only announce highest threshold
+
+    return messages
+
+
+def check_big_lead_milestone(game_id, home_score, away_score, home_team, away_team, period, game_info):
+    """
+    Check for big lead milestones (20+, 25+, 30+).
+    Returns a milestone message if threshold crossed.
+    """
+    global _dev_live_announced_milestones
+
+    if game_id not in _dev_live_announced_milestones:
+        _dev_live_announced_milestones[game_id] = set()
+
+    announced = _dev_live_announced_milestones[game_id]
+    lead_diff = abs(home_score - away_score)
+
+    if lead_diff < 20:
+        return None
+
+    leader = home_team if home_score > away_score else away_team
+    opponent = away_team if home_score > away_score else home_team
+
+    # Check thresholds in descending order
+    for threshold in [30, 25, 20]:
+        if lead_diff >= threshold:
+            milestone_key = f"{leader}_{threshold}lead_Q{period}"
+            if milestone_key not in announced:
+                announced.add(milestone_key)
+                msg = generate_historian_milestone_message(
+                    'big_lead', leader, opponent,
+                    {'lead_amount': lead_diff, 'period': period},
+                    game_info
+                )
+                return msg
+            break
+
+    return None
+
+
+def generate_historian_milestone_message(milestone_type, player, team, context, game_info):
+    """
+    Generate a Historian bot message for a stat milestone using LLM.
+    """
+    try:
+        from llm_commentary import generate_llm_commentary, COMMENTARY_PROMPTS
+
+        # Build LLM context
+        llm_context = {
+            'player': player,
+            'team': team,
+            **context
+        }
+
+        # Generate LLM commentary
+        llm_text = generate_llm_commentary(milestone_type, llm_context)
+
+        if llm_text:
+            return {
+                'bot': 'historian',
+                'text': llm_text,
+                'type': 'milestone',
+                'team': team if milestone_type != 'big_lead' else context.get('team', ''),
+                'timestamp': datetime.now().isoformat(),
+            }
+        else:
+            # Fallback messages without LLM
+            fallback_messages = {
+                'triple_double': f"📜 {player} records a triple-double with {context.get('pts', 0)} pts, {context.get('reb', 0)} reb, {context.get('ast', 0)} ast!",
+                'double_double': f"📜 {player} has a double-double: {context.get('stat1_val', 0)} {context.get('stat1_name', 'PTS')}, {context.get('stat2_val', 0)} {context.get('stat2_name', 'REB')}",
+                'scoring_milestone': f"📜 {player} hits {context.get('pts', 0)} points! ({context.get('milestone', 30)}+ game)",
+                'blocks_milestone': f"📜 {player} with {context.get('blocks', 0)} blocks tonight! Defensive showcase.",
+                'steals_milestone': f"📜 {player} has {context.get('steals', 0)} steals! Picking pockets all night.",
+                'big_lead': f"📜 {player} leads by {context.get('lead_amount', 20)} - historically, teams hold this lead ~95% of the time.",
+            }
+            fallback = fallback_messages.get(milestone_type, f"📜 {player} hits a milestone!")
+            return {
+                'bot': 'historian',
+                'text': fallback,
+                'type': 'milestone',
+                'team': team if milestone_type != 'big_lead' else '',
+                'timestamp': datetime.now().isoformat(),
+            }
+
+    except Exception as e:
+        print(f"Historian milestone error: {e}")
+        return None
+
 
 def ml_to_prob(ml):
     """Convert moneyline odds to implied probability."""
@@ -3212,7 +3537,7 @@ def api_dev_live_feed(game_id):
             if prev_plays:
                 prev_play = prev_plays[0]
 
-        # Calculate largest leads from history if this is a fresh load
+        # Calculate largest leads and player stats from history if this is a fresh load
         if last_action == 0 and len(plays) > 0:
             for p in plays:
                 h = int(p.get('home_score', 0) or 0)
@@ -3221,6 +3546,8 @@ def api_dev_live_feed(game_id):
                     _dev_live_largest_leads[game_id]['home'] = max(_dev_live_largest_leads[game_id]['home'], h - aw)
                 elif aw > h:
                     _dev_live_largest_leads[game_id]['away'] = max(_dev_live_largest_leads[game_id]['away'], aw - h)
+                # Track player stats from historical plays for milestone detection
+                track_player_stats_from_play(game_id, p)
 
         # For fresh loads of games that just started, prepend pregame messages
         # This ensures viewers joining early see the matchup preview
@@ -3284,6 +3611,41 @@ def api_dev_live_feed(game_id):
                                 messages.append(ai_msg)
                         except Exception as e:
                             print(f"LLM enhancement error: {e}")
+
+            # === HISTORIAN BOT: Stat Milestone Detection ===
+            # Track player stats from this play and check for milestones
+            if viewer_count > 0:  # Only when viewers are watching
+                try:
+                    # Track stats from the play
+                    tracked_player = track_player_stats_from_play(game_id, play)
+
+                    if tracked_player:
+                        # Check for individual stat milestones (triple-double, 30+ pts, etc.)
+                        milestone_msgs = check_stat_milestones(game_id, tracked_player, game_info)
+                        for milestone_msg in milestone_msgs:
+                            milestone_msg['action_number'] = play.get('order', 0)
+                            milestone_msg['score'] = f"{away_team} {play.get('away_score', 0)} - {home_team} {play.get('home_score', 0)}"
+                            milestone_msg['clock'] = play.get('clock', '')
+                            milestone_msg['period'] = play.get('period', 1)
+                            messages.append(milestone_msg)
+
+                    # Check for big lead milestones (20+, 25+, 30+ point leads)
+                    h_score = int(play.get('home_score', 0) or 0)
+                    a_score = int(play.get('away_score', 0) or 0)
+                    if abs(h_score - a_score) >= 20:
+                        big_lead_msg = check_big_lead_milestone(
+                            game_id, h_score, a_score,
+                            home_team, away_team,
+                            play.get('period', 1), game_info
+                        )
+                        if big_lead_msg:
+                            big_lead_msg['action_number'] = play.get('order', 0)
+                            big_lead_msg['score'] = f"{away_team} {a_score} - {home_team} {h_score}"
+                            big_lead_msg['clock'] = play.get('clock', '')
+                            big_lead_msg['period'] = play.get('period', 1)
+                            messages.append(big_lead_msg)
+                except Exception as e:
+                    print(f"Milestone detection error: {e}")
 
             all_messages.extend(messages)
 

@@ -109,6 +109,90 @@ Example format:
 • Charlotte improves playoff positioning with this road win
 
 Keep it punchy and insightful. No hashtags or emojis.""",
+
+    # Historian prompts for stat milestones
+    'triple_double': """You are an NBA historian providing fascinating context. A player just recorded a triple-double!
+
+Player: {player}
+Stats: {pts} points, {reb} rebounds, {ast} assists
+Team: {team}
+Player's season average: {season_avg}
+
+Give ONE sentence (max 25 words) with an interesting historical fact about triple-doubles. Examples of angles:
+- Compare to all-time leaders (Oscar Robertson, Russell Westbrook, Magic Johnson)
+- Note how rare they are (~120-150 per season league-wide)
+- Reference franchise records if it's a star player
+- Mention notable active players who chase them
+
+Be creative and educational. Start with 📜. No hashtags.""",
+
+    'double_double': """You are an NBA historian. A player just got a double-double!
+
+Player: {player}
+Stats: {stat1_name} {stat1_val}, {stat2_name} {stat2_val}
+Team: {team}
+Player's season average: {season_avg}
+
+Give ONE sentence (max 20 words) with quick context. Only comment if it's notable - if it's routine for this player, mention their consistency. Reference how common double-doubles are (~15-20 per night league-wide). Start with 📜. No hashtags.""",
+
+    'scoring_milestone': """You are an NBA historian. A player just hit a scoring milestone!
+
+Player: {player}
+Points: {pts}
+Milestone: {milestone}+ point game
+Team: {team}
+Player's scoring average: {ppg} PPG this season
+
+Give ONE sentence (max 25 words) with fascinating historical context. Angles to consider:
+- 30+ pts: "Only 3-4 players per night reach this mark"
+- 40+ pts: "Only ~150 occur per season across the NBA"
+- 50+ pts: "Historic performance - fewer than 30 per season league-wide"
+- 60+ pts: "Legendary territory - only happens a handful of times per year"
+
+Reference similar performances by legends if relevant. Start with 📜. No hashtags.""",
+
+    'blocks_milestone': """You are an NBA historian. A player just hit a blocks milestone!
+
+Player: {player}
+Blocks: {blocks}
+Milestone: {milestone}+ blocks
+Team: {team}
+Player's blocks average: {bpg} BPG this season
+
+Give ONE sentence (max 25 words) with context about this defensive feat. Angles:
+- 5+ blocks: "Only happens 1-2 times per night league-wide"
+- 10+ blocks: "Ultra-rare - maybe 2-3 times per season"
+- 15+ blocks: "Historic - would tie/break NBA records"
+
+Reference shot-blocking legends (Hakeem, Mutombo, Mark Eaton). Start with 📜. No hashtags.""",
+
+    'steals_milestone': """You are an NBA historian. A player just hit a steals milestone!
+
+Player: {player}
+Steals: {steals}
+Milestone: {milestone}+ steals
+Team: {team}
+Player's steals average: {spg} SPG this season
+
+Give ONE sentence (max 25 words) with context. Angles:
+- 5+ steals: "Averages just one such game per night league-wide"
+- 10+ steals: "Incredibly rare - maybe 1-2 times per season"
+
+Reference steal leaders (John Stockton, Chris Paul, Gary Payton). Start with 📜. No hashtags.""",
+
+    'big_lead': """You are an NBA historian commenting on a big lead.
+
+Leading team: {leader}
+Lead amount: +{lead_amount}
+Opponent: {opponent}
+Quarter: Q{period}
+
+Give ONE sentence (max 20 words) about comebacks from this deficit. Angles:
+- 20+ point leads: "Historically held in about 85% of games"
+- 25+ point leads: "Teams win 99%+ when leading by this much"
+- 30+ point leads: "The largest comeback in NBA history was 36 points"
+
+Make it dramatic but factual. Start with 📜. No hashtags.""",
 }
 
 # Event types that require longer responses (quarter summaries need more tokens)
