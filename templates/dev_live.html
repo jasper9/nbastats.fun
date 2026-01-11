@@ -1427,30 +1427,6 @@
             const swingValue = (prob - 50) * 2;  // 50% → 0, 75% → +50, 25% → -50
             chartData.homeProbs.push(swingValue);
 
-            // Limit data points for performance (keep last 100)
-            const maxPoints = 100;
-            if (chartData.labels.length > maxPoints) {
-                chartData.labels.shift();
-                chartData.homeScores.shift();
-                chartData.awayScores.shift();
-                chartData.leadDiffs.shift();
-                chartData.homeProbs.shift();
-
-                // Adjust quarter markers when data shifts (decrement all indices by 1)
-                // Filter both markers and labels together
-                const newMarkers = [];
-                const newLabels = [];
-                for (let i = 0; i < chartData.quarterMarkers.length; i++) {
-                    const newIdx = chartData.quarterMarkers[i] - 1;
-                    if (newIdx >= 0) {
-                        newMarkers.push(newIdx);
-                        newLabels.push(chartData.quarterLabels[i]);
-                    }
-                }
-                chartData.quarterMarkers = newMarkers;
-                chartData.quarterLabels = newLabels;
-            }
-
             // Update team colors in charts (use contrasting colors)
             const { awayColor, homeColor } = getTeamColors(awayTeam, homeTeam);
 
