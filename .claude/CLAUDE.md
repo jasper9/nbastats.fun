@@ -13,7 +13,7 @@ A Flask-based dashboard for tracking Nikola Jokić and Denver Nuggets stats, sta
 - `templates/leaders.html` - League leaders by stat category
 - `templates/live.html` - Live game win probability tracker
 - `templates/live_history.html` - Historical game recap with charts and player stats
-- `templates/dev_live.html` - Development live chat feed with play-by-play bots
+- `templates/beta_live.html` - Beta live chat feed with play-by-play bots
 
 ### Data Refresh Scripts
 - `refresh_cache.py` - **Full refresh** - runs all data refreshes (for manual use)
@@ -39,8 +39,8 @@ A Flask-based dashboard for tracking Nikola Jokić and Denver Nuggets stats, sta
 - `live_status.json` - Current game status (is_live flag for nav indicator)
 - `live_history/game_*.json` - Win probability snapshots and player stats for completed games
 - `historical_odds.json` - Pre-game odds archive for ATS tracking
-- `dev_live_history/game_*.json` - Dev-live chat messages and scores for completed games
-- `dev_live_odds.json` - Cached odds for dev-live games (balldontlie v2 API)
+- `dev_live_history/game_*.json` - Beta-live chat messages and scores for completed games
+- `dev_live_odds.json` - Cached odds for beta-live games (balldontlie v2 API)
 
 ### Static Data Files (in `data/`)
 - `special_events.json` - Promotional events/giveaways for home games
@@ -233,9 +233,9 @@ load_dotenv()
 
 ## Work In Progress: Live Chat Feed
 
-### Current Implementation (`/dev-live`)
+### Current Implementation (`/beta-live`)
 A real-time play-by-play chat feed with bot "personalities":
-- **Files**: `templates/dev_live.html`, `llm_commentary.py`, routes in `app.py`
+- **Files**: `templates/beta_live.html`, `llm_commentary.py`, routes in `app.py`
 - **Data Source**: NBA Live API `playbyplay.PlayByPlay(game_id)`
 - **Polling**: Every 5 seconds for new plays
 

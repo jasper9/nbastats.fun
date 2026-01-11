@@ -211,7 +211,7 @@
                 <a href="/more">Nuggets</a>
                 <a href="/leaders">Leaders</a>
                 <a href="/live">Live</a>
-                <a href="/dev-live" class="active">Dev Live</a>
+                <a href="/beta-live" class="active">Beta Live</a>
             </div>
         </div>
     </nav>
@@ -222,7 +222,7 @@
     </header>
 
     <div class="container">
-        <a href="/dev-live" class="back-link">
+        <a href="/beta-live" class="back-link">
             <span>&larr;</span> Back to Live Feed
         </a>
 
@@ -256,7 +256,7 @@
             const container = document.getElementById('archive-container');
 
             try {
-                const response = await fetch('/api/dev-live/games');
+                const response = await fetch('/api/beta-live/games');
                 const data = await response.json();
 
                 if (data.error) {
@@ -324,7 +324,7 @@
                                         <div class="score">${game.away_score} - ${game.home_score} (Final)</div>
                                     </div>
                                 </div>
-                                <a href="/dev-live?game=${game.game_id}" class="view-btn">View Replay</a>
+                                <a href="/beta-live?game=${game.game_id}" class="view-btn">View Replay</a>
                             </div>
                         `;
                     });

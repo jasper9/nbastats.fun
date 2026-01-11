@@ -2904,20 +2904,20 @@ def generate_chat_message(action, game_info, prev_action=None, largest_leads=Non
     return messages
 
 
-@app.route('/dev-live')
-def dev_live():
-    """Development live chat feed page."""
-    return render_template('dev_live.html')
+@app.route('/beta-live')
+def beta_live():
+    """Beta live chat feed page."""
+    return render_template('beta_live.html')
 
 
-@app.route('/dev-live/archive')
-def dev_live_archive():
+@app.route('/beta-live/archive')
+def beta_live_archive():
     """Archive of past games with saved history."""
-    return render_template('dev_live_archive.html')
+    return render_template('beta_live_archive.html')
 
 
-@app.route('/api/dev-live/prewarm')
-def api_dev_live_prewarm():
+@app.route('/api/beta-live/prewarm')
+def api_beta_live_prewarm():
     """Pre-warm caches for all today's games (injuries, rosters).
     Call this on page load to speed up game switching."""
     try:
@@ -2959,8 +2959,8 @@ def api_dev_live_prewarm():
         return jsonify({'status': 'error', 'error': str(e)})
 
 
-@app.route('/api/dev-live/games')
-def api_dev_live_games():
+@app.route('/api/beta-live/games')
+def api_beta_live_games():
     """Get current live NBA games and games with saved history using BallDontLie API."""
     try:
         if not BDL_AVAILABLE:
@@ -3108,8 +3108,8 @@ def api_dev_live_games():
         return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
 
 
-@app.route('/api/dev-live/feed/<game_id>')
-def api_dev_live_feed(game_id):
+@app.route('/api/beta-live/feed/<game_id>')
+def api_beta_live_feed(game_id):
     """Get live chat feed for a specific game using BallDontLie API."""
     try:
         import uuid

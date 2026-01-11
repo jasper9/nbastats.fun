@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dev Live Feed - NBA Stats Fun</title>
+    <title>Beta Live Feed - NBA Stats Fun</title>
     {% if ga_tracking_id %}
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_tracking_id }}"></script>
     <script>
@@ -1095,13 +1095,13 @@
                 <a href="/jokic">Jokic</a>
                 <a href="/more">Nuggets</a>
                 <a href="/live" class="nav-live {{ 'is-live' if is_game_live else '' }}">Live</a>
-                <a href="/dev-live" class="active" style="color: #f97316;">Dev</a>
+                <a href="/beta-live" class="active" style="color: #f97316;">Beta</a>
             </div>
         </div>
     </nav>
 
     <header>
-        <div class="page-title">Live Play-by-Play Feed <span style="background: #f97316; color: white; font-size: 0.5em; padding: 3px 8px; border-radius: 4px; vertical-align: middle; margin-left: 10px;">DEV</span></div>
+        <div class="page-title">Live Play-by-Play Feed <span style="background: #f97316; color: white; font-size: 0.5em; padding: 3px 8px; border-radius: 4px; vertical-align: middle; margin-left: 10px;">BETA</span></div>
         <div class="page-subtitle">Real-time game updates with personality</div>
     </header>
 
@@ -1109,7 +1109,7 @@
         <div class="game-selector">
             <label>
                 Select a live game: <span id="timezone-label" style="font-weight: normal; opacity: 0.7;"></span>
-                <a href="/dev-live/archive" class="archive-link">View Past Games</a>
+                <a href="/beta-live/archive" class="archive-link">View Past Games</a>
             </label>
             <select id="game-select">
                 <option value="">Loading games...</option>
@@ -1330,7 +1330,7 @@
     </div>
 
     <div class="footer">
-        <p>Development feature - Live play-by-play from NBA API</p>
+        <p>Beta feature - Live play-by-play from NBA API</p>
     </div>
 
     <script>
@@ -2482,7 +2482,7 @@
         async function loadGames() {
             try {
                 // Only fetch today's games for faster loading
-                const response = await fetch('/api/dev-live/games?today_only=true');
+                const response = await fetch('/api/beta-live/games?today_only=true');
                 const data = await response.json();
 
                 const select = document.getElementById('game-select');
@@ -2561,7 +2561,7 @@
                 }
                 // Clear URL parameter
                 if (updateUrl) {
-                    window.history.replaceState({}, '', '/dev-live');
+                    window.history.replaceState({}, '', '/beta-live');
                 }
                 return;
             }
@@ -2620,7 +2620,7 @@
 
             // Update URL with game ID (allows refresh and sharing)
             if (updateUrl) {
-                window.history.replaceState({}, '', `/dev-live?game=${gameId}`);
+                window.history.replaceState({}, '', `/beta-live?game=${gameId}`);
             }
 
             // Show UI elements immediately
@@ -2732,7 +2732,7 @@
             const requestGameId = currentGameId;
 
             try {
-                const response = await fetch(`/api/dev-live/feed/${requestGameId}?last_action=${lastActionNumber}&client_id=${clientId}`);
+                const response = await fetch(`/api/beta-live/feed/${requestGameId}?last_action=${lastActionNumber}&client_id=${clientId}`);
                 const data = await response.json();
 
                 // Ignore stale responses if game changed while request was in flight
@@ -3091,7 +3091,7 @@
 
             try {
                 // Fetch full history (recent_only=false)
-                const response = await fetch(`/api/dev-live/feed/${currentGameId}?last_action=0&client_id=${clientId}&recent_only=false`);
+                const response = await fetch(`/api/beta-live/feed/${currentGameId}?last_action=0&client_id=${clientId}&recent_only=false`);
                 const data = await response.json();
 
                 if (data.messages && data.messages.length > 0) {
@@ -3155,7 +3155,7 @@
         // Pre-warm caches in background for faster game switching
         // This fetches injuries and rosters for all teams playing today
         setTimeout(() => {
-            fetch('/api/dev-live/prewarm').catch(() => {});
+            fetch('/api/beta-live/prewarm').catch(() => {});
         }, 500);  // Delay slightly to prioritize initial page load
 
         // Refresh game list every 60 seconds
