@@ -1996,12 +1996,17 @@
                 // Initialize charts (will use currentHomeTeam/currentAwayTeam for labels)
                 initCharts();
 
-                // Add initial chart points using pre-game odds (so chart matches odds bar before game starts)
-                // Need at least 2 points to draw a visible line
-                if (preGameOddsLocked && gameData) {
-                    const initScore = { home: gameData.home_score || 0, away: gameData.away_score || 0 };
-                    updateCharts(initScore.home, initScore.away, currentHomeTeam, currentAwayTeam, null, null);
-                    updateCharts(initScore.home, initScore.away, currentHomeTeam, currentAwayTeam, null, null);
+                // Only add initial 0-0 chart points for PRE-GAME games (not yet started)
+                // This allows the chart to show pre-game odds before any scoring
+                // For live/completed games, score history from the API will populate the chart
+                const isPreGame = !gameData || !gameData.status ||
+                    (!gameData.status.includes('Q') &&
+                     gameData.status !== 'Half' &&
+                     !gameData.status.includes('Final'));
+                if (isPreGame && preGameOddsLocked) {
+                    // Add 0-0 starting point for pre-game display
+                    updateCharts(0, 0, currentHomeTeam, currentAwayTeam, null, 0);
+                    updateCharts(0, 0, currentHomeTeam, currentAwayTeam, null, 0);
                 }
 
                 // Start polling for new game
