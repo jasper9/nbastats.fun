@@ -781,6 +781,12 @@
             color: var(--nuggets-gold);
             font-weight: 600;
         }
+        .player-stats-table .positive {
+            color: var(--positive);
+        }
+        .player-stats-table .negative {
+            color: var(--negative);
+        }
         .player-stats-table .pct {
             color: var(--text-muted);
             font-size: 0.75rem;
@@ -976,13 +982,12 @@
                     <thead>
                         <tr>
                             <th class="player-col">Player</th>
+                            <th>MIN</th>
                             <th>PTS</th>
                             <th>REB</th>
                             <th>AST</th>
                             <th>STL</th>
                             <th>BLK</th>
-                            <th>TOV</th>
-                            <th>PF</th>
                             <th>FGM</th>
                             <th>FGA</th>
                             <th>FG%</th>
@@ -994,6 +999,9 @@
                             <th>FT%</th>
                             <th>OREB</th>
                             <th>DREB</th>
+                            <th>TOV</th>
+                            <th>PF</th>
+                            <th>+/-</th>
                         </tr>
                     </thead>
                     <tbody id="player-stats-body">
@@ -1697,7 +1705,7 @@
             const tbody = document.getElementById('player-stats-body');
 
             if (players.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="19" style="text-align: center; padding: 20px; color: var(--text-muted);">No player stats yet</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="21" style="text-align: center; padding: 20px; color: var(--text-muted);">No player stats yet</td></tr>';
                 return;
             }
 
@@ -1706,20 +1714,21 @@
 
             let html = '';
             players.forEach(p => {
-                const fgPct = p.fga > 0 ? (p.fgm / p.fga * 100).toFixed(1) : '0.0';
-                const fg3Pct = p.fg3a > 0 ? (p.fg3m / p.fg3a * 100).toFixed(1) : '0.0';
-                const ftPct = p.fta > 0 ? (p.ftm / p.fta * 100).toFixed(1) : '0.0';
+                const fgPct = p.fga > 0 ? (p.fgm / p.fga * 100).toFixed(1) : '-';
+                const fg3Pct = p.fg3a > 0 ? (p.fg3m / p.fg3a * 100).toFixed(1) : '-';
+                const ftPct = p.fta > 0 ? (p.ftm / p.fta * 100).toFixed(1) : '-';
                 const ptsClass = p.pts >= 20 ? 'highlight' : '';
+                const plusMinus = p.plus_minus !== undefined ? (p.plus_minus > 0 ? `+${p.plus_minus}` : p.plus_minus) : '-';
+                const plusMinusClass = p.plus_minus > 0 ? 'positive' : (p.plus_minus < 0 ? 'negative' : '');
 
                 html += `<tr>
                     <td class="player-col">${p.name}</td>
+                    <td>${p.min || '-'}</td>
                     <td class="${ptsClass}">${p.pts}</td>
                     <td>${p.reb}</td>
                     <td>${p.ast}</td>
                     <td>${p.stl}</td>
                     <td>${p.blk}</td>
-                    <td>${p.tov || 0}</td>
-                    <td>${p.pf || 0}</td>
                     <td>${p.fgm}</td>
                     <td>${p.fga}</td>
                     <td class="pct">${fgPct}</td>
@@ -1731,6 +1740,9 @@
                     <td class="pct">${ftPct}</td>
                     <td>${p.oreb || 0}</td>
                     <td>${p.dreb || 0}</td>
+                    <td>${p.tov || 0}</td>
+                    <td>${p.pf || 0}</td>
+                    <td class="${plusMinusClass}">${plusMinus}</td>
                 </tr>`;
 
                 // Add to totals
@@ -1752,18 +1764,17 @@
             });
 
             // Add totals row
-            const totalFgPct = totals.fga > 0 ? (totals.fgm / totals.fga * 100).toFixed(1) : '0.0';
-            const totalFg3Pct = totals.fg3a > 0 ? (totals.fg3m / totals.fg3a * 100).toFixed(1) : '0.0';
-            const totalFtPct = totals.fta > 0 ? (totals.ftm / totals.fta * 100).toFixed(1) : '0.0';
+            const totalFgPct = totals.fga > 0 ? (totals.fgm / totals.fga * 100).toFixed(1) : '-';
+            const totalFg3Pct = totals.fg3a > 0 ? (totals.fg3m / totals.fg3a * 100).toFixed(1) : '-';
+            const totalFtPct = totals.fta > 0 ? (totals.ftm / totals.fta * 100).toFixed(1) : '-';
             html += `<tr class="totals-row">
                 <td class="player-col">TOTAL</td>
+                <td>-</td>
                 <td>${totals.pts}</td>
                 <td>${totals.reb}</td>
                 <td>${totals.ast}</td>
                 <td>${totals.stl}</td>
                 <td>${totals.blk}</td>
-                <td>${totals.tov}</td>
-                <td>${totals.pf}</td>
                 <td>${totals.fgm}</td>
                 <td>${totals.fga}</td>
                 <td class="pct">${totalFgPct}</td>
@@ -1775,6 +1786,9 @@
                 <td class="pct">${totalFtPct}</td>
                 <td>${totals.oreb}</td>
                 <td>${totals.dreb}</td>
+                <td>${totals.tov}</td>
+                <td>${totals.pf}</td>
+                <td>-</td>
             </tr>`;
 
             tbody.innerHTML = html;
