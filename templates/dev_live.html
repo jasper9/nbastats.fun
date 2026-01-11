@@ -1133,7 +1133,7 @@
         let historyCutoffAction = 0;
         let isLoadingFullHistory = false;
 
-        // Custom Chart.js plugin to draw vertical quarter lines
+        // Custom Chart.js plugin to draw vertical quarter lines (at elapsed time positions)
         const quarterLinesPlugin = {
             id: 'quarterLines',
             afterDraw: (chart) => {
@@ -1148,11 +1148,9 @@
                 ctx.lineWidth = 1;
                 ctx.setLineDash([3, 3]);
 
-                chartData.quarterMarkers.forEach((index, i) => {
-                    // Skip if index is out of bounds
-                    if (index < 0 || index >= chartData.labels.length) return;
-
-                    const x = xAxis.getPixelForValue(index);
+                chartData.quarterMarkers.forEach((elapsedTime, i) => {
+                    // quarterMarkers now stores elapsed seconds (720 for Q2, 1440 for Q3, etc.)
+                    const x = xAxis.getPixelForValue(elapsedTime);
 
                     ctx.beginPath();
                     ctx.moveTo(x, yAxis.top);
@@ -1248,13 +1246,25 @@
             return { awayColor, homeColor };
         }
 
+        // Helper to convert elapsed seconds to game time string (e.g., "Q2 5:32")
+        function elapsedToGameTime(elapsed) {
+            if (elapsed === null || elapsed === undefined) return '';
+            const period = Math.floor(elapsed / 720) + 1;
+            const periodElapsed = elapsed % 720;
+            const remaining = 720 - periodElapsed;
+            const mins = Math.floor(remaining / 60);
+            const secs = remaining % 60;
+            const qLabel = period <= 4 ? `Q${period}` : `OT${period - 4}`;
+            return `${qLabel} ${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
         function initCharts() {
             // Destroy existing charts
             if (leadChart) { leadChart.destroy(); leadChart = null; }
             if (probChart) { probChart.destroy(); probChart = null; }
 
-            // Reset data including quarter markers
-            chartData = { labels: [], homeScores: [], awayScores: [], leadDiffs: [], homeProbs: [], quarterMarkers: [], quarterLabels: [] };
+            // Reset data including quarter markers and elapsed times
+            chartData = { labels: [], elapsed: [], clocks: [], homeScores: [], awayScores: [], leadDiffs: [], homeProbs: [], quarterMarkers: [], quarterLabels: [] };
             lastPeriod = 0;
 
             const chartOptions = {
@@ -1282,7 +1292,10 @@
                 },
                 scales: {
                     x: {
-                        display: false
+                        type: 'linear',
+                        display: false,
+                        min: 0,
+                        max: 2880  // 48 minutes = 2880 seconds (regulation)
                     },
                     y: {
                         ticks: {
@@ -1295,14 +1308,13 @@
                 }
             };
 
-            // Lead Differential Chart
+            // Lead Differential Chart (uses {x: elapsed, y: diff} format for time-based x-axis)
             const leadCtx = document.getElementById('leadChart').getContext('2d');
             leadChart = new Chart(leadCtx, {
                 type: 'line',
                 data: {
-                    labels: chartData.labels,
                     datasets: [{
-                        data: chartData.leadDiffs,
+                        data: [],  // Will be populated with {x, y} objects
                         borderColor: '#fec524',
                         borderWidth: 1.5,
                         fill: {
@@ -1326,9 +1338,11 @@
                                 title: (items) => {
                                     const idx = items[0]?.dataIndex;
                                     if (idx === undefined) return '';
+                                    const elapsed = chartData.elapsed[idx];
+                                    const gameTime = elapsedToGameTime(elapsed);
                                     const home = chartData.homeScores[idx] || 0;
                                     const away = chartData.awayScores[idx] || 0;
-                                    return `Score: ${away} - ${home}`;
+                                    return `${gameTime} | ${away} - ${home}`;
                                 },
                                 label: (ctx) => {
                                     const val = ctx.parsed.y;
@@ -1357,15 +1371,14 @@
                 }
             });
 
-            // Win Probability Chart (100 - EVEN - 100 format, using swing scale: 50% → 0, 100% → +100, 0% → -100)
+            // Win Probability Chart (uses {x: elapsed, y: prob} format for time-based x-axis)
             const probCtx = document.getElementById('probChart').getContext('2d');
             probChart = new Chart(probCtx, {
                 type: 'line',
                 data: {
-                    labels: chartData.labels,
                     datasets: [{
                         label: 'Win Prob',
-                        data: chartData.homeProbs,
+                        data: [],  // Will be populated with {x, y} objects
                         borderColor: '#fec524',
                         borderWidth: 1.5,
                         fill: {
@@ -1410,9 +1423,11 @@
                                 title: (items) => {
                                     const idx = items[0]?.dataIndex;
                                     if (idx === undefined) return '';
+                                    const elapsed = chartData.elapsed[idx];
+                                    const gameTime = elapsedToGameTime(elapsed);
                                     const home = chartData.homeScores[idx] || 0;
                                     const away = chartData.awayScores[idx] || 0;
-                                    return `Score: ${away} - ${home}`;
+                                    return `${gameTime} | ${away} - ${home}`;
                                 },
                                 label: (ctx) => {
                                     // Convert swing value back to probability
@@ -1476,23 +1491,35 @@
             return Math.max(5, Math.min(95, finalProb));
         }
 
-        function updateCharts(homeScore, awayScore, homeTeam, awayTeam, homeProb = null, period = null) {
+        function updateCharts(homeScore, awayScore, homeTeam, awayTeam, homeProb = null, period = null, elapsed = null, clock = null) {
             if (!leadChart || !probChart) return;
 
-            // Check for quarter change - add marker at start of each quarter
+            // Calculate elapsed time if not provided (for backwards compatibility)
+            if (elapsed === null && period) {
+                // Default to start of current period if no elapsed given
+                elapsed = (period - 1) * 720;
+            } else if (elapsed === null) {
+                // Fallback: use index * some interval
+                elapsed = chartData.elapsed.length * 30;
+            }
+
+            // Check for quarter change - add marker at quarter boundaries (720, 1440, 2160)
             if (period && period > lastPeriod) {
-                const markerIndex = chartData.labels.length;  // Current position before adding
-                chartData.quarterMarkers.push(markerIndex);
+                const quarterStart = (period - 1) * 720;
+                chartData.quarterMarkers.push(quarterStart);
                 chartData.quarterLabels.push(period <= 4 ? `Q${period}` : `OT${period - 4}`);
                 lastPeriod = period;
             }
 
-            // Add data point
-            const label = chartData.labels.length;
-            chartData.labels.push(label);
+            // Add data point with elapsed time as x-value
+            chartData.labels.push(chartData.labels.length);  // Keep sequential for reference
+            chartData.elapsed.push(elapsed);
+            chartData.clocks.push(clock || '');
             chartData.homeScores.push(homeScore);
             chartData.awayScores.push(awayScore);
-            chartData.leadDiffs.push(homeScore - awayScore);
+
+            const leadDiff = homeScore - awayScore;
+            chartData.leadDiffs.push({x: elapsed, y: leadDiff});
 
             // Add probability data point (convert to swing scale: 50% → 0, 100% → +100, 0% → -100)
             let prob;
@@ -1503,7 +1530,7 @@
                 prob = estimateWinProbability(homeScore, awayScore, period);
             }
             const swingValue = (prob - 50) * 2;  // 50% → 0, 75% → +50, 25% → -50
-            chartData.homeProbs.push(swingValue);
+            chartData.homeProbs.push({x: elapsed, y: swingValue});
 
             // Update team colors in charts (use contrasting colors)
             const { awayColor, homeColor } = getTeamColors(awayTeam, homeTeam);
@@ -1512,11 +1539,16 @@
             leadChart.data.datasets[0].fill.above = homeColor + '4D';  // 30% opacity
             leadChart.data.datasets[0].fill.below = awayColor + '4D';
 
-            // Sync chart data arrays with chartData (Chart.js needs direct reference updates)
-            leadChart.data.labels = chartData.labels;
+            // Update chart data (using {x, y} format for linear scale)
             leadChart.data.datasets[0].data = chartData.leadDiffs;
-            probChart.data.labels = chartData.labels;
             probChart.data.datasets[0].data = chartData.homeProbs;
+
+            // Dynamically adjust x-axis max based on game progress (extend for overtime)
+            const maxElapsed = Math.max(...chartData.elapsed, 2880);
+            if (maxElapsed > 2880) {
+                leadChart.options.scales.x.max = maxElapsed + 300;  // Add buffer for OT
+                probChart.options.scales.x.max = maxElapsed + 300;
+            }
 
             // Update chart display
             leadChart.update('none');
@@ -2151,9 +2183,8 @@
                      gameData.status !== 'Half' &&
                      !gameData.status.includes('Final'));
                 if (isPreGame && preGameOddsLocked) {
-                    // Add 0-0 starting point for pre-game display
-                    updateCharts(0, 0, currentHomeTeam, currentAwayTeam, null, 0);
-                    updateCharts(0, 0, currentHomeTeam, currentAwayTeam, null, 0);
+                    // Add 0-0 starting point for pre-game display (elapsed=0 for game start)
+                    updateCharts(0, 0, currentHomeTeam, currentAwayTeam, null, 1, 0, '12:00');
                 }
 
                 // Start polling for new game
@@ -2267,16 +2298,19 @@
 
                     // Load score history for charts (only once per game - historical games OR first load of live game)
                     if (!scoreHistoryLoaded && (data.is_historical || data.is_first_load) && data.scores && data.scores.length > 0) {
-                        // Reconstruct charts from saved score history (with period info for quarter lines)
+                        // Reconstruct charts from saved score history (with elapsed time for x-axis)
                         data.scores.forEach(s => {
-                            updateCharts(s.home, s.away, data.game_info.home_team, data.game_info.away_team, null, s.period);
+                            updateCharts(s.home, s.away, data.game_info.home_team, data.game_info.away_team, null, s.period, s.elapsed, s.clock);
                         });
                         scoreHistoryLoaded = true;  // Mark as loaded to prevent duplicates
                     } else if (!data.is_historical && !data.is_first_load) {
-                        // Live update (only for non-historical games) - pass current period for quarter tracking
-                        // Note: Chart uses pre-game odds as baseline, then adjusts based on score/time
+                        // Live update (only for non-historical games) - get elapsed from latest score
                         const currentPeriod = data.period || null;
-                        updateCharts(data.score.home, data.score.away, data.game_info.home_team, data.game_info.away_team, null, currentPeriod);
+                        // If scores array has latest score with elapsed, use it
+                        const latestScore = data.scores && data.scores.length > 0 ? data.scores[data.scores.length - 1] : null;
+                        const elapsed = latestScore?.elapsed || null;
+                        const clock = latestScore?.clock || null;
+                        updateCharts(data.score.home, data.score.away, data.game_info.home_team, data.game_info.away_team, null, currentPeriod, elapsed, clock);
                     }
                 }
 

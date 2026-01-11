@@ -1045,6 +1045,32 @@ def get_player_stats_from_nba_boxscore(bs_data, home_team_tricode):
     return result
 
 
+def clock_to_elapsed_seconds(clock_str, period):
+    """
+    Convert game clock (MM:SS remaining) and period to elapsed seconds.
+    Q1 12:00 → 0, Q1 0:00 → 720, Q2 12:00 → 720, Q4 0:00 → 2880
+    """
+    if not clock_str or not period:
+        return 0
+    try:
+        parts = clock_str.split(':')
+        if len(parts) == 2:
+            mins = int(parts[0])
+            secs = int(float(parts[1]))  # Handle "12:00.0" format
+        else:
+            return (period - 1) * 720  # Default to start of period
+
+        # Time remaining in current quarter
+        remaining = mins * 60 + secs
+        # Elapsed in current quarter (12 min = 720 sec per quarter)
+        quarter_elapsed = 720 - remaining
+        # Total elapsed including previous quarters
+        total_elapsed = (period - 1) * 720 + quarter_elapsed
+        return total_elapsed
+    except (ValueError, IndexError):
+        return (period - 1) * 720
+
+
 def fetch_dev_live_odds(game_ids, game_date=None):
     """Fetch odds for multiple games from balldontlie API.
     Returns dict with both game_id and team-pair keys for flexible matching."""
@@ -2505,11 +2531,15 @@ def api_dev_live_feed(game_id):
 
                 # Track score at each action (include period for quarter markers)
                 if h > 0 or aw > 0:
+                    clock = play.get('clock', '')
+                    period = play.get('period', 1)
                     full_scores.append({
                         'home': h,
                         'away': aw,
                         'action': play.get('order', 0),
-                        'period': play.get('period', 1)
+                        'period': period,
+                        'clock': clock,
+                        'elapsed': clock_to_elapsed_seconds(clock, period)
                     })
 
                 prev_play = play
@@ -2752,8 +2782,9 @@ def api_dev_live_feed(game_id):
                 history['saved_action_numbers'].add(msg_key)
                 history['messages'].append(msg)
 
-        # Track score progression for charts (include period for quarter markers)
+        # Track score progression for charts (include period and clock for game time x-axis)
         play_period = plays[-1].get('period', 1) if plays else current_period
+        play_clock = plays[-1].get('clock', game_clock) if plays else game_clock
         if latest_score['home'] > 0 or latest_score['away'] > 0:
             # Only add if score changed from last recorded score
             if not history['scores'] or \
@@ -2764,6 +2795,8 @@ def api_dev_live_feed(game_id):
                     'away': latest_score['away'],
                     'action': max_action,
                     'period': play_period,
+                    'clock': play_clock,
+                    'elapsed': clock_to_elapsed_seconds(play_clock, play_period),
                 })
 
         # Update history metadata
@@ -2806,11 +2839,15 @@ def api_dev_live_feed(game_id):
 
                     # Track score at each play (include period for quarter markers)
                     if h > 0 or aw > 0:
+                        clock = p.get('clock', '')
+                        period = p.get('period', 1)
                         full_scores.append({
                             'home': h,
                             'away': aw,
                             'action': p.get('order', 0),
-                            'period': p.get('period', 1)
+                            'period': period,
+                            'clock': clock,
+                            'elapsed': clock_to_elapsed_seconds(clock, period)
                         })
 
                     prev_p = p
@@ -2921,11 +2958,15 @@ def api_dev_live_feed(game_id):
                 if h > 0 or aw > 0:
                     # Only add if score changed
                     if not full_scores or full_scores[-1]['home'] != h or full_scores[-1]['away'] != aw:
+                        clock = p.get('clock', '')
+                        period = p.get('period', 1)
                         full_scores.append({
                             'home': h,
                             'away': aw,
                             'action': p.get('order', 0),
-                            'period': p.get('period', 1)
+                            'period': period,
+                            'clock': clock,
+                            'elapsed': clock_to_elapsed_seconds(clock, period)
                         })
             if full_scores:
                 response_data['scores'] = full_scores
