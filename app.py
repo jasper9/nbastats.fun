@@ -3251,9 +3251,15 @@ def api_beta_live_feed(game_id):
         # recent_only: only load recent plays for faster initial load (default true for fresh loads)
         recent_only = request.args.get('recent_only', 'true').lower() == 'true'
 
-        # Check for saved history first (for completed games)
+        # Check for saved history first (for completed games AND live games on first load)
         saved_history = load_dev_live_history(game_id)
-        if saved_history and saved_history.get('status') == 'Final':
+        saved_status = saved_history.get('status', '') if saved_history else ''
+
+        # For Final games: use saved history directly
+        # For live games on first load (last_action == 0): use saved messages to avoid regeneration
+        use_saved_history = saved_history and (saved_status == 'Final' or (saved_status and last_action == 0))
+
+        if use_saved_history and saved_status == 'Final':
             # Check if we need to enrich with starter info (for games saved before starter feature)
             player_stats = saved_history.get('player_stats', {'home': [], 'away': []})
             needs_starter_info = (
@@ -3332,6 +3338,40 @@ def api_beta_live_feed(game_id):
                     'lead_changes': saved_history.get('lead_changes', 0),
                     'status': 'Final',
                     'is_historical': True,
+                    'player_stats': saved_history.get('player_stats', {'home': [], 'away': []}),
+                })
+
+        # For live games with saved history on first load: return saved messages + fresh game status
+        if use_saved_history and saved_status != 'Final':
+            # Get fresh game info from API for current status/score
+            game_data = bdl.get_game_info(bdl_game_id)
+            period, clock, status_text, is_live = bdl.parse_game_status(game_data)
+
+            home_score = game_data.get('home_team_score', 0) or 0
+            away_score = game_data.get('visitor_team_score', 0) or 0
+
+            # If game is now Final, we should regenerate to get final messages
+            if status_text == 'Final':
+                # Don't use saved history - fall through to regenerate
+                pass
+            else:
+                # Return saved messages with fresh status
+                print(f"Using saved history for live game {game_id}: {len(saved_history.get('messages', []))} messages")
+                return jsonify({
+                    'messages': saved_history.get('messages', []),
+                    'last_action': saved_history.get('last_action', 0),
+                    'game_info': saved_history.get('game_info', {}),
+                    'score': {'home': home_score, 'away': away_score},
+                    'scores': saved_history.get('scores', []),
+                    'total_actions': saved_history.get('total_actions', 0),
+                    'viewer_count': 0,
+                    'client_id': client_id,
+                    'lead_changes': saved_history.get('lead_changes', 0),
+                    'status': status_text,
+                    'period': period,
+                    'game_clock': clock,
+                    'is_historical': False,
+                    'is_cached': True,  # Indicate this is from cache
                     'player_stats': saved_history.get('player_stats', {'home': [], 'away': []}),
                 })
 
@@ -4073,6 +4113,23 @@ def api_beta_live_feed(game_id):
             if full_scores:
                 response_data['scores'] = full_scores
                 response_data['is_first_load'] = True
+
+            # Save history for live games on first load (so subsequent loads are fast)
+            if game_status != 'Final':
+                history_to_save = {
+                    'messages': all_messages,
+                    'scores': full_scores,
+                    'game_info': game_info,
+                    'status': game_status,
+                    'last_action': max_action,
+                    'lead_changes': _dev_live_lead_changes.get(game_id, {}).get('count', 0),
+                    'final_score': latest_score,
+                    'total_actions': len(plays),
+                    'player_stats': player_stats_by_team,
+                }
+                _dev_live_history[game_id] = history_to_save
+                save_dev_live_history(game_id)
+                print(f"Saved live game history for {game_id}: {len(all_messages)} messages")
 
         return jsonify(response_data)
 
