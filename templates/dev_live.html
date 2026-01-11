@@ -952,8 +952,11 @@
                         ...chartOptions.scales,
                         y: {
                             ...chartOptions.scales.y,
+                            suggestedMin: -15,
+                            suggestedMax: 15,
                             ticks: {
                                 ...chartOptions.scales.y.ticks,
+                                stepSize: 5,
                                 callback: v => v > 0 ? `+${Math.round(v)}` : Math.round(v)
                             },
                             grid: {
