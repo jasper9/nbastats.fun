@@ -3446,6 +3446,13 @@ def api_beta_live_feed(game_id):
                 if countdown_msg:
                     pregame_messages.append(countdown_msg)
 
+            # Calculate scheduled game time as UTC timestamp for client countdown
+            scheduled_time_utc = None
+            if time_until_game is not None:
+                # time_until_game is in minutes, convert to future timestamp
+                from datetime import timezone as tz
+                scheduled_time_utc = int((datetime.now(tz.utc) + timedelta(minutes=time_until_game)).timestamp() * 1000)
+
             return jsonify({
                 'messages': pregame_messages,
                 'last_action': -95,  # Negative to indicate pregame messages
@@ -3459,6 +3466,7 @@ def api_beta_live_feed(game_id):
                 'status': game_status,
                 'is_historical': False,
                 'is_pregame': True,
+                'scheduled_time_utc': scheduled_time_utc,
             })
 
         # Get play-by-play from BallDontLie (only for games that have started or finished)

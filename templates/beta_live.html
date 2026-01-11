@@ -1394,6 +1394,11 @@
         let pollInterval = null;
         let clientId = 'client_' + Math.random().toString(36).substr(2, 9);
 
+        // Countdown timer for pregame
+        let countdownInterval = null;
+        let scheduledTimeUtc = null;
+        let gameHasStarted = false;
+
         // Current team names for chart labels
         let currentHomeTeam = 'HOME';
         let currentAwayTeam = 'AWAY';
@@ -2597,6 +2602,14 @@
                     }
                 }
 
+                // Reset countdown timer when switching games
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                }
+                scheduledTimeUtc = null;
+                gameHasStarted = false;
+
                 // Reset on-court player tracking
                 onCourtPlayers = { home: new Set(), away: new Set() };
                 recentPlayPlayers = [];
@@ -2762,6 +2775,58 @@
             }
         }
 
+        function startCountdownTimer() {
+            // Clear any existing countdown
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+
+            function updateCountdown() {
+                if (!scheduledTimeUtc || gameHasStarted) {
+                    if (countdownInterval) {
+                        clearInterval(countdownInterval);
+                        countdownInterval = null;
+                    }
+                    return;
+                }
+
+                const now = Date.now();
+                const diff = scheduledTimeUtc - now;
+                const clockEl = document.getElementById('game-clock');
+                const quarterEl = document.getElementById('game-quarter');
+
+                if (diff <= 0) {
+                    // Scheduled time has passed - show "STARTING SOON"
+                    quarterEl.textContent = 'STARTING';
+                    clockEl.textContent = 'SOON';
+                } else {
+                    // Calculate hours, minutes, seconds
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+                    if (hours > 0) {
+                        clockEl.textContent = `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                    } else {
+                        clockEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                    }
+                    quarterEl.textContent = 'TIPOFF IN';
+                }
+            }
+
+            // Update immediately and then every second
+            updateCountdown();
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+
+        function stopCountdownTimer() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            gameHasStarted = true;
+        }
+
         function createMessageElement(msg) {
             const div = document.createElement('div');
             div.className = `chat-message bot-${msg.bot}`;
@@ -2886,6 +2951,11 @@
             const isGameLive = data.period > 0 && data.status !== 'Final';
             const clockSection = document.getElementById('game-clock-section');
 
+            // Stop countdown timer when game actually starts (tipoff detected)
+            if (isGameLive && !gameHasStarted) {
+                stopCountdownTimer();
+            }
+
             // Show/hide delay selector based on live status
             if (DELAY_FEATURE_ENABLED) {
                 const delaySel = document.getElementById('delay-selector');
@@ -2916,10 +2986,15 @@
                 document.getElementById('game-quarter').textContent = 'FINAL';
                 document.getElementById('game-clock').textContent = '';
             } else if (data.is_pregame) {
-                // Show "PRE-GAME" for upcoming games
+                // Show countdown for upcoming games
                 clockSection.style.display = 'block';
-                document.getElementById('game-quarter').textContent = 'PRE-GAME';
-                document.getElementById('game-clock').textContent = '';
+                document.getElementById('game-quarter').textContent = 'TIPOFF IN';
+
+                // Store scheduled time and start countdown timer
+                if (data.scheduled_time_utc && !countdownInterval) {
+                    scheduledTimeUtc = data.scheduled_time_utc;
+                    startCountdownTimer();
+                }
             } else {
                 // Hide clock section when no relevant status
                 clockSection.style.display = 'none';

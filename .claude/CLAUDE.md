@@ -261,11 +261,12 @@ A real-time play-by-play chat feed with bot "personalities":
 - Viewer count (heartbeat-based, 15s timeout)
 
 **Pregame Countdown**:
-- Automatic countdown messages as game time approaches
-- Time brackets: 60min, 30min, 15min, 10min, 5min, 2min, 1min, tipoff
-- Messages update on each poll (every 5 seconds)
-- Uses HypeMan bot for exciting countdowns, PlayByPlay for informational
-- Only shows when game status contains valid time (e.g., "7:00 PM ET")
+- Live countdown clock at top (updates every second)
+- Shows "TIPOFF IN X:XX" with real-time countdown
+- Transitions to "STARTING SOON" when scheduled time passes
+- Automatic countdown chat messages at key intervals (60min, 30min, 15min, etc.)
+- Stops countdown when game actually starts (period > 0 detected)
+- Resets when switching between games
 
 **Consensus Odds Display** (below scoreboard):
 - Shows spread, total (O/U), and win probability from balldontlie v2 API
