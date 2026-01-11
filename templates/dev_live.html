@@ -1050,6 +1050,7 @@
             quarterLabels: []    // labels for quarter markers (Q1, Q2, etc.)
         };
         let lastPeriod = 0;  // Track current period for quarter markers
+        let scoreHistoryLoaded = false;  // Track if we've loaded score history (to prevent duplicates)
 
         // Player stats data
         let playerStats = { home: [], away: [] };
@@ -1921,6 +1922,7 @@
                 preGameOdds = null;
                 preGameOddsLocked = false;
                 lastActionNumber = 0;
+                scoreHistoryLoaded = false;  // Reset history loaded flag
 
                 // Clear chart data for new game
                 chartData = {
@@ -2109,14 +2111,15 @@
                     }
                     document.getElementById('stat-score').textContent = scoreText;
 
-                    // Load score history for charts (historical games OR first load of live game)
-                    if ((data.is_historical || data.is_first_load) && data.scores && data.scores.length > 0) {
+                    // Load score history for charts (only once per game - historical games OR first load of live game)
+                    if (!scoreHistoryLoaded && (data.is_historical || data.is_first_load) && data.scores && data.scores.length > 0) {
                         // Reconstruct charts from saved score history (with period info for quarter lines)
                         data.scores.forEach(s => {
                             updateCharts(s.home, s.away, data.game_info.home_team, data.game_info.away_team, null, s.period);
                         });
-                    } else {
-                        // Live update - pass current period for quarter tracking
+                        scoreHistoryLoaded = true;  // Mark as loaded to prevent duplicates
+                    } else if (!data.is_historical && !data.is_first_load) {
+                        // Live update (only for non-historical games) - pass current period for quarter tracking
                         // Note: Chart uses pre-game odds as baseline, then adjusts based on score/time
                         const currentPeriod = data.period || null;
                         updateCharts(data.score.home, data.score.away, data.game_info.home_team, data.game_info.away_team, null, currentPeriod);
