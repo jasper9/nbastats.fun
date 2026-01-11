@@ -291,8 +291,8 @@ def extract_player_from_text(text: str) -> str:
 
     import re
 
-    # Try "Name makes/misses/draws" pattern - handles multi-word names
-    match = re.match(r'^([A-Z][a-z\']+(?:\s+[A-Z][a-z\']+)+?)(?:\s+(?:Jr\.|Sr\.|II|III|IV))?\s+(?:makes|misses|draws|commits|blocks|steals|with|offensive|personal|shooting|loose|turnover)', text, re.IGNORECASE)
+    # Try "Name makes/misses/draws/defensive/offensive" pattern - handles multi-word names
+    match = re.match(r'^([A-Z][a-z\']+(?:\s+[A-Z][a-z\']+)+?)(?:\s+(?:Jr\.|Sr\.|II|III|IV))?\s+(?:makes|misses|draws|commits|blocks|steals|with|offensive|defensive|personal|shooting|loose|turnover|rebound)', text, re.IGNORECASE)
     if match:
         return match.group(1).strip()
 
@@ -377,26 +377,40 @@ def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = N
             'team': team,
         })
 
-    # Blocks
-    elif 'block' in play_type:
+    # Blocks - check both play_type AND text (API often has shot type as play_type but block in text)
+    elif 'block' in play_type or ('blocks' in text.lower() and not is_scoring):
+        # Extract blocker name from text like "Goga Bitadze blocks Zion Williamson's shot"
+        blocker = player
+        if 'blocks' in text.lower():
+            import re
+            block_match = re.match(r'^([A-Za-z\s\'\-]+?)\s+blocks', text)
+            if block_match:
+                blocker = block_match.group(1).strip()
         messages.append({
             'bot': 'play_by_play',
-            'text': f"🚫 {player} ({team}) with the REJECTION!",
+            'text': f"🚫 {blocker} with the REJECTION!",
             'type': 'block',
             'team': team,
         })
 
-    # Steals
-    elif 'steal' in play_type:
+    # Steals - check both play_type AND text
+    elif 'steal' in play_type or 'steal' in text.lower():
+        # Extract stealer name from text
+        stealer = player
+        if 'steal' in text.lower():
+            import re
+            steal_match = re.search(r'([A-Za-z\s\'\-]+?)\s+steals?', text)
+            if steal_match:
+                stealer = steal_match.group(1).strip()
         messages.append({
             'bot': 'play_by_play',
-            'text': f"👋 {player} ({team}) picks the pocket! Steal!",
+            'text': f"👋 {stealer} ({team}) picks the pocket! Steal!",
             'type': 'steal',
             'team': team,
         })
 
     # Turnovers
-    elif 'turnover' in play_type:
+    elif 'turnover' in play_type or 'turnover' in text.lower():
         if 'steal' not in text.lower():  # Don't duplicate with steal
             messages.append({
                 'bot': 'play_by_play',
@@ -404,6 +418,29 @@ def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = N
                 'type': 'turnover',
                 'team': team,
             })
+
+    # Missed shots - show when it's a shooting play but not a scoring play
+    elif play.get('shooting_play') and not is_scoring and 'blocks' not in text.lower():
+        # Extract shot type and distance from text
+        shot_desc = play_type.replace(' Shot', '').lower()
+        if 'misses' in text.lower():
+            messages.append({
+                'bot': 'play_by_play',
+                'text': f"❌ {player} ({team}) misses the {shot_desc}.",
+                'type': 'miss',
+                'team': team,
+            })
+
+    # Rebounds
+    elif 'rebound' in play_type.lower():
+        reb_type = 'offensive' if 'offensive' in play_type.lower() else 'defensive'
+        emoji = '🔄' if reb_type == 'offensive' else '📥'
+        messages.append({
+            'bot': 'play_by_play',
+            'text': f"{emoji} {player} ({team}) grabs the {reb_type} rebound.",
+            'type': 'rebound',
+            'team': team,
+        })
 
     # Fouls - show referee calls
     elif 'foul' in play_type:
@@ -468,6 +505,24 @@ def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = N
                 'type': 'challenge',
                 'team': team,
             })
+
+    # Timeouts
+    elif 'timeout' in play_type.lower():
+        timeout_type = 'Full' if 'full' in play_type.lower() else '20-second'
+        messages.append({
+            'bot': 'play_by_play',
+            'text': f"⏸️ {team} calls a {timeout_type.lower()} timeout.",
+            'type': 'timeout',
+            'team': team,
+        })
+
+    # Jumpball
+    elif 'jumpball' in play_type.lower() or 'jump ball' in play_type.lower():
+        messages.append({
+            'bot': 'play_by_play',
+            'text': f"⬆️ Jump ball! {text}",
+            'type': 'jumpball',
+        })
 
     # Period events
     elif 'period' in play_type:
