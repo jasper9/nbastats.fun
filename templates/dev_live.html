@@ -1899,6 +1899,7 @@
                 document.getElementById('chat-container').style.display = 'none';
                 document.getElementById('mini-charts').classList.remove('visible');
                 document.getElementById('odds-section').classList.remove('visible');
+                document.getElementById('quarter-scores').style.display = 'none';
                 if (pollInterval) {
                     clearInterval(pollInterval);
                     pollInterval = null;
@@ -1910,32 +1911,72 @@
                 return;
             }
 
-            currentGameId = gameId;
+            // If same game already selected, don't reset everything
+            const isSameGame = currentGameId === gameId;
 
-            // Reset pre-game odds when switching games (will lock on first odds load)
-            preGameOdds = null;
-            preGameOddsLocked = false;
+            if (!isSameGame) {
+                currentGameId = gameId;
+
+                // Reset pre-game odds only when switching games
+                preGameOdds = null;
+                preGameOddsLocked = false;
+                lastActionNumber = 0;
+
+                // Clear chart data for new game
+                chartData = {
+                    labels: [],
+                    homeScores: [],
+                    awayScores: [],
+                    leadDiffs: [],
+                    homeProbs: [],
+                    quarterMarkers: [],
+                    quarterLabels: []
+                };
+            }
 
             // Update URL with game ID (allows refresh and sharing)
             if (updateUrl) {
                 window.history.replaceState({}, '', `/dev-live?game=${gameId}`);
             }
-            lastActionNumber = 0;
 
+            // Show UI elements immediately
             document.getElementById('scoreboard').style.display = 'flex';
             document.getElementById('chat-container').style.display = 'block';
-            document.getElementById('chat-feed').innerHTML = '<div class="loading" id="loading"><div class="spinner"></div><p>Loading game feed...</p></div>';
+
+            // Only show loading message if chat is empty (first load)
+            const chatFeed = document.getElementById('chat-feed');
+            if (!chatFeed.children.length || chatFeed.querySelector('.loading')) {
+                chatFeed.innerHTML = '<div class="loading" id="loading"><div class="spinner"></div><p>Loading game feed...</p></div>';
+            }
 
             // Get game data from stored games
             const gameData = gamesData[gameId];
 
-            // Update scoreboard immediately from stored data
+            // Update scoreboard immediately from stored data (no waiting for API)
             if (gameData) {
                 // Show city names in scoreboard
                 document.getElementById('home-team').textContent = gameData.home_team_city || gameData.home_team;
                 document.getElementById('away-team').textContent = gameData.away_team_city || gameData.away_team;
                 document.getElementById('home-score').textContent = gameData.home_score || 0;
                 document.getElementById('away-score').textContent = gameData.away_score || 0;
+
+                // Show initial status from games data (will be updated by feed)
+                const clockSection = document.getElementById('game-clock-section');
+                if (gameData.status && gameData.status !== '--') {
+                    clockSection.style.display = 'block';
+                    // Parse status like "Q3 2:00" or "Half" or "Final"
+                    if (gameData.status.includes('Q') || gameData.status === 'Half') {
+                        const parts = gameData.status.split(' ');
+                        document.getElementById('game-quarter').textContent = parts[0] || '';
+                        document.getElementById('game-clock').textContent = parts[1] || '';
+                    } else if (gameData.status === 'Final' || gameData.status === 'Final (Saved)') {
+                        document.getElementById('game-quarter').textContent = 'FINAL';
+                        document.getElementById('game-clock').textContent = '';
+                    } else {
+                        document.getElementById('game-quarter').textContent = 'PRE-GAME';
+                        document.getElementById('game-clock').textContent = '';
+                    }
+                }
 
                 // Set team names for chart labels (use abbreviations for compactness)
                 currentHomeTeam = gameData.home_team || 'HOME';
@@ -1950,21 +1991,24 @@
                 }
             }
 
-            // Initialize charts (will use currentHomeTeam/currentAwayTeam for labels)
-            initCharts();
+            // Only reinitialize charts for a new game
+            if (!isSameGame) {
+                // Initialize charts (will use currentHomeTeam/currentAwayTeam for labels)
+                initCharts();
 
-            // Add initial chart points using pre-game odds (so chart matches odds bar before game starts)
-            // Need at least 2 points to draw a visible line
-            if (preGameOddsLocked && gameData) {
-                const initScore = { home: gameData.home_score || 0, away: gameData.away_score || 0 };
-                updateCharts(initScore.home, initScore.away, currentHomeTeam, currentAwayTeam, null, null);
-                updateCharts(initScore.home, initScore.away, currentHomeTeam, currentAwayTeam, null, null);
+                // Add initial chart points using pre-game odds (so chart matches odds bar before game starts)
+                // Need at least 2 points to draw a visible line
+                if (preGameOddsLocked && gameData) {
+                    const initScore = { home: gameData.home_score || 0, away: gameData.away_score || 0 };
+                    updateCharts(initScore.home, initScore.away, currentHomeTeam, currentAwayTeam, null, null);
+                    updateCharts(initScore.home, initScore.away, currentHomeTeam, currentAwayTeam, null, null);
+                }
+
+                // Start polling for new game
+                fetchFeed();
+                if (pollInterval) clearInterval(pollInterval);
+                pollInterval = setInterval(fetchFeed, 5000); // Poll every 5 seconds
             }
-
-            // Start polling
-            fetchFeed();
-            if (pollInterval) clearInterval(pollInterval);
-            pollInterval = setInterval(fetchFeed, 5000); // Poll every 5 seconds
         }
 
         async function fetchFeed() {
