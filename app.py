@@ -2214,13 +2214,48 @@ def api_dev_live_feed(game_id):
         home_score = game_data.get('home_team_score', 0) or 0
         away_score = game_data.get('visitor_team_score', 0) or 0
 
-        # BallDontLie doesn't provide these, so set defaults
+        # BallDontLie doesn't provide timeouts, bonus, or quarter scores
+        # Supplement with NBA API scoreboard for these fields
         home_timeouts = 0
         away_timeouts = 0
         home_in_bonus = False
         away_in_bonus = False
         home_periods = []
         away_periods = []
+
+        # Try to get supplemental data from NBA API scoreboard
+        try:
+            from nba_api.live.nba.endpoints import scoreboard
+            sb = scoreboard.ScoreBoard()
+            nba_games = sb.get_dict()['scoreboard']['games']
+
+            # Match by team abbreviations (IDs differ between APIs)
+            for ng in nba_games:
+                if (ng['homeTeam']['teamTricode'] == home_team and
+                    ng['awayTeam']['teamTricode'] == away_team):
+                    # Found matching game - extract timeout/bonus/quarter data
+                    home_timeouts = ng['homeTeam'].get('timeoutsRemaining', 0)
+                    away_timeouts = ng['awayTeam'].get('timeoutsRemaining', 0)
+                    home_in_bonus = ng['homeTeam'].get('inBonus', '0') == '1'
+                    away_in_bonus = ng['awayTeam'].get('inBonus', '0') == '1'
+                    home_periods = ng['homeTeam'].get('periods', [])
+                    away_periods = ng['awayTeam'].get('periods', [])
+
+                    # Also get more accurate game clock from NBA API
+                    raw_clock = ng.get('gameClock', '')
+                    if raw_clock and raw_clock.startswith('PT'):
+                        try:
+                            match = re.match(r'PT(\d+)M([\d.]+)S', raw_clock)
+                            if match:
+                                mins = int(match.group(1))
+                                secs = int(float(match.group(2)))
+                                game_clock = f"{mins}:{secs:02d}"
+                        except:
+                            pass
+                    break
+        except Exception as e:
+            # NBA API failed - continue with BallDontLie data only
+            print(f"NBA API scoreboard supplement failed: {e}")
 
         # Get full team names for pregame display
         home_team_name = home_team_obj.get('full_name', '')
