@@ -2309,13 +2309,24 @@
                         });
                         scoreHistoryLoaded = true;  // Mark as loaded to prevent duplicates
                     } else if (!data.is_historical && !data.is_first_load) {
-                        // Live update (only for non-historical games) - get elapsed from latest score
+                        // Live update - calculate elapsed from game_clock and period
                         const currentPeriod = data.period || null;
-                        // If scores array has latest score with elapsed, use it
-                        const latestScore = data.scores && data.scores.length > 0 ? data.scores[data.scores.length - 1] : null;
-                        const elapsed = latestScore?.elapsed || null;
-                        const clock = latestScore?.clock || null;
-                        updateCharts(data.score.home, data.score.away, data.game_info.home_team, data.game_info.away_team, null, currentPeriod, elapsed, clock);
+                        const gameClock = data.game_clock || null;
+
+                        // Calculate elapsed from game clock (MM:SS remaining in quarter)
+                        let elapsed = null;
+                        if (gameClock && currentPeriod) {
+                            const parts = gameClock.split(':');
+                            if (parts.length === 2) {
+                                const mins = parseInt(parts[0]) || 0;
+                                const secs = parseInt(parts[1]) || 0;
+                                const remaining = mins * 60 + secs;
+                                const quarterElapsed = 720 - remaining;
+                                elapsed = (currentPeriod - 1) * 720 + quarterElapsed;
+                            }
+                        }
+
+                        updateCharts(data.score.home, data.score.away, data.game_info.home_team, data.game_info.away_team, null, currentPeriod, elapsed, gameClock);
                     }
                 }
 
