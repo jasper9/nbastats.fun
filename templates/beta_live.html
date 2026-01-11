@@ -1889,6 +1889,8 @@
                 const label = isCurrent
                     ? `MAX +${maxHomeLead}`
                     : `MAX +${maxHomeLead} ${currentHomeTeam}`;
+                // Use dark text on light backgrounds for readability
+                const homeTextColor = isColorDark(homeColor) ? '#ffffff' : '#0d1117';
 
                 annotations.maxHomeLead = {
                     type: 'line',
@@ -1903,7 +1905,7 @@
                         content: label,
                         position: 'end',
                         backgroundColor: homeColor,
-                        color: '#ffffff',
+                        color: homeTextColor,
                         font: { size: 9, weight: 'bold', family: 'Oswald' },
                         padding: 3,
                         yAdjust: -8
@@ -1917,6 +1919,8 @@
                 const label = isCurrent
                     ? `MAX +${maxAwayLead}`
                     : `MAX +${maxAwayLead} ${currentAwayTeam}`;
+                // Use dark text on light backgrounds for readability
+                const awayTextColor = isColorDark(awayColor) ? '#ffffff' : '#0d1117';
 
                 annotations.maxAwayLead = {
                     type: 'line',
@@ -1931,7 +1935,7 @@
                         content: label,
                         position: 'start',
                         backgroundColor: awayColor,
-                        color: '#ffffff',
+                        color: awayTextColor,
                         font: { size: 9, weight: 'bold', family: 'Oswald' },
                         padding: 3,
                         yAdjust: 8
