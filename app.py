@@ -3897,6 +3897,15 @@ def api_beta_live_feed(game_id):
 
         history = _dev_live_history[game_id]
 
+        # Ensure saved_action_numbers exists (not in file-loaded history since sets aren't JSON-serializable)
+        if 'saved_action_numbers' not in history:
+            # Rebuild from existing messages
+            history['saved_action_numbers'] = set()
+            for msg in history.get('messages', []):
+                action_num = msg.get('action_number', 0)
+                msg_key = f"{action_num}_{msg.get('bot', '')}_{msg.get('type', '')}"
+                history['saved_action_numbers'].add(msg_key)
+
         # Add new messages to history
         # Use message text + action_number as unique key since multiple messages per action
         for msg in all_messages:
