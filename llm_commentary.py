@@ -310,3 +310,138 @@ def get_cached_or_generate(event_key, event_type, context):
         _llm_cache[event_key] = commentary
 
     return commentary
+
+
+# =============================================================================
+# PERSONA-BASED MESSAGE REFINEMENT
+# =============================================================================
+
+# Toggle for LLM refinement (set to False to use hardcoded messages)
+ENABLE_LLM_REFINEMENT = True
+
+# Bot personas with detailed character descriptions
+BOT_PERSONAS = {
+    'hype_man': """You are HypeMan, an INCREDIBLY enthusiastic NBA announcer who lives for the big moments.
+Your style: Over-the-top excited, uses lots of energy words, occasionally ALL CAPS for emphasis.
+You sound like a mix of Kevin Harlan and a WWE announcer. You make every play sound legendary.
+Keep responses to ONE sentence, max 20 words. Use 2-3 emojis max. Never use hashtags.""",
+
+    'play_by_play': """You are PlayByPlay, a professional NBA play-by-play announcer.
+Your style: Clear, informative, occasionally witty. You call the action accurately with flair.
+You sound like Mike Breen or Ian Eagle - professional but with personality.
+Keep responses to ONE sentence, max 15 words. Use 1 emoji at the start. Never use hashtags.""",
+
+    'stats_nerd': """You are StatsNerd, an analytical NBA commentator obsessed with numbers and context.
+Your style: Data-driven, insightful, finds interesting statistical angles. You love advanced stats.
+You sound like Zach Lowe or a sharp analytics writer.
+Keep responses to ONE sentence, max 20 words. Use 📊 emoji at start. Never use hashtags.""",
+
+    'historian': """You are Historian, an NBA historian who provides rich historical context.
+Your style: Knowledgeable, reverent of the game's history, draws parallels to past legends.
+You sound like Bob Costas or an ESPN 30-for-30 narrator.
+Keep responses to ONE sentence, max 25 words. Use 📜 emoji at start. Never use hashtags.""",
+
+    'trash_talker': """You are TrashTalker, a playful commentator who adds spicy commentary.
+Your style: Witty, slightly provocative, loves dramatic reactions. You keep it fun, never mean.
+You sound like Charles Barkley or Shaq on Inside the NBA.
+Keep responses to ONE sentence, max 15 words. Use 1-2 emojis. Never use hashtags.""",
+}
+
+# Event types that should be refined with LLM (to control costs)
+REFINABLE_EVENTS = {
+    'technical',
+    'technical_hype',
+    'flagrant',
+    'flagrant_hype',
+    'ejection',
+    'ejection_hype',
+    'hype',  # Dunks and highlight plays
+    'lead_change',
+    'block',
+    'steal',
+}
+
+# Cache for refined messages
+_refinement_cache = {}
+MAX_REFINEMENT_CACHE = 200
+
+
+def refine_message_with_persona(bot_type, gist, context=None):
+    """
+    Refine a message using LLM with the bot's persona.
+
+    Args:
+        bot_type: One of 'hype_man', 'play_by_play', 'stats_nerd', 'historian', 'trash_talker'
+        gist: The core message/idea to express (what happened)
+        context: Optional dict with additional context (player, team, score, etc.)
+
+    Returns:
+        str: Refined message or original gist if LLM unavailable
+    """
+    global _refinement_cache
+
+    if not ENABLE_LLM_REFINEMENT:
+        return gist
+
+    client = get_client()
+    if not client:
+        return gist
+
+    persona = BOT_PERSONAS.get(bot_type)
+    if not persona:
+        return gist
+
+    # Create cache key from bot type and gist
+    cache_key = f"{bot_type}:{gist[:50]}"
+    if cache_key in _refinement_cache:
+        return _refinement_cache[cache_key]
+
+    try:
+        # Build the prompt
+        context_str = ""
+        if context:
+            context_str = f"\nContext: {context}"
+
+        prompt = f"""{persona}
+
+Rewrite this message in your unique voice. Keep the same meaning but make it YOUR style:
+"{gist}"{context_str}
+
+Respond with ONLY the rewritten message, nothing else."""
+
+        # Call Claude Haiku
+        response = client.messages.create(
+            model="claude-3-5-haiku-latest",
+            max_tokens=60,
+            temperature=0.9,  # High creativity for variety
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+
+        if response.content and len(response.content) > 0:
+            result = response.content[0].text.strip()
+            # Remove quotes if the model wrapped the response
+            if result.startswith('"') and result.endswith('"'):
+                result = result[1:-1]
+
+            # Cache the result
+            if len(_refinement_cache) >= MAX_REFINEMENT_CACHE:
+                # Remove oldest entries
+                oldest = list(_refinement_cache.keys())[:40]
+                for k in oldest:
+                    del _refinement_cache[k]
+            _refinement_cache[cache_key] = result
+
+            return result
+
+        return gist
+
+    except Exception as e:
+        print(f"LLM refinement error: {e}")
+        return gist
+
+
+def should_refine_message(msg_type):
+    """Check if a message type should be refined with LLM."""
+    return ENABLE_LLM_REFINEMENT and msg_type in REFINABLE_EVENTS

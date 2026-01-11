@@ -11,10 +11,19 @@ from zoneinfo import ZoneInfo
 
 # LLM commentary for exciting events (optional)
 try:
-    from llm_commentary import enhance_message_with_llm, get_cached_or_generate
+    from llm_commentary import (
+        enhance_message_with_llm,
+        get_cached_or_generate,
+        refine_message_with_persona,
+        should_refine_message
+    )
     LLM_AVAILABLE = True
 except ImportError:
     LLM_AVAILABLE = False
+    def refine_message_with_persona(bot, gist, ctx=None):
+        return gist
+    def should_refine_message(msg_type):
+        return False
 
 # BallDontLie API for live game data (play-by-play, stats)
 try:
@@ -2093,11 +2102,13 @@ def generate_chat_message(action, game_info, prev_action=None, largest_leads=Non
             'team': team,
         })
 
-        # HypeMan for dunks and highlight plays
+        # HypeMan for dunks and highlight plays - LLM refined!
         if 'dunk' in shot_type.lower() or 'alley' in desc.lower():
+            dunk_gist = f"{player} just threw down a massive dunk! Absolutely posterized!"
+            dunk_context = {'player': player, 'team': team, 'shot_type': shot_type}
             messages.append({
                 'bot': 'hype_man',
-                'text': f"🔥🔥🔥 POSTER! {player} throws it DOWN!",
+                'text': refine_message_with_persona('hype_man', dunk_gist, dunk_context),
                 'type': 'hype',
                 'team': team,
             })
@@ -2112,20 +2123,24 @@ def generate_chat_message(action, game_info, prev_action=None, largest_leads=Non
             'team': team,
         })
 
-    # Blocks - exciting defensive play
+    # Blocks - exciting defensive play with LLM refinement
     elif action_type == 'block':
+        block_gist = f"{player} from {team} just blocked a shot! Great defensive play!"
+        block_context = {'player': player, 'team': team}
         messages.append({
             'bot': 'play_by_play',
-            'text': f"🚫 {player} ({team}) with the REJECTION!",
+            'text': refine_message_with_persona('play_by_play', block_gist, block_context),
             'type': 'block',
             'team': team,
         })
 
-    # Steals
+    # Steals with LLM refinement
     elif action_type == 'steal':
+        steal_gist = f"{player} from {team} got a steal! Picked the pocket!"
+        steal_context = {'player': player, 'team': team}
         messages.append({
             'bot': 'play_by_play',
-            'text': f"👋 {player} ({team}) picks the pocket! Steal!",
+            'text': refine_message_with_persona('play_by_play', steal_gist, steal_context),
             'type': 'steal',
             'team': team,
         })
@@ -2140,66 +2155,79 @@ def generate_chat_message(action, game_info, prev_action=None, largest_leads=Non
                 'team': team,
             })
 
-    # Technical fouls and ejections - BIG reactions!
+    # Technical fouls and ejections - BIG reactions with LLM refinement!
     elif action_type == 'foul':
         desc_lower = desc.lower()
         sub_lower = sub_type.lower() if sub_type else ''
+        event_context = {'player': player, 'team': team}
 
         # Check for ejection first (most dramatic)
         if 'ejected' in desc_lower or 'ejection' in desc_lower:
+            # Play-by-play announcement
+            pbp_gist = f"{player} from {team} has been ejected from the game"
             messages.append({
                 'bot': 'play_by_play',
-                'text': f"🚨 {player} ({team}) has been EJECTED from the game!",
+                'text': refine_message_with_persona('play_by_play', pbp_gist, event_context),
                 'type': 'ejection',
                 'team': team,
             })
+            # HypeMan goes WILD
+            hype_gist = f"{player} just got ejected! This is absolutely crazy! They're gone!"
             messages.append({
                 'bot': 'hype_man',
-                'text': f"🤯🤯🤯 OH NO HE DIDN'T!!! {player} is GONE! EJECTED! THE REFS HAVE SPOKEN! 👋👋👋",
+                'text': refine_message_with_persona('hype_man', hype_gist, event_context),
                 'type': 'ejection_hype',
                 'team': team,
             })
             # Historical context
+            hist_gist = f"{player} getting ejected - they have a reputation for passionate play and confrontations"
             messages.append({
                 'bot': 'historian',
-                'text': f"📜 For context: {player} has a history of fiery moments. This ejection adds to their reputation as one of the league's more passionate competitors.",
+                'text': refine_message_with_persona('historian', hist_gist, event_context),
                 'type': 'history',
             })
 
         # Flagrant foul (very dramatic)
         elif 'flagrant' in desc_lower or 'flagrant' in sub_lower:
             flagrant_type = '2' if '2' in desc_lower else '1'
+            event_context['flagrant_type'] = flagrant_type
+
+            pbp_gist = f"Flagrant {flagrant_type} foul called on {player} from {team}"
             messages.append({
                 'bot': 'play_by_play',
-                'text': f"⚠️ FLAGRANT {flagrant_type} FOUL called on {player} ({team})!",
+                'text': refine_message_with_persona('play_by_play', pbp_gist, event_context),
                 'type': 'flagrant',
                 'team': team,
             })
+            hype_gist = f"Flagrant foul on {player}! This is getting heated and intense out there!"
             messages.append({
                 'bot': 'hype_man',
-                'text': f"😤😤😤 WHOA!!! FLAGRANT FOUL! {player} got FLAGGED! Things are getting HEATED out there! 🔥🔥🔥",
+                'text': refine_message_with_persona('hype_man', hype_gist, event_context),
                 'type': 'flagrant_hype',
                 'team': team,
             })
 
         # Technical foul (dramatic)
         elif 'technical' in desc_lower or 'technical' in sub_lower:
+            pbp_gist = f"Technical foul called on {player} from {team}"
             messages.append({
                 'bot': 'play_by_play',
-                'text': f"🔔 Technical foul called on {player} ({team})!",
+                'text': refine_message_with_persona('play_by_play', pbp_gist, event_context),
                 'type': 'technical',
                 'team': team,
             })
+            hype_gist = f"{player} just got a technical foul! They are NOT happy with the refs!"
             messages.append({
                 'bot': 'hype_man',
-                'text': f"🗣️🗣️🗣️ TECHNICAL! {player} just got T'd UP! Someone's NOT happy with the refs! 😤",
+                'text': refine_message_with_persona('hype_man', hype_gist, event_context),
                 'type': 'technical_hype',
                 'team': team,
             })
-            # Historical context for technicals
+            # Stats context for technicals
+            stats_gist = f"{player} picked up a technical - tracking their foul count this season"
             messages.append({
                 'bot': 'stats_nerd',
-                'text': f"📊 Technical foul tracker: {player} is known to voice their opinions. League leaders in techs this season are often the most passionate players.",
+                'text': refine_message_with_persona('stats_nerd', stats_gist, event_context),
                 'type': 'tech_stats',
             })
 
@@ -2235,27 +2263,33 @@ def generate_chat_message(action, game_info, prev_action=None, largest_leads=Non
         # Lead change: one team was ahead, now the other is
         if prev_diff > 0 and curr_diff < 0:
             # Away was leading, now home leads
+            lead_gist = f"{home_team} just took the lead! Lead change in this game!"
+            lead_context = {'team': home_team, 'opponent': away_team, 'score': f"{curr_away}-{curr_home}"}
             messages.append({
                 'bot': 'hype_man',
-                'text': f"🔄 LEAD CHANGE! {home_team} takes the lead!",
+                'text': refine_message_with_persona('hype_man', lead_gist, lead_context),
                 'type': 'lead_change',
                 'team': home_team,
                 'is_lead_change': True,
             })
         elif prev_diff < 0 and curr_diff > 0:
             # Home was leading, now away leads
+            lead_gist = f"{away_team} just took the lead! Lead change in this game!"
+            lead_context = {'team': away_team, 'opponent': home_team, 'score': f"{curr_away}-{curr_home}"}
             messages.append({
                 'bot': 'hype_man',
-                'text': f"🔄 LEAD CHANGE! {away_team} takes the lead!",
+                'text': refine_message_with_persona('hype_man', lead_gist, lead_context),
                 'type': 'lead_change',
                 'team': away_team,
                 'is_lead_change': True,
             })
         # Tie game detection
         elif curr_diff == 0 and prev_diff != 0:
+            tie_gist = f"It's a tie game now at {curr_away}-{curr_home}! This is intense!"
+            tie_context = {'score': f"{curr_away}-{curr_home}"}
             messages.append({
                 'bot': 'hype_man',
-                'text': f"⚖️ TIE GAME! {curr_away}-{curr_home}",
+                'text': refine_message_with_persona('hype_man', tie_gist, tie_context),
                 'type': 'tie',
             })
 
