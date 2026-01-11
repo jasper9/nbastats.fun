@@ -156,6 +156,17 @@
             outline: none;
             border-color: var(--nuggets-gold);
         }
+        .game-selector select optgroup {
+            font-weight: 600;
+            color: var(--nuggets-gold);
+            background: var(--bg-secondary);
+            padding: 5px 0;
+        }
+        .game-selector select option {
+            font-weight: 400;
+            color: var(--text-primary);
+            padding: 8px 12px;
+        }
         /* Scoreboard */
         .scoreboard {
             background: var(--bg-secondary);
@@ -2396,44 +2407,82 @@
                 gamesData = {};
 
                 if (data.games && data.games.length > 0) {
-                    // Sort games: Live first, then upcoming, then final
-                    const sortedGames = data.games.sort((a, b) => {
-                        const getOrder = (game) => {
-                            if (game.status.includes('Q') || game.status === 'Half' || game.status.includes('OT')) return 0;  // Live
-                            if (game.status === 'Final' || game.status === 'Final (Saved)') return 2;  // Final
-                            return 1;  // Upcoming
-                        };
-                        return getOrder(a) - getOrder(b);
+                    // Get today's date in YYYY-MM-DD format
+                    const today = new Date().toISOString().split('T')[0];
+
+                    // Group games by date
+                    const gamesByDate = {};
+                    data.games.forEach(game => {
+                        const gameDate = game.game_date || today;
+                        if (!gamesByDate[gameDate]) {
+                            gamesByDate[gameDate] = [];
+                        }
+                        gamesByDate[gameDate].push(game);
                     });
 
-                    sortedGames.forEach(game => {
-                        // Store game data for later access
-                        gamesData[game.game_id] = game;
+                    // Sort dates (most recent first)
+                    const sortedDates = Object.keys(gamesByDate).sort((a, b) => b.localeCompare(a));
 
-                        const option = document.createElement('option');
-                        option.value = game.game_id;
-                        const statusText = getGameStatusText(game);
+                    // Sort games within each date: Live first, then upcoming, then final
+                    const getGameOrder = (game) => {
+                        if (game.status.includes('Q') || game.status === 'Half' || game.status.includes('OT')) return 0;  // Live
+                        if (game.status === 'Final' || game.status === 'Final (Saved)') return 2;  // Final
+                        return 1;  // Upcoming
+                    };
 
-                        // Build team names - use abbreviation as fallback
-                        let awayFull = game.away_team_city && game.away_team_name
-                            ? `${game.away_team_city} ${game.away_team_name}`.trim()
-                            : game.away_team;
-                        let homeFull = game.home_team_city && game.home_team_name
-                            ? `${game.home_team_city} ${game.home_team_name}`.trim()
-                            : game.home_team;
+                    sortedDates.forEach(date => {
+                        gamesByDate[date].sort((a, b) => getGameOrder(a) - getGameOrder(b));
+                    });
 
-                        let text = `${awayFull} @ ${homeFull} - ${statusText}`;
-                        if (game.status.includes('Q') || game.status === 'Half' || game.status.includes('OT')) {
-                            text += ` (${game.away_score}-${game.home_score})`;
-                        } else if (game.status === 'Final' || game.status === 'Final (Saved)') {
-                            text += ` (${game.away_score}-${game.home_score})`;
+                    // Create option groups for each date
+                    sortedDates.forEach(date => {
+                        const games = gamesByDate[date];
+                        const isToday = date === today;
+
+                        // Create optgroup
+                        const optgroup = document.createElement('optgroup');
+                        if (isToday) {
+                            optgroup.label = "Today's Games";
+                        } else {
+                            // Format date nicely (e.g., "Jan 10, 2026")
+                            const dateObj = new Date(date + 'T12:00:00');
+                            const formatted = dateObj.toLocaleDateString('en-US', {
+                                month: 'short', day: 'numeric', year: 'numeric'
+                            });
+                            optgroup.label = `📜 Archived - ${formatted}`;
                         }
-                        // Add history indicator
-                        if (game.has_history) {
-                            text += ' 📜';
-                        }
-                        option.textContent = text;
-                        select.appendChild(option);
+
+                        games.forEach(game => {
+                            // Store game data for later access
+                            gamesData[game.game_id] = game;
+
+                            const option = document.createElement('option');
+                            option.value = game.game_id;
+                            const statusText = getGameStatusText(game);
+
+                            // Build team names - use abbreviation as fallback
+                            let awayFull = game.away_team_city && game.away_team_name
+                                ? `${game.away_team_city} ${game.away_team_name}`.trim()
+                                : game.away_team;
+                            let homeFull = game.home_team_city && game.home_team_name
+                                ? `${game.home_team_city} ${game.home_team_name}`.trim()
+                                : game.home_team;
+
+                            let text = `${awayFull} @ ${homeFull} - ${statusText}`;
+                            if (game.status.includes('Q') || game.status === 'Half' || game.status.includes('OT')) {
+                                text += ` (${game.away_score}-${game.home_score})`;
+                            } else if (game.status === 'Final' || game.status === 'Final (Saved)') {
+                                text += ` (${game.away_score}-${game.home_score})`;
+                            }
+                            // Add history indicator for today's games only (archived already have 📜)
+                            if (isToday && game.has_history) {
+                                text += ' 📜';
+                            }
+                            option.textContent = text;
+                            optgroup.appendChild(option);
+                        });
+
+                        select.appendChild(optgroup);
                     });
                 } else {
                     select.innerHTML = '<option value="">No games available</option>';

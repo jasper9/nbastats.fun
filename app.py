@@ -2199,6 +2199,7 @@ def api_dev_live_games():
                 'away_score': g.get('visitor_team_score', 0) or 0,
                 'has_history': has_history,
                 'bdl_id': g['id'],  # Keep original BallDontLie ID for API calls
+                'game_date': g.get('date', game_date),  # Date from API or fallback to today
             }
 
             # Add odds if available
@@ -2249,6 +2250,10 @@ def api_dev_live_games():
                                     continue
 
                                 final_score = history.get('final_score', {'home': 0, 'away': 0})
+                                # Get date from file modification time
+                                file_path = os.path.join(DEV_LIVE_HISTORY_DIR, filename)
+                                file_mtime = os.path.getmtime(file_path)
+                                file_date = datetime.fromtimestamp(file_mtime).strftime('%Y-%m-%d')
                                 games.append({
                                     'game_id': game_id,
                                     'home_team': home,
@@ -2259,6 +2264,7 @@ def api_dev_live_games():
                                     'home_score': final_score.get('home', 0),
                                     'away_score': final_score.get('away', 0),
                                     'has_history': True,
+                                    'game_date': file_date,
                                 })
                                 seen_matchups.add(matchup)
                         except Exception:
