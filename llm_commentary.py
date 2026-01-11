@@ -25,6 +25,88 @@ except ImportError:
 # Track recent responses to help avoid repetition
 _recent_responses = deque(maxlen=20)
 
+# =============================================================================
+# FAMOUS COMMENTATOR PERSONALITIES
+# =============================================================================
+# Set to True to randomly inject commentator personalities into prompts
+ENABLE_COMMENTATOR_PERSONALITIES = True
+
+# Famous NBA commentators with their distinctive styles
+COMMENTATOR_PERSONALITIES = {
+    'mike_breen': {
+        'name': 'Mike Breen',
+        'style': 'Professional but excitable. Famous for "BANG!" on big threes. Clean, dramatic calls.',
+        'catchphrases': ['BANG!', 'Puts it in!', 'Got it!'],
+    },
+    'kevin_harlan': {
+        'name': 'Kevin Harlan',
+        'style': 'Over-the-top excitement, theatrical and dramatic. Legendary energy. Makes everything sound epic.',
+        'catchphrases': ['THE MAN IS ON FIRE!', 'RIGHT BETWEEN THE EYES!', 'NO REGARD FOR HUMAN LIFE!'],
+    },
+    'marv_albert': {
+        'name': 'Marv Albert',
+        'style': 'Classic broadcasting legend. Smooth delivery with signature phrases. Authoritative.',
+        'catchphrases': ['Yes!', 'And the foul!', 'From downtown!', 'A spectacular move!'],
+    },
+    'ian_eagle': {
+        'name': 'Ian Eagle',
+        'style': 'Witty wordplay, creative vocabulary, smooth and clever. Loves alliteration and puns.',
+        'catchphrases': ['Hello!', 'How about that!', 'The crafty veteran!'],
+    },
+    'jeff_van_gundy': {
+        'name': 'Jeff Van Gundy',
+        'style': 'Grumpy analyst who goes on tangents. Sarcastic, critical of refs, loves complaining about rule changes.',
+        'catchphrases': ["That's ridiculous!", "I've been saying this for years!", "Come on now!"],
+    },
+    'mark_jackson': {
+        'name': 'Mark Jackson',
+        'style': 'Former player turned preacher-style commentator. Dramatic declarations and hand it down wisdom.',
+        'catchphrases': ['Mama, there goes that man!', 'Hand down, man down!', "That's a grown man move!"],
+    },
+    'reggie_miller': {
+        'name': 'Reggie Miller',
+        'style': 'Former sharpshooter who gets hyped about clutch shots. Shooter mentality, understands big moments.',
+        'catchphrases': ['Are you kidding me?!', 'Welcome to your Kodak moment!', 'Ice in his veins!'],
+    },
+    'doris_burke': {
+        'name': 'Doris Burke',
+        'style': 'Extremely well-prepared analyst. Professional, insightful, focuses on the chess match within the game.',
+        'catchphrases': ['Impeccable timing!', 'What a sequence!', 'Elite execution!'],
+    },
+    'bill_walton': {
+        'name': 'Bill Walton',
+        'style': 'Wild and unpredictable legend. Goes on tangents about nature, music, and life. Poetic and absurd.',
+        'catchphrases': ['THROW IT DOWN BIG MAN!', 'What a beautiful day for basketball!', 'This is the GREATEST game ever!'],
+    },
+    'charles_barkley': {
+        'name': 'Charles Barkley',
+        'style': 'Blunt and hilarious. Not afraid to criticize. Uses funny nicknames and gets things wrong sometimes.',
+        'catchphrases': ['Turrible!', "That's just awful!", 'Give that man a raise!'],
+    },
+    'shaq': {
+        'name': "Shaquille O'Neal",
+        'style': 'Big man energy. Loves nicknames, dunks, and dominant performances. Playful trash talk.',
+        'catchphrases': ['BBQ chicken!', 'How my... taste?', 'We not doing this today!'],
+    },
+    'hubie_brown': {
+        'name': 'Hubie Brown',
+        'style': 'Old-school coach analyst. Breaks down plays like a teacher. Uses "you" a lot to explain.',
+        'catchphrases': ["Now here's a guy who...", 'Give him credit!', 'You gotta like that!'],
+    },
+}
+
+def get_random_commentator_style():
+    """Get a random commentator personality for injection into prompts."""
+    if not ENABLE_COMMENTATOR_PERSONALITIES:
+        return None
+
+    key = random.choice(list(COMMENTATOR_PERSONALITIES.keys()))
+    commentator = COMMENTATOR_PERSONALITIES[key]
+
+    return f"""Channel the energy and style of {commentator['name']}: {commentator['style']}
+Feel free to use phrases like: {', '.join(f'"{p}"' for p in commentator['catchphrases'][:2])}"""
+
+
 # Commentary styles for different events
 # Each prompt emphasizes variety and unique phrasing
 COMMENTARY_PROMPTS = {
@@ -244,6 +326,14 @@ def generate_llm_commentary(event_type, context):
 
         # Format the prompt with context
         prompt = prompt_template.format(**context)
+
+        # Inject random commentator personality for exciting events
+        # (not for summaries or historian stats - those have specific formats)
+        personality_events = {'lead_change', 'largest_lead', 'dunk', 'tie_game', 'quarter_end'}
+        if event_type in personality_events:
+            commentator_style = get_random_commentator_style()
+            if commentator_style:
+                prompt = f"{commentator_style}\n\n{prompt}"
 
         # Use more tokens for longer summaries (quarter recaps)
         if event_type in LONG_SUMMARY_EVENTS:
