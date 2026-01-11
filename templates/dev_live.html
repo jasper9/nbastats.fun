@@ -2024,9 +2024,18 @@
         async function fetchFeed() {
             if (!currentGameId) return;
 
+            // Capture game ID at request time to detect stale responses
+            const requestGameId = currentGameId;
+
             try {
-                const response = await fetch(`/api/dev-live/feed/${currentGameId}?last_action=${lastActionNumber}&client_id=${clientId}`);
+                const response = await fetch(`/api/dev-live/feed/${requestGameId}?last_action=${lastActionNumber}&client_id=${clientId}`);
                 const data = await response.json();
+
+                // Ignore stale responses if game changed while request was in flight
+                if (currentGameId !== requestGameId) {
+                    console.log('Ignoring stale response for game:', requestGameId);
+                    return;
+                }
 
                 if (data.error) {
                     console.error('Feed error:', data.error);
