@@ -15,6 +15,7 @@
     {% endif %}
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23f85' stroke='%23333' stroke-width='3'/><path d='M50 5 v90 M5 50 h90 M15 20 Q50 50 15 80 M85 20 Q50 50 85 80' fill='none' stroke='%23333' stroke-width='3'/></svg>">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
         :root {
@@ -1348,6 +1349,9 @@
                                     return val > 0 ? `${currentHomeTeam} +${val}` : `${currentAwayTeam} +${Math.abs(val)}`;
                                 }
                             }
+                        },
+                        annotation: {
+                            annotations: {}  // Will be populated with max lead lines
                         }
                     },
                     scales: {
@@ -1544,9 +1548,100 @@
             probChart.data.labels = chartData.labels;
             probChart.data.datasets[0].data = chartData.homeProbs;
 
+            // Update max lead annotations
+            updateMaxLeadAnnotations();
+
             // Update chart display
             leadChart.update('none');
             probChart.update('none');
+        }
+
+        // Update max lead annotations on the Lead Differential chart
+        function updateMaxLeadAnnotations() {
+            if (!leadChart || chartData.leadDiffs.length < 2) return;
+
+            const diffs = chartData.leadDiffs;
+            let maxHomeLead = 0, maxHomeLeadIdx = -1;
+            let maxAwayLead = 0, maxAwayLeadIdx = -1;
+
+            // Find max leads (positive = home leading, negative = away leading)
+            for (let i = 0; i < diffs.length; i++) {
+                const diff = diffs[i];
+                if (diff > maxHomeLead) {
+                    maxHomeLead = diff;
+                    maxHomeLeadIdx = i;
+                }
+                if (diff < -maxAwayLead) {
+                    maxAwayLead = -diff;
+                    maxAwayLeadIdx = i;
+                }
+            }
+
+            const annotations = {};
+            const lastIdx = diffs.length - 1;
+            const currentDiff = diffs[lastIdx];
+
+            // Get team colors
+            const { awayColor, homeColor } = getTeamColors(currentAwayTeam, currentHomeTeam);
+
+            // Max home team lead annotation (positive lead)
+            if (maxHomeLeadIdx >= 0 && maxHomeLead > 0) {
+                const isCurrent = maxHomeLeadIdx === lastIdx && currentDiff > 0;
+                const label = isCurrent
+                    ? `MAX +${maxHomeLead}`
+                    : `MAX +${maxHomeLead} ${currentHomeTeam}`;
+
+                annotations.maxHomeLead = {
+                    type: 'line',
+                    xMin: maxHomeLeadIdx,
+                    xMax: maxHomeLeadIdx,
+                    yMin: 0,
+                    yMax: maxHomeLead,
+                    borderColor: homeColor,
+                    borderWidth: 2,
+                    label: {
+                        display: true,
+                        content: label,
+                        position: 'end',
+                        backgroundColor: homeColor,
+                        color: '#ffffff',
+                        font: { size: 9, weight: 'bold', family: 'Oswald' },
+                        padding: 3,
+                        yAdjust: -8
+                    }
+                };
+            }
+
+            // Max away team lead annotation (negative lead)
+            if (maxAwayLeadIdx >= 0 && maxAwayLead > 0) {
+                const isCurrent = maxAwayLeadIdx === lastIdx && currentDiff < 0;
+                const label = isCurrent
+                    ? `MAX +${maxAwayLead}`
+                    : `MAX +${maxAwayLead} ${currentAwayTeam}`;
+
+                annotations.maxAwayLead = {
+                    type: 'line',
+                    xMin: maxAwayLeadIdx,
+                    xMax: maxAwayLeadIdx,
+                    yMin: -maxAwayLead,
+                    yMax: 0,
+                    borderColor: awayColor,
+                    borderWidth: 2,
+                    label: {
+                        display: true,
+                        content: label,
+                        position: 'start',
+                        backgroundColor: awayColor,
+                        color: '#ffffff',
+                        font: { size: 9, weight: 'bold', family: 'Oswald' },
+                        padding: 3,
+                        yAdjust: 8
+                    }
+                };
+            }
+
+            // Update chart annotations
+            leadChart.options.plugins.annotation.annotations = annotations;
         }
 
         function formatMoneyline(ml) {
