@@ -1444,8 +1444,8 @@
                     }
                     document.getElementById('stat-score').textContent = scoreText;
 
-                    // For historical data, load all score history for charts
-                    if (data.is_historical && data.scores && data.scores.length > 0) {
+                    // Load score history for charts (historical games OR first load of live game)
+                    if ((data.is_historical || data.is_first_load) && data.scores && data.scores.length > 0) {
                         // Reconstruct charts from saved score history (with period info for quarter lines)
                         data.scores.forEach(s => {
                             updateCharts(s.home, s.away, data.game_info.home_team, data.game_info.away_team, null, s.period);

@@ -2437,7 +2437,8 @@ def api_dev_live_feed(game_id):
         else:
             history['status'] = game_status
 
-        return jsonify({
+        # Build response
+        response_data = {
             'messages': all_messages,
             'last_action': max_action,
             'game_info': game_info,
@@ -2448,7 +2449,29 @@ def api_dev_live_feed(game_id):
             'lead_changes': _dev_live_lead_changes[game_id]['count'],
             'status': game_status,
             'period': current_period,  # Current quarter for chart quarter markers
-        })
+        }
+
+        # Include score history on first load for chart reconstruction
+        if last_action == 0 and actions:
+            # Build full score history from all actions (not just accumulated)
+            full_scores = []
+            for a in actions:
+                h = int(a.get('scoreHome', 0) or 0)
+                aw = int(a.get('scoreAway', 0) or 0)
+                if h > 0 or aw > 0:
+                    # Only add if score changed
+                    if not full_scores or full_scores[-1]['home'] != h or full_scores[-1]['away'] != aw:
+                        full_scores.append({
+                            'home': h,
+                            'away': aw,
+                            'action': a.get('actionNumber', 0),
+                            'period': a.get('period', 1)
+                        })
+            if full_scores:
+                response_data['scores'] = full_scores
+                response_data['is_first_load'] = True
+
+        return jsonify(response_data)
 
     except Exception as e:
         import traceback
