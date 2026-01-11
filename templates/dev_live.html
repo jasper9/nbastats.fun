@@ -725,16 +725,19 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 0.85rem;
+            border: 1px solid var(--border);
         }
         .quarter-scores-table th,
         .quarter-scores-table td {
             padding: 8px 12px;
             text-align: center;
+            border: 1px solid var(--border);
         }
         .quarter-scores-table th {
             color: var(--text-muted);
             font-weight: 500;
             font-size: 0.75rem;
+            background: var(--bg-card);
         }
         .quarter-scores-table th:first-child,
         .quarter-scores-table td:first-child {
@@ -749,14 +752,19 @@
             font-weight: 700;
             font-family: 'Oswald', sans-serif;
             font-size: 1rem;
+            background: var(--bg-card);
         }
         .quarter-scores-table td.current-quarter {
-            color: var(--nuggets-gold);
-            font-weight: 600;
+            background: rgba(254, 197, 36, 0.15);
         }
         .quarter-scores-table td.quarter-winner {
             color: var(--positive);
             font-weight: 600;
+        }
+        .quarter-scores-table td.current-winner {
+            color: var(--nuggets-gold);
+            font-weight: 600;
+            background: rgba(254, 197, 36, 0.15);
         }
         .quarter-scores-table tr.winner td.total-col {
             color: var(--positive);
@@ -1837,8 +1845,13 @@
             const q4HomeWins = homeQ4 > awayQ4 && (currentPeriod > 4 || (currentPeriod === 4 && awayQ4 > 0 && homeQ4 > 0));
 
             // Helper to get class for a quarter cell
-            const getQClass = (isWinner, isCurrent) => {
-                if (isCurrent) return 'current-quarter';
+            // For current quarter: only highlight the leading score (current-winner)
+            // For completed quarters: highlight the winner (quarter-winner)
+            const getQClass = (score, oppScore, isWinner, isCurrent) => {
+                if (isCurrent) {
+                    // In current quarter, only highlight if this team is winning the quarter
+                    return score > oppScore ? 'current-winner' : 'current-quarter';
+                }
                 if (isWinner) return 'quarter-winner';
                 return '';
             };
@@ -1852,22 +1865,22 @@
             // Away team row
             html += `<tr class="${awayWinner}">
                 <td>${awayTeam}</td>
-                <td class="${getQClass(q1AwayWins, currentPeriod === 1)}">${awayQ1 || '-'}</td>
-                <td class="${getQClass(q2AwayWins, currentPeriod === 2)}">${awayQ2 || '-'}</td>
-                <td class="${getQClass(q3AwayWins, currentPeriod === 3)}">${awayQ3 || '-'}</td>
-                <td class="${getQClass(q4AwayWins, currentPeriod === 4)}">${awayQ4 || '-'}</td>
-                ${hasOT ? `<td class="ot-col ${currentPeriod > 4 ? 'current-quarter' : ''}">${awayOT || '-'}</td>` : ''}
+                <td class="${getQClass(awayQ1, homeQ1, q1AwayWins, currentPeriod === 1)}">${awayQ1 || '-'}</td>
+                <td class="${getQClass(awayQ2, homeQ2, q2AwayWins, currentPeriod === 2)}">${awayQ2 || '-'}</td>
+                <td class="${getQClass(awayQ3, homeQ3, q3AwayWins, currentPeriod === 3)}">${awayQ3 || '-'}</td>
+                <td class="${getQClass(awayQ4, homeQ4, q4AwayWins, currentPeriod === 4)}">${awayQ4 || '-'}</td>
+                ${hasOT ? `<td class="ot-col ${awayOT > homeOT && currentPeriod > 4 ? 'current-winner' : (currentPeriod > 4 ? 'current-quarter' : '')}">${awayOT || '-'}</td>` : ''}
                 <td class="total-col">${awayTotal}</td>
             </tr>`;
 
             // Home team row
             html += `<tr class="${homeWinner}">
                 <td>${homeTeam}</td>
-                <td class="${getQClass(q1HomeWins, currentPeriod === 1)}">${homeQ1 || '-'}</td>
-                <td class="${getQClass(q2HomeWins, currentPeriod === 2)}">${homeQ2 || '-'}</td>
-                <td class="${getQClass(q3HomeWins, currentPeriod === 3)}">${homeQ3 || '-'}</td>
-                <td class="${getQClass(q4HomeWins, currentPeriod === 4)}">${homeQ4 || '-'}</td>
-                ${hasOT ? `<td class="ot-col ${currentPeriod > 4 ? 'current-quarter' : ''}">${homeOT || '-'}</td>` : ''}
+                <td class="${getQClass(homeQ1, awayQ1, q1HomeWins, currentPeriod === 1)}">${homeQ1 || '-'}</td>
+                <td class="${getQClass(homeQ2, awayQ2, q2HomeWins, currentPeriod === 2)}">${homeQ2 || '-'}</td>
+                <td class="${getQClass(homeQ3, awayQ3, q3HomeWins, currentPeriod === 3)}">${homeQ3 || '-'}</td>
+                <td class="${getQClass(homeQ4, awayQ4, q4HomeWins, currentPeriod === 4)}">${homeQ4 || '-'}</td>
+                ${hasOT ? `<td class="ot-col ${homeOT > awayOT && currentPeriod > 4 ? 'current-winner' : (currentPeriod > 4 ? 'current-quarter' : '')}">${homeOT || '-'}</td>` : ''}
                 <td class="total-col">${homeTotal}</td>
             </tr>`;
 
