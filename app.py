@@ -1520,8 +1520,12 @@ def fetch_team_injuries(team_abbrev):
         return []
 
 
-def generate_pregame_preview(home_team, away_team, home_team_name='', away_team_name='', odds=None):
-    """Generate pre-game preview messages with injuries and star players."""
+def generate_pregame_preview(home_team, away_team, home_team_name='', away_team_name='', odds=None, show_hype=True):
+    """Generate pre-game preview messages with injuries and star players.
+
+    Args:
+        show_hype: If True, include HypeMan messages. Set to False for games not starting soon.
+    """
     messages = []
 
     # Fetch injuries for both teams
@@ -1663,35 +1667,36 @@ def generate_pregame_preview(home_team, away_team, home_team_name='', away_team_
                 'score': pregame_score,
             })
 
-    # Add hype message
-    matchup_descriptions = []
-    if 'Nikola Jokić' in (home_available_stars + away_available_stars):
-        matchup_descriptions.append("the MVP in the building")
-    if 'LeBron James' in (home_available_stars + away_available_stars):
-        matchup_descriptions.append("the King is playing")
-    if 'Stephen Curry' in (home_available_stars + away_available_stars):
-        matchup_descriptions.append("Chef Curry cooking")
-    if 'Giannis Antetokounmpo' in (home_available_stars + away_available_stars):
-        matchup_descriptions.append("the Greek Freak unleashed")
+    # Add hype message only if game is starting soon
+    if show_hype:
+        matchup_descriptions = []
+        if 'Nikola Jokić' in (home_available_stars + away_available_stars):
+            matchup_descriptions.append("the MVP in the building")
+        if 'LeBron James' in (home_available_stars + away_available_stars):
+            matchup_descriptions.append("the King is playing")
+        if 'Stephen Curry' in (home_available_stars + away_available_stars):
+            matchup_descriptions.append("Chef Curry cooking")
+        if 'Giannis Antetokounmpo' in (home_available_stars + away_available_stars):
+            matchup_descriptions.append("the Greek Freak unleashed")
 
-    if matchup_descriptions:
-        messages.append({
-            'bot': 'hype_man',
-            'text': f"🔥 Get ready! {matchup_descriptions[0].capitalize()}! Let's GO!",
-            'type': 'hype',
-            'timestamp': datetime.now().isoformat(),
-            'action_number': -96,
-            'score': pregame_score,
-        })
-    else:
-        messages.append({
-            'bot': 'hype_man',
-            'text': "🔥 Let's get this game started! Time for some basketball!",
-            'type': 'hype',
-            'timestamp': datetime.now().isoformat(),
-            'action_number': -96,
-            'score': pregame_score,
-        })
+        if matchup_descriptions:
+            messages.append({
+                'bot': 'hype_man',
+                'text': f"🔥 Get ready! {matchup_descriptions[0].capitalize()}! Let's GO!",
+                'type': 'hype',
+                'timestamp': datetime.now().isoformat(),
+                'action_number': -96,
+                'score': pregame_score,
+            })
+        else:
+            messages.append({
+                'bot': 'hype_man',
+                'text': "🔥 Let's get this game started! Time for some basketball!",
+                'type': 'hype',
+                'timestamp': datetime.now().isoformat(),
+                'action_number': -96,
+                'score': pregame_score,
+            })
 
     return messages
 
@@ -2609,10 +2614,43 @@ def api_dev_live_feed(game_id):
                 team_key = f"{away_team}@{home_team}"
                 game_odds = get_cached_odds(team_key, game_date)
 
+                # Check if game is starting soon (within 30 minutes)
+                # game_status contains time like "7:00 PM ET"
+                show_hype = False
+                try:
+                    import re
+                    time_match = re.match(r'(\d{1,2}):(\d{2})\s*(AM|PM)', game_status)
+                    if time_match:
+                        hour = int(time_match.group(1))
+                        minute = int(time_match.group(2))
+                        ampm = time_match.group(3)
+
+                        # Convert to 24-hour (assume ET, convert to local)
+                        if ampm == 'PM' and hour != 12:
+                            hour += 12
+                        elif ampm == 'AM' and hour == 12:
+                            hour = 0
+
+                        # Create game datetime (assume today, ET timezone)
+                        from datetime import timezone
+                        # ET is UTC-5 (or UTC-4 during DST)
+                        et_offset = timedelta(hours=-5)  # EST
+                        now_utc = datetime.now(timezone.utc)
+                        game_time_et = datetime(now_utc.year, now_utc.month, now_utc.day,
+                                                hour, minute, tzinfo=timezone(et_offset))
+
+                        # Check if within 30 minutes
+                        time_until_game = (game_time_et - now_utc).total_seconds() / 60
+                        show_hype = time_until_game <= 30
+                except Exception as e:
+                    print(f"Error parsing game time: {e}")
+                    show_hype = False
+
                 pregame_messages = generate_pregame_preview(
                     home_team, away_team,
                     home_team_name, away_team_name,
-                    game_odds
+                    game_odds,
+                    show_hype=show_hype
                 )
 
             return jsonify({
@@ -2825,7 +2863,8 @@ def api_dev_live_feed(game_id):
             pregame_msgs_to_add = generate_pregame_preview(
                 home_team, away_team,
                 home_team_name, away_team_name,
-                game_odds
+                game_odds,
+                show_hype=True  # Game just started, always show hype
             )
 
         for i, play in enumerate(new_plays_for_messages):
