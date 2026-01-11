@@ -372,6 +372,134 @@
             text-align: center;
             margin-top: 8px;
         }
+        /* Live Roster Section */
+        .roster-section {
+            display: none;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        .roster-section.visible {
+            display: block;
+        }
+        .roster-header {
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .roster-teams {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .roster-team {
+            background: var(--bg-card);
+            border-radius: 6px;
+            padding: 10px;
+        }
+        .roster-team-header {
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .roster-team-header .team-score-small {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .roster-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .roster-player {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+        .roster-player:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .roster-player.on-court {
+            color: var(--text-primary);
+            background: rgba(52, 211, 153, 0.1);
+        }
+        .roster-player.on-court .player-name {
+            font-weight: 500;
+        }
+        .on-court-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            flex-shrink: 0;
+            transition: all 0.3s;
+        }
+        .roster-player.on-court .on-court-indicator {
+            background: #34d399;
+            box-shadow: 0 0 6px rgba(52, 211, 153, 0.6);
+            animation: pulse-oncourt 2s ease-in-out infinite;
+        }
+        @keyframes pulse-oncourt {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(0.9); }
+        }
+        .player-name {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .player-stats-mini {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+        .player-stats-mini .pts-highlight {
+            color: var(--nuggets-gold);
+            font-weight: 600;
+        }
+        .roster-legend {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+        .roster-legend .legend-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #34d399;
+        }
+        @media (max-width: 600px) {
+            .roster-teams {
+                grid-template-columns: 1fr;
+            }
+            .roster-list {
+                max-height: 150px;
+            }
+        }
         /* Mini Charts */
         .mini-charts {
             display: none;
@@ -823,6 +951,22 @@
             color: var(--text-primary);
             font-weight: 500;
         }
+        /* On-court indicator in player stats table */
+        .player-stats-table .on-court-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            margin-right: 6px;
+            vertical-align: middle;
+            flex-shrink: 0;
+        }
+        .player-stats-table .on-court-dot.active {
+            background: #34d399;
+            box-shadow: 0 0 6px rgba(52, 211, 153, 0.6);
+            animation: pulse-oncourt 2s ease-in-out infinite;
+        }
         .player-stats-table tr:hover {
             background: rgba(255,255,255,0.03);
         }
@@ -1152,6 +1296,12 @@
         let hasMoreHistory = false;
         let historyCutoffAction = 0;
         let isLoadingFullHistory = false;
+
+        // On-court player tracking
+        // Tracks players mentioned in recent plays to infer who's on court
+        let onCourtPlayers = { home: new Set(), away: new Set() };
+        const RECENT_PLAYS_WINDOW = 8;  // Number of recent plays to consider
+        let recentPlayPlayers = [];  // Array of {player, team, timestamp}
 
         // Custom Chart.js plugin to draw vertical quarter lines (at data index positions)
         const quarterLinesPlugin = {
@@ -1943,6 +2093,10 @@
                 const plusMinus = p.plus_minus !== undefined ? (p.plus_minus > 0 ? `+${p.plus_minus}` : p.plus_minus) : '-';
                 const plusMinusClass = p.plus_minus > 0 ? 'positive' : (p.plus_minus < 0 ? 'negative' : '');
 
+                // Check if player is on court (team variable is from parent scope)
+                const isOnCourt = isPlayerOnCourt(p.name, team);
+                const onCourtClass = isOnCourt ? 'active' : '';
+
                 // Add to totals
                 totals.pts += p.pts || 0;
                 totals.reb += p.reb || 0;
@@ -1961,7 +2115,7 @@
                 totals.dreb += p.dreb || 0;
 
                 return `<tr>
-                    <td class="player-col">${p.name}</td>
+                    <td class="player-col"><span class="on-court-dot ${onCourtClass}"></span>${p.name}</td>
                     <td>${p.min || '-'}</td>
                     <td class="${ptsClass}">${p.pts}</td>
                     <td>${p.reb}</td>
@@ -2039,6 +2193,99 @@
 
             // Re-render stats
             renderPlayerStats(team);
+        }
+
+        // Extract player name from a message text
+        function extractPlayerFromMessage(text) {
+            if (!text) return null;
+
+            // Common patterns in play-by-play messages
+            // "Player Name (TEAM) hits..." or "Player Name (TEAM) makes..."
+            const patterns = [
+                /^[💥✓🚫👋💨🚨⭐🔥]+\s*([A-Z][a-z']+(?:\s+[A-Z][a-z']+)+)\s*\(/i,  // Emoji + name + (
+                /POSTER!\s*([A-Z][a-z']+(?:\s+[A-Z][a-z']+)+)/i,  // POSTER! name
+                /by\s+([A-Z][a-z']+(?:\s+[A-Z][a-z']+)+)/i,  // "by Name"
+                /on\s+([A-Z][a-z']+(?:\s+[A-Z][a-z']+)+)\s*\(/i,  // "on Name ("
+            ];
+
+            for (const pattern of patterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    return match[1].trim();
+                }
+            }
+            return null;
+        }
+
+        // Track a player mention from a play
+        function trackPlayerMention(playerName, teamAbbrev) {
+            if (!playerName || !teamAbbrev) return;
+
+            // Determine if home or away
+            const isHome = teamAbbrev === currentHomeTeam;
+            const teamKey = isHome ? 'home' : 'away';
+
+            // Add to recent plays
+            recentPlayPlayers.push({
+                player: playerName,
+                team: teamKey,
+                timestamp: Date.now()
+            });
+
+            // Keep only recent plays
+            if (recentPlayPlayers.length > RECENT_PLAYS_WINDOW * 2) {
+                recentPlayPlayers = recentPlayPlayers.slice(-RECENT_PLAYS_WINDOW * 2);
+            }
+
+            // Update on-court sets from recent plays
+            updateOnCourtFromRecentPlays();
+        }
+
+        // Update on-court player sets based on recent play mentions
+        function updateOnCourtFromRecentPlays() {
+            // Clear current sets
+            onCourtPlayers.home.clear();
+            onCourtPlayers.away.clear();
+
+            // Get players from most recent plays
+            const recentPlays = recentPlayPlayers.slice(-RECENT_PLAYS_WINDOW);
+
+            for (const play of recentPlays) {
+                onCourtPlayers[play.team].add(play.player);
+            }
+        }
+
+        // Check if a player name matches any on-court player (fuzzy match for last name)
+        function isPlayerOnCourt(playerName, teamKey) {
+            const onCourt = onCourtPlayers[teamKey];
+            if (!onCourt || onCourt.size === 0) return false;
+
+            // Exact match
+            if (onCourt.has(playerName)) return true;
+
+            // Last name match (for when play shows "Smith" but roster shows "John Smith")
+            const lastName = playerName.split(' ').pop();
+            for (const name of onCourt) {
+                if (name.includes(lastName) || lastName.includes(name.split(' ').pop())) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Process incoming messages to track on-court players
+        function processMessagesForOnCourt(messages) {
+            if (!messages || !Array.isArray(messages)) return;
+
+            for (const msg of messages) {
+                // Only process play-by-play type messages
+                if (msg.bot === 'play_by_play' || msg.bot === 'hype_man' || msg.bot === 'referee') {
+                    const playerName = extractPlayerFromMessage(msg.text);
+                    if (playerName && msg.team) {
+                        trackPlayerMention(playerName, msg.team);
+                    }
+                }
+            }
         }
 
         // Format UTC time to local time
@@ -2210,6 +2457,10 @@
                 historyCutoffAction = 0;
                 isLoadingFullHistory = false;
                 document.getElementById('load-more-container').style.display = 'none';
+
+                // Reset on-court player tracking
+                onCourtPlayers = { home: new Set(), away: new Set() };
+                recentPlayPlayers = [];
 
                 // Hide odds section until new game's odds load
                 document.getElementById('odds-section').classList.remove('visible');
@@ -2488,6 +2739,9 @@
                         msgEl.dataset.actionNumber = msg.action_number;
                         feed.appendChild(msgEl);
                     });
+
+                    // Track on-court players from messages
+                    processMessagesForOnCourt(data.messages);
 
                     // Auto-scroll to bottom
                     feed.scrollTop = feed.scrollHeight;
