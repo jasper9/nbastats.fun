@@ -2140,6 +2140,69 @@ def generate_chat_message(action, game_info, prev_action=None, largest_leads=Non
                 'team': team,
             })
 
+    # Technical fouls and ejections - BIG reactions!
+    elif action_type == 'foul':
+        desc_lower = desc.lower()
+        sub_lower = sub_type.lower() if sub_type else ''
+
+        # Check for ejection first (most dramatic)
+        if 'ejected' in desc_lower or 'ejection' in desc_lower:
+            messages.append({
+                'bot': 'play_by_play',
+                'text': f"🚨 {player} ({team}) has been EJECTED from the game!",
+                'type': 'ejection',
+                'team': team,
+            })
+            messages.append({
+                'bot': 'hype_man',
+                'text': f"🤯🤯🤯 OH NO HE DIDN'T!!! {player} is GONE! EJECTED! THE REFS HAVE SPOKEN! 👋👋👋",
+                'type': 'ejection_hype',
+                'team': team,
+            })
+            # Historical context
+            messages.append({
+                'bot': 'historian',
+                'text': f"📜 For context: {player} has a history of fiery moments. This ejection adds to their reputation as one of the league's more passionate competitors.",
+                'type': 'history',
+            })
+
+        # Flagrant foul (very dramatic)
+        elif 'flagrant' in desc_lower or 'flagrant' in sub_lower:
+            flagrant_type = '2' if '2' in desc_lower else '1'
+            messages.append({
+                'bot': 'play_by_play',
+                'text': f"⚠️ FLAGRANT {flagrant_type} FOUL called on {player} ({team})!",
+                'type': 'flagrant',
+                'team': team,
+            })
+            messages.append({
+                'bot': 'hype_man',
+                'text': f"😤😤😤 WHOA!!! FLAGRANT FOUL! {player} got FLAGGED! Things are getting HEATED out there! 🔥🔥🔥",
+                'type': 'flagrant_hype',
+                'team': team,
+            })
+
+        # Technical foul (dramatic)
+        elif 'technical' in desc_lower or 'technical' in sub_lower:
+            messages.append({
+                'bot': 'play_by_play',
+                'text': f"🔔 Technical foul called on {player} ({team})!",
+                'type': 'technical',
+                'team': team,
+            })
+            messages.append({
+                'bot': 'hype_man',
+                'text': f"🗣️🗣️🗣️ TECHNICAL! {player} just got T'd UP! Someone's NOT happy with the refs! 😤",
+                'type': 'technical_hype',
+                'team': team,
+            })
+            # Historical context for technicals
+            messages.append({
+                'bot': 'stats_nerd',
+                'text': f"📊 Technical foul tracker: {player} is known to voice their opinions. League leaders in techs this season are often the most passionate players.",
+                'type': 'tech_stats',
+            })
+
     # Period start/end
     elif action_type == 'period':
         if sub_type == 'end':
