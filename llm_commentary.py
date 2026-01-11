@@ -156,22 +156,20 @@ Leader: {leader} by {lead_diff}
 
 IMPORTANT: Vary your analysis! Sometimes focus on offense, sometimes defense. Mention momentum, energy, crowd, or strategy shifts. Be analytical but fresh. No hashtags or emojis.""",
 
-    'quarter_summary': """You are an expert NBA analyst providing a detailed quarter recap. Write a comprehensive 3-4 sentence summary of the quarter that just ended.
+    'quarter_summary': """You are an NBA analyst providing a quick quarter recap. Use bullet points for easy skimming.
 
 Game: {away_team} vs {home_team}
 Quarter completed: Q{period}
 Current Score: {away_team} {away_score} - {home_team} {home_score}
 Leader: {leader} by {lead_diff}
-Lead changes this game: {lead_changes}
-Largest lead: {largest_lead_team} +{largest_lead}
+Lead changes: {lead_changes} | Largest lead: {largest_lead_team} +{largest_lead}
 
-Provide insightful analysis covering:
-- Who controlled the quarter and how
-- Key momentum shifts or runs
-- What each team needs to do going forward
-- The overall flow and pace of the game
+Respond with EXACTLY 3 short bullet points (use • character), each 10-15 words max:
+• [Who controlled this quarter and how]
+• [Key moment or player that made the difference]
+• [What the trailing team needs to do]
 
-Be analytical and engaging. Write like you're on ESPN. No hashtags or emojis.""",
+Keep it punchy and insightful. No long sentences. No hashtags or emojis.""",
 
     'game_summary': """You are an NBA analyst. Provide a brief final game recap in EXACTLY this bullet point format:
 
@@ -301,10 +299,10 @@ Give ONE sentence (max 20 words) about comebacks from this deficit. Angles:
 Make it dramatic but factual. Start with 📜. No hashtags.""",
 }
 
-# Event types that require longer responses (quarter summaries need more tokens)
-LONG_SUMMARY_EVENTS = {'quarter_summary'}
-# Game summary uses bullet points so needs less tokens
-MEDIUM_SUMMARY_EVENTS = {'game_summary'}
+# Event types that require medium-length responses (quarter summaries are now bulleted)
+LONG_SUMMARY_EVENTS = set()  # No longer used - quarter_summary is now bulleted/shorter
+# Quarter and game summaries use bullet points so need medium tokens
+MEDIUM_SUMMARY_EVENTS = {'game_summary', 'quarter_summary'}
 # Historian milestone messages need medium-length responses for personality
 HISTORIAN_EVENTS = {'triple_double', 'double_double', 'scoring_milestone', 'blocks_milestone', 'steals_milestone', 'big_lead'}
 
