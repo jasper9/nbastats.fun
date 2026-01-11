@@ -243,8 +243,17 @@ A real-time play-by-play chat feed with bot "personalities":
 - 🏀 **PlayByPlay** (white) - Scoring plays, blocks, steals, turnovers
 - 📊 **StatsNerd** (cyan) - Quarter summaries, largest lead announcements
 - 🔥 **HypeMan** (orange) - Dunks, lead changes, tie games
-- 📜 **Historian** (purple) - Historical context (future)
+- 📜 **Historian** (purple) - Stat milestones with historical context (see below)
 - 🤖 **AI** (blue) - Claude Haiku LLM-generated commentary for exciting events
+
+**Historian Bot Milestones** (LLM-enhanced):
+- Triple-doubles (10+ pts/reb/ast) - with player season averages
+- Double-doubles (10+ in 2 categories)
+- Scoring milestones (30+, 40+, 50+, 60+ points)
+- Block milestones (5+, 10+, 15+, 20+ blocks)
+- Steal milestones (5+, 10+, 15+, 20+ steals)
+- Big lead milestones (20+, 25+, 30+ point leads)
+- Hardcoded star player averages with fallback for unknown players
 
 **Stats Tracked**:
 - Lead changes count (detected per scoring play)
