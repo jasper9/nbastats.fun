@@ -211,6 +211,27 @@
             letter-spacing: 0.5px;
             margin-bottom: 4px;
         }
+        .live-tag {
+            background: #ef4444;
+            color: white;
+            font-size: 0.5rem;
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-left: 4px;
+            animation: pulse-live 2s infinite;
+        }
+        @keyframes pulse-live {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .locked-tag {
+            background: #6b7280;
+            color: white;
+            font-size: 0.5rem;
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-left: 4px;
+        }
         .odds-value {
             font-family: 'Oswald', sans-serif;
             font-size: 1.1rem;
@@ -710,15 +731,15 @@
         <div class="odds-section" id="odds-section">
             <div class="odds-row">
                 <div class="odds-item">
-                    <div class="odds-label">Spread</div>
+                    <div class="odds-label">Spread <span class="live-tag">LIVE</span></div>
                     <div class="odds-value" id="odds-spread">--</div>
                 </div>
                 <div class="odds-item">
-                    <div class="odds-label">Total</div>
+                    <div class="odds-label">Total <span class="live-tag">LIVE</span></div>
                     <div class="odds-value" id="odds-total">--</div>
                 </div>
                 <div class="odds-item">
-                    <div class="odds-label">Moneyline</div>
+                    <div class="odds-label">Moneyline <span class="live-tag">LIVE</span></div>
                     <div class="odds-moneyline" id="odds-moneyline">
                         <div class="ml-team">
                             <span class="ml-abbrev" id="ml-away-abbrev">AWAY</span>
@@ -731,7 +752,7 @@
                     </div>
                 </div>
                 <div class="odds-item prob-display">
-                    <div class="odds-label">Pre-Game Odds</div>
+                    <div class="odds-label">Pre-Game Odds <span class="locked-tag">LOCKED</span></div>
                     <div class="prob-bar-container">
                         <div class="prob-bar away" id="away-prob-bar"></div>
                         <div class="prob-bar home" id="home-prob-bar"></div>
@@ -935,8 +956,12 @@
         // Register the plugin globally
         Chart.register(quarterLinesPlugin);
 
-        // Current game odds
+        // Current game odds (updates during game)
         let currentOdds = null;
+
+        // Pre-game odds (locked at first load, never changes)
+        let preGameOdds = null;
+        let preGameOddsLocked = false;
 
         // Store games for accessing odds when selecting
         let gamesData = {};
@@ -1339,34 +1364,41 @@
                 homeMlEl.className = 'ml-value ' + (homeMl < awayMl ? 'favorite' : 'underdog');
             }
 
-            // Update probability display with team colors
-            const homeProb = consensus.home_prob || 50;
-            const awayProb = consensus.away_prob || 50;
+            // Pre-Game Odds: Only set once, then lock forever (never updates during game)
+            // This captures the opening line before any in-game movement
+            if (!preGameOddsLocked) {
+                preGameOdds = odds;
+                preGameOddsLocked = true;
 
-            // Normalize to 100% total (remove vig)
-            const totalProb = homeProb + awayProb;
-            const normalizedHomeProb = Math.round((homeProb / totalProb) * 100);
-            const normalizedAwayProb = 100 - normalizedHomeProb;
+                // Update probability display with team colors (only on first load)
+                const homeProb = consensus.home_prob || 50;
+                const awayProb = consensus.away_prob || 50;
 
-            // Update probability bar with team colors and proper text contrast
-            const awayBar = document.getElementById('away-prob-bar');
-            const homeBar = document.getElementById('home-prob-bar');
+                // Normalize to 100% total (remove vig)
+                const totalProb = homeProb + awayProb;
+                const normalizedHomeProb = Math.round((homeProb / totalProb) * 100);
+                const normalizedAwayProb = 100 - normalizedHomeProb;
 
-            awayBar.style.width = `${normalizedAwayProb}%`;
-            awayBar.style.background = awayColor;
-            awayBar.style.color = isColorDark(awayColor) ? '#ffffff' : '#0d1117';
-            awayBar.textContent = normalizedAwayProb >= 20 ? `${normalizedAwayProb}%` : '';
+                // Update probability bar with team colors and proper text contrast
+                const awayBar = document.getElementById('away-prob-bar');
+                const homeBar = document.getElementById('home-prob-bar');
 
-            homeBar.style.width = `${normalizedHomeProb}%`;
-            homeBar.style.background = homeColor;
-            homeBar.style.color = isColorDark(homeColor) ? '#ffffff' : '#0d1117';
-            homeBar.textContent = normalizedHomeProb >= 20 ? `${normalizedHomeProb}%` : '';
+                awayBar.style.width = `${normalizedAwayProb}%`;
+                awayBar.style.background = awayColor;
+                awayBar.style.color = isColorDark(awayColor) ? '#ffffff' : '#0d1117';
+                awayBar.textContent = normalizedAwayProb >= 20 ? `${normalizedAwayProb}%` : '';
 
-            // Update labels with team colors (use city names)
-            document.getElementById('away-dot').style.background = awayColor;
-            document.getElementById('home-dot').style.background = homeColor;
-            document.getElementById('away-prob-text').textContent = `${awayDisplay} ${normalizedAwayProb}%`;
-            document.getElementById('home-prob-text').textContent = `${homeDisplay} ${normalizedHomeProb}%`;
+                homeBar.style.width = `${normalizedHomeProb}%`;
+                homeBar.style.background = homeColor;
+                homeBar.style.color = isColorDark(homeColor) ? '#ffffff' : '#0d1117';
+                homeBar.textContent = normalizedHomeProb >= 20 ? `${normalizedHomeProb}%` : '';
+
+                // Update labels with team colors (use city names)
+                document.getElementById('away-dot').style.background = awayColor;
+                document.getElementById('home-dot').style.background = homeColor;
+                document.getElementById('away-prob-text').textContent = `${awayDisplay} ${normalizedAwayProb}%`;
+                document.getElementById('home-prob-text').textContent = `${homeDisplay} ${normalizedHomeProb}%`;
+            }
 
             // Update vendor count
             document.getElementById('odds-vendor-count').textContent =
@@ -1616,6 +1648,10 @@
             }
 
             currentGameId = gameId;
+
+            // Reset pre-game odds when switching games (will lock on first odds load)
+            preGameOdds = null;
+            preGameOddsLocked = false;
 
             // Update URL with game ID (allows refresh and sharing)
             if (updateUrl) {
