@@ -177,6 +177,48 @@
         .archive-link:hover {
             text-decoration: underline;
         }
+        /* Delay selector for TV sync */
+        .delay-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+        .delay-selector label {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .delay-selector select {
+            padding: 6px 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .delay-selector select:focus {
+            outline: none;
+            border-color: var(--nuggets-gold);
+        }
+        .delay-indicator {
+            font-size: 0.75rem;
+            color: var(--nuggets-gold);
+            padding: 3px 8px;
+            background: rgba(254, 197, 36, 0.15);
+            border-radius: 4px;
+            display: none;
+        }
+        .delay-indicator.active {
+            display: inline-block;
+        }
+        .delay-indicator .delay-countdown {
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
         /* Scoreboard */
         .scoreboard {
             background: var(--bg-secondary);
@@ -1072,6 +1114,21 @@
             <select id="game-select">
                 <option value="">Loading games...</option>
             </select>
+            <div class="delay-selector" id="delay-selector" style="display: none;">
+                <label for="delay-select">📺 TV Sync Delay:</label>
+                <select id="delay-select">
+                    <option value="0">No delay (live)</option>
+                    <option value="15">15 seconds</option>
+                    <option value="30">30 seconds</option>
+                    <option value="45">45 seconds</option>
+                    <option value="60">1 minute</option>
+                    <option value="90">1.5 minutes</option>
+                    <option value="120">2 minutes</option>
+                </select>
+                <span class="delay-indicator" id="delay-indicator">
+                    Delayed by <span class="delay-countdown" id="delay-countdown">0s</span>
+                </span>
+            </div>
         </div>
 
         <div class="scoreboard" id="scoreboard" style="display: none;">
@@ -1277,6 +1334,19 @@
     </div>
 
     <script>
+        // ============================================================
+        // FEATURE FLAG: TV Sync Delay
+        // Set to false to completely disable the delay feature
+        // ============================================================
+        const DELAY_FEATURE_ENABLED = true;
+
+        // Delay buffer for TV sync (client-side only)
+        let delaySeconds = 0;  // Current delay in seconds
+        let delayBuffer = [];  // Buffer of {data, receivedAt} objects
+        let delayDisplayInterval = null;  // Interval for processing delayed display
+        let lastDisplayedScore = { home: 0, away: 0 };
+        let lastDisplayedClock = { period: 0, clock: '' };
+
         // Bot emoji mapping
         const botEmojis = {
             'play_by_play': '&#x1F3C0;',
@@ -2515,6 +2585,18 @@
                 const loadMoreEl = document.getElementById('load-more-container');
                 if (loadMoreEl) loadMoreEl.style.display = 'none';
 
+                // Reset delay buffer when switching games
+                if (DELAY_FEATURE_ENABLED) {
+                    delayBuffer = [];
+                    document.getElementById('delay-select').value = '0';
+                    delaySeconds = 0;
+                    document.getElementById('delay-indicator').classList.remove('active');
+                    if (delayDisplayInterval) {
+                        clearInterval(delayDisplayInterval);
+                        delayDisplayInterval = null;
+                    }
+                }
+
                 // Reset on-court player tracking
                 onCourtPlayers = { home: new Set(), away: new Set() };
                 recentPlayPlayers = [];
@@ -2614,6 +2696,16 @@
                 // Initialize charts (will use currentHomeTeam/currentAwayTeam for labels)
                 initCharts();
 
+                // Show delay selector for live games only (not pregame, not final, not historical)
+                if (DELAY_FEATURE_ENABLED && gameData) {
+                    const isLiveGame = gameData.status &&
+                        (gameData.status.includes('Q') || gameData.status === 'Half') &&
+                        !gameData.status.includes('Final');
+                    document.getElementById('delay-selector').style.display = isLiveGame ? 'flex' : 'none';
+                } else {
+                    document.getElementById('delay-selector').style.display = 'none';
+                }
+
                 // Only add initial 0-0 chart points for PRE-GAME games (not yet started)
                 // This allows the chart to show pre-game odds before any scoring
                 // For live/completed games, score history from the API will populate the chart
@@ -2649,191 +2741,20 @@
                     return;
                 }
 
-                if (data.error) {
-                    console.error('Feed error:', data.error);
-                    return;
-                }
-
-                // Check if this is historical data (completed game)
-                if (data.is_historical) {
-                    // Stop polling for completed games
-                    if (pollInterval) {
-                        clearInterval(pollInterval);
-                        pollInterval = null;
-                    }
-                }
-
-                // Update scoreboard (use city names from stored game data)
-                const storedGame = gamesData[currentGameId];
-                const homeCity = storedGame?.home_team_city || data.game_info?.home_team;
-                const awayCity = storedGame?.away_team_city || data.game_info?.away_team;
-
-                if (data.game_info) {
-                    document.getElementById('home-team').textContent = homeCity;
-                    document.getElementById('away-team').textContent = awayCity;
-                }
-
-                // Update game clock, quarter, timeouts, and bonus indicators
-                const isGameLive = data.period > 0 && data.status !== 'Final';
-                const clockSection = document.getElementById('game-clock-section');
-
-                if (isGameLive && data.game_clock) {
-                    // Show game clock during live games
-                    clockSection.style.display = 'block';
-                    const periodText = data.period <= 4 ? `Q${data.period}` : `OT${data.period - 4}`;
-                    document.getElementById('game-quarter').textContent = periodText;
-                    document.getElementById('game-clock').textContent = data.game_clock;
-                } else if (data.status === 'Final') {
-                    // Show "FINAL" for completed games
-                    clockSection.style.display = 'block';
-                    document.getElementById('game-quarter').textContent = 'FINAL';
-                    document.getElementById('game-clock').textContent = '';
-                } else if (data.is_pregame) {
-                    // Show "PRE-GAME" for upcoming games
-                    clockSection.style.display = 'block';
-                    document.getElementById('game-quarter').textContent = 'PRE-GAME';
-                    document.getElementById('game-clock').textContent = '';
-                } else {
-                    // Hide clock section when no relevant status
-                    clockSection.style.display = 'none';
-                }
-
-                // Update timeouts (only show during live games)
-                // Show dots: lit for remaining, dim for used (7 total per team)
-                const awayTimeouts = document.getElementById('away-timeouts');
-                const homeTimeouts = document.getElementById('home-timeouts');
-                if (isGameLive) {
-                    awayTimeouts.style.display = 'flex';
-                    homeTimeouts.style.display = 'flex';
-                    renderTimeoutDots(awayTimeouts, data.away_timeouts ?? 7);
-                    renderTimeoutDots(homeTimeouts, data.home_timeouts ?? 7);
-                } else {
-                    awayTimeouts.style.display = 'none';
-                    homeTimeouts.style.display = 'none';
-                }
-
-                // Update bonus indicators (team is "in bonus" when opponent has 5+ fouls in quarter)
-                // Only show during live games
-                const awayBonus = document.getElementById('away-bonus');
-                const homeBonus = document.getElementById('home-bonus');
-                if (isGameLive) {
-                    awayBonus.classList.toggle('active', data.away_in_bonus || false);
-                    homeBonus.classList.toggle('active', data.home_in_bonus || false);
-                } else {
-                    awayBonus.classList.remove('active');
-                    homeBonus.classList.remove('active');
-                }
-                if (data.score) {
-                    document.getElementById('home-score').textContent = data.score.home;
-                    document.getElementById('away-score').textContent = data.score.away;
-                    // Update header score with city names
-                    let scoreText = `${awayCity} ${data.score.away} - ${homeCity} ${data.score.home}`;
-                    if (data.status === 'Final') {
-                        scoreText += ' (FINAL)';
-                    } else if (data.is_pregame) {
-                        scoreText = `${awayCity} @ ${homeCity} (PREGAME)`;
-                    }
-                    document.getElementById('stat-score').textContent = scoreText;
-
-                    // Load score history for charts (only once per game - historical games OR first load of live game)
-                    if (!scoreHistoryLoaded && (data.is_historical || data.is_first_load) && data.scores && data.scores.length > 0) {
-                        // Reconstruct charts from saved score history (with elapsed time for x-axis)
-                        data.scores.forEach(s => {
-                            updateCharts(s.home, s.away, data.game_info.home_team, data.game_info.away_team, null, s.period, s.elapsed, s.clock);
-                        });
-                        scoreHistoryLoaded = true;  // Mark as loaded to prevent duplicates
-                    } else if (!data.is_historical && !data.is_first_load) {
-                        // Live update - calculate elapsed from game_clock and period
-                        const currentPeriod = data.period || null;
-                        const gameClock = data.game_clock || null;
-
-                        // Calculate elapsed from game clock (MM:SS remaining in quarter)
-                        let elapsed = null;
-                        if (gameClock && currentPeriod) {
-                            const parts = gameClock.split(':');
-                            if (parts.length === 2) {
-                                const mins = parseInt(parts[0]) || 0;
-                                const secs = parseInt(parts[1]) || 0;
-                                const remaining = mins * 60 + secs;
-                                const quarterElapsed = 720 - remaining;
-                                elapsed = (currentPeriod - 1) * 720 + quarterElapsed;
-                            }
-                        }
-
-                        updateCharts(data.score.home, data.score.away, data.game_info.home_team, data.game_info.away_team, null, currentPeriod, elapsed, gameClock);
-                    }
-                }
-
-                // Update box score with player stats and quarter scores
-                if (data.player_stats) {
-                    updateBoxScore(data.player_stats);
-                }
-
-                // Update quarter-by-quarter scores
-                if (data.home_periods && data.away_periods && data.score) {
-                    renderQuarterScores(
-                        data.home_periods,
-                        data.away_periods,
-                        currentHomeTeam,
-                        currentAwayTeam,
-                        data.score.home,
-                        data.score.away,
-                        data.period || 0
-                    );
-                }
-
-                // Update stats in header
-                document.getElementById('stat-lead-changes').textContent = `🔄 ${data.lead_changes || 0}`;
-                // Show appropriate status based on game state
-                if (data.is_historical) {
-                    document.getElementById('stat-viewers').textContent = '📺 Replay';
-                } else if (data.is_pregame) {
-                    document.getElementById('stat-viewers').textContent = '⏰ Starting Soon';
-                } else {
-                    document.getElementById('stat-viewers').textContent = `👁 ${data.viewer_count || 1}`;
-                }
-
-                // Update last action number (handle pregame with negative action numbers)
-                if (data.last_action > lastActionNumber || (data.is_pregame && lastActionNumber === 0)) {
-                    lastActionNumber = data.last_action;
-                }
-
-                // Add new messages (but don't re-add pregame messages we already have)
-                if (data.messages && data.messages.length > 0 && !(data.is_pregame && lastActionNumber < 0 && document.querySelectorAll('.chat-message').length > 0)) {
-                    const feed = document.getElementById('chat-feed');
-                    const loading = document.getElementById('loading');
-                    if (loading) loading.remove();
-
-                    data.messages.forEach(msg => {
-                        const msgEl = createMessageElement(msg);
-                        msgEl.dataset.actionNumber = msg.action_number;
-                        feed.appendChild(msgEl);
+                // If delay is enabled and this is live data, buffer it
+                // Historical/pregame/final games should display immediately
+                if (DELAY_FEATURE_ENABLED && delaySeconds > 0 && !data.is_historical && !data.is_pregame && data.status !== 'Final') {
+                    delayBuffer.push({
+                        data: data,
+                        receivedAt: Date.now()
                     });
-
-                    // Track on-court players from messages
-                    processMessagesForOnCourt(data.messages);
-
-                    // Auto-scroll to bottom
-                    feed.scrollTop = feed.scrollHeight;
-                }
-
-                // Handle empty feed for completed games with no saved messages
-                if (data.is_historical && (!data.messages || data.messages.length === 0)) {
-                    const feed = document.getElementById('chat-feed');
-                    const loading = document.getElementById('loading');
-                    if (loading) {
-                        loading.innerHTML = '<p>No chat history available for this game.</p>';
+                    // Start display interval if not running
+                    if (!delayDisplayInterval) {
+                        delayDisplayInterval = setInterval(processDelayBuffer, 500);
                     }
-                }
-
-                // Handle "Load More History" button visibility
-                if (data.has_more_history && !isLoadingFullHistory) {
-                    hasMoreHistory = true;
-                    historyCutoffAction = data.history_cutoff_action || 0;
-                    document.getElementById('load-more-container').style.display = 'flex';
                 } else {
-                    hasMoreHistory = false;
-                    document.getElementById('load-more-container').style.display = 'none';
+                    // No delay or non-live data - display immediately
+                    displayFeedData(data, false);
                 }
 
             } catch (error) {
@@ -2875,6 +2796,274 @@
         document.getElementById('game-select').addEventListener('change', (e) => {
             selectGame(e.target.value);
         });
+
+        // Delay selector event handler
+        if (DELAY_FEATURE_ENABLED) {
+            document.getElementById('delay-select').addEventListener('change', (e) => {
+                delaySeconds = parseInt(e.target.value) || 0;
+                const indicator = document.getElementById('delay-indicator');
+
+                if (delaySeconds > 0) {
+                    indicator.classList.add('active');
+                    // Start the display interval if not already running
+                    if (!delayDisplayInterval) {
+                        delayDisplayInterval = setInterval(processDelayBuffer, 500);
+                    }
+                } else {
+                    indicator.classList.remove('active');
+                    // Stop the display interval and flush buffer immediately
+                    if (delayDisplayInterval) {
+                        clearInterval(delayDisplayInterval);
+                        delayDisplayInterval = null;
+                    }
+                    flushDelayBuffer();
+                }
+            });
+        }
+
+        // Process delayed buffer - displays items that are old enough
+        function processDelayBuffer() {
+            if (!DELAY_FEATURE_ENABLED || delaySeconds === 0 || delayBuffer.length === 0) return;
+
+            const now = Date.now();
+            const delayMs = delaySeconds * 1000;
+            let itemsToDisplay = [];
+
+            // Find all items old enough to display
+            while (delayBuffer.length > 0 && (now - delayBuffer[0].receivedAt) >= delayMs) {
+                itemsToDisplay.push(delayBuffer.shift());
+            }
+
+            // Display the delayed items
+            itemsToDisplay.forEach(item => {
+                displayFeedData(item.data, true);  // true = is delayed display
+            });
+
+            // Update delay countdown
+            if (delayBuffer.length > 0) {
+                const oldestWait = Math.ceil((delayMs - (now - delayBuffer[0].receivedAt)) / 1000);
+                document.getElementById('delay-countdown').textContent = `${oldestWait}s`;
+            } else {
+                document.getElementById('delay-countdown').textContent = `${delaySeconds}s`;
+            }
+        }
+
+        // Flush all buffered data immediately (when delay is disabled)
+        function flushDelayBuffer() {
+            while (delayBuffer.length > 0) {
+                const item = delayBuffer.shift();
+                displayFeedData(item.data, false);
+            }
+        }
+
+        // Display feed data (separated from fetch for delay support)
+        function displayFeedData(data, isDelayed = false) {
+            if (data.error) {
+                console.error('Feed error:', data.error);
+                return;
+            }
+
+            // Check if this is historical data (completed game)
+            if (data.is_historical && !isDelayed) {
+                // Stop polling for completed games
+                if (pollInterval) {
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                }
+            }
+
+            // Update scoreboard (use city names from stored game data)
+            const storedGame = gamesData[currentGameId];
+            const homeCity = storedGame?.home_team_city || data.game_info?.home_team;
+            const awayCity = storedGame?.away_team_city || data.game_info?.away_team;
+
+            if (data.game_info) {
+                document.getElementById('home-team').textContent = homeCity;
+                document.getElementById('away-team').textContent = awayCity;
+            }
+
+            // Update game clock, quarter, timeouts, and bonus indicators
+            const isGameLive = data.period > 0 && data.status !== 'Final';
+            const clockSection = document.getElementById('game-clock-section');
+
+            // Show/hide delay selector based on live status
+            if (DELAY_FEATURE_ENABLED) {
+                const delaySel = document.getElementById('delay-selector');
+                if (isGameLive && !data.is_pregame) {
+                    delaySel.style.display = 'flex';
+                } else {
+                    delaySel.style.display = 'none';
+                    // Clear delay when game ends
+                    if (delaySeconds > 0) {
+                        delaySeconds = 0;
+                        document.getElementById('delay-select').value = '0';
+                        document.getElementById('delay-indicator').classList.remove('active');
+                        flushDelayBuffer();
+                    }
+                }
+            }
+
+            if (isGameLive && data.game_clock) {
+                // Show game clock during live games
+                clockSection.style.display = 'block';
+                const periodText = data.period <= 4 ? `Q${data.period}` : `OT${data.period - 4}`;
+                document.getElementById('game-quarter').textContent = periodText;
+                document.getElementById('game-clock').textContent = data.game_clock;
+                lastDisplayedClock = { period: data.period, clock: data.game_clock };
+            } else if (data.status === 'Final') {
+                // Show "FINAL" for completed games
+                clockSection.style.display = 'block';
+                document.getElementById('game-quarter').textContent = 'FINAL';
+                document.getElementById('game-clock').textContent = '';
+            } else if (data.is_pregame) {
+                // Show "PRE-GAME" for upcoming games
+                clockSection.style.display = 'block';
+                document.getElementById('game-quarter').textContent = 'PRE-GAME';
+                document.getElementById('game-clock').textContent = '';
+            } else {
+                // Hide clock section when no relevant status
+                clockSection.style.display = 'none';
+            }
+
+            // Update timeouts (only show during live games)
+            const awayTimeouts = document.getElementById('away-timeouts');
+            const homeTimeouts = document.getElementById('home-timeouts');
+            if (isGameLive) {
+                awayTimeouts.style.display = 'flex';
+                homeTimeouts.style.display = 'flex';
+                renderTimeoutDots(awayTimeouts, data.away_timeouts ?? 7);
+                renderTimeoutDots(homeTimeouts, data.home_timeouts ?? 7);
+            } else {
+                awayTimeouts.style.display = 'none';
+                homeTimeouts.style.display = 'none';
+            }
+
+            // Update bonus indicators
+            const awayBonus = document.getElementById('away-bonus');
+            const homeBonus = document.getElementById('home-bonus');
+            if (isGameLive) {
+                awayBonus.classList.toggle('active', data.away_in_bonus || false);
+                homeBonus.classList.toggle('active', data.home_in_bonus || false);
+            } else {
+                awayBonus.classList.remove('active');
+                homeBonus.classList.remove('active');
+            }
+
+            if (data.score) {
+                document.getElementById('home-score').textContent = data.score.home;
+                document.getElementById('away-score').textContent = data.score.away;
+                lastDisplayedScore = { home: data.score.home, away: data.score.away };
+
+                // Update header score with city names
+                let scoreText = `${awayCity} ${data.score.away} - ${homeCity} ${data.score.home}`;
+                if (data.status === 'Final') {
+                    scoreText += ' (FINAL)';
+                } else if (data.is_pregame) {
+                    scoreText = `${awayCity} @ ${homeCity} (PREGAME)`;
+                }
+                document.getElementById('stat-score').textContent = scoreText;
+
+                // Handle chart updates (skip for delayed displays to avoid duplicates)
+                if (!isDelayed) {
+                    // Load score history for charts (only once per game)
+                    if (!scoreHistoryLoaded && (data.is_historical || data.is_first_load) && data.scores && data.scores.length > 0) {
+                        data.scores.forEach(s => {
+                            updateCharts(s.home, s.away, data.game_info.home_team, data.game_info.away_team, null, s.period, s.elapsed, s.clock);
+                        });
+                        scoreHistoryLoaded = true;
+                    } else if (!data.is_historical && !data.is_first_load) {
+                        // Live update - calculate elapsed
+                        const currentPeriod = data.period || null;
+                        const gameClock = data.game_clock || null;
+                        let elapsed = null;
+                        if (gameClock && currentPeriod) {
+                            const parts = gameClock.split(':');
+                            if (parts.length === 2) {
+                                const mins = parseInt(parts[0]) || 0;
+                                const secs = parseInt(parts[1]) || 0;
+                                const remaining = mins * 60 + secs;
+                                const quarterElapsed = 720 - remaining;
+                                elapsed = (currentPeriod - 1) * 720 + quarterElapsed;
+                            }
+                        }
+                        updateCharts(data.score.home, data.score.away, data.game_info.home_team, data.game_info.away_team, null, currentPeriod, elapsed, gameClock);
+                    }
+                }
+            }
+
+            // Update box score with player stats
+            if (data.player_stats) {
+                updateBoxScore(data.player_stats);
+            }
+
+            // Update quarter-by-quarter scores
+            if (data.home_periods && data.away_periods && data.score) {
+                renderQuarterScores(
+                    data.home_periods,
+                    data.away_periods,
+                    currentHomeTeam,
+                    currentAwayTeam,
+                    data.score.home,
+                    data.score.away,
+                    data.period || 0
+                );
+            }
+
+            // Update stats in header
+            document.getElementById('stat-lead-changes').textContent = `🔄 ${data.lead_changes || 0}`;
+            if (data.is_historical) {
+                document.getElementById('stat-viewers').textContent = '📺 Replay';
+            } else if (data.is_pregame) {
+                document.getElementById('stat-viewers').textContent = '⏰ Starting Soon';
+            } else {
+                document.getElementById('stat-viewers').textContent = `👁 ${data.viewer_count || 1}`;
+            }
+
+            // Update last action number (handle pregame with negative action numbers)
+            if (data.last_action > lastActionNumber || (data.is_pregame && lastActionNumber === 0)) {
+                lastActionNumber = data.last_action;
+            }
+
+            // Add new messages
+            if (data.messages && data.messages.length > 0 && !(data.is_pregame && lastActionNumber < 0 && document.querySelectorAll('.chat-message').length > 0)) {
+                const feed = document.getElementById('chat-feed');
+                const loading = document.getElementById('loading');
+                if (loading) loading.remove();
+
+                data.messages.forEach(msg => {
+                    const msgEl = createMessageElement(msg);
+                    msgEl.dataset.actionNumber = msg.action_number;
+                    feed.appendChild(msgEl);
+                });
+
+                // Track on-court players from messages
+                processMessagesForOnCourt(data.messages);
+
+                // Auto-scroll to bottom
+                feed.scrollTop = feed.scrollHeight;
+            }
+
+            // Handle empty feed for completed games
+            if (data.is_historical && (!data.messages || data.messages.length === 0)) {
+                const feed = document.getElementById('chat-feed');
+                const loading = document.getElementById('loading');
+                if (loading) {
+                    loading.innerHTML = '<p>No chat history available for this game.</p>';
+                }
+            }
+
+            // Handle "Load More History" button visibility
+            if (data.has_more_history && !isLoadingFullHistory) {
+                hasMoreHistory = true;
+                historyCutoffAction = data.history_cutoff_action || 0;
+                const loadMoreEl = document.getElementById('load-more-container');
+                if (loadMoreEl) loadMoreEl.style.display = 'flex';
+            } else {
+                hasMoreHistory = false;
+                const loadMoreEl = document.getElementById('load-more-container');
+                if (loadMoreEl) loadMoreEl.style.display = 'none';
+            }
+        }
 
         // Filter button click handlers
         document.querySelectorAll('.filter-btn').forEach(btn => {
