@@ -2524,7 +2524,13 @@ def api_dev_live_feed(game_id):
 
                 # Generate messages using BallDontLie module (no LLM)
                 compare_play = prev_play if i > 0 else None
-                msgs = bdl.generate_messages_from_play(play, game_info, compare_play, largest_leads_regen)
+                # Check if this is the last play (for game summary)
+                is_last_play = (i == len(plays) - 1)
+                msgs = bdl.generate_messages_from_play(
+                    play, game_info, compare_play, largest_leads_regen,
+                    lead_changes=lead_change_count,
+                    is_game_final=is_last_play
+                )
                 for msg in msgs:
                     msg['action_number'] = play.get('order', 0)
                 full_messages.extend(msgs)
@@ -2686,7 +2692,13 @@ def api_dev_live_feed(game_id):
         for i, play in enumerate(new_plays_for_messages):
             # Use previous play for comparison (either from before batch or previous in batch)
             compare_play = prev_play if i == 0 else new_plays_for_messages[i - 1]
-            messages = bdl.generate_messages_from_play(play, game_info, compare_play, _dev_live_largest_leads[game_id])
+            # Get current lead changes count for LLM context
+            current_lead_changes = _dev_live_lead_changes.get(game_id, {}).get('count', 0)
+            messages = bdl.generate_messages_from_play(
+                play, game_info, compare_play, _dev_live_largest_leads[game_id],
+                lead_changes=current_lead_changes,
+                is_game_final=False  # Live games are not final
+            )
 
             # Add action_number to each message
             for msg in messages:
@@ -2820,6 +2832,7 @@ def api_dev_live_feed(game_id):
                 full_scores = []
                 prev_p = None
                 largest_leads_regen = {'home': 0, 'away': 0}
+                lead_change_count_regen = 0
 
                 for i, p in enumerate(plays):
                     # Track largest leads
@@ -2830,9 +2843,24 @@ def api_dev_live_feed(game_id):
                     elif aw > h:
                         largest_leads_regen['away'] = max(largest_leads_regen['away'], aw - h)
 
+                    # Count lead changes
+                    if prev_p:
+                        prev_h = int(prev_p.get('home_score', 0) or 0)
+                        prev_aw = int(prev_p.get('away_score', 0) or 0)
+                        prev_diff = prev_aw - prev_h
+                        curr_diff = aw - h
+                        if (prev_diff > 0 and curr_diff < 0) or (prev_diff < 0 and curr_diff > 0):
+                            lead_change_count_regen += 1
+
                     # Generate messages using BallDontLie module
                     compare_p = prev_p if i > 0 else None
-                    msgs = bdl.generate_messages_from_play(p, game_info, compare_p, largest_leads_regen)
+                    # Check if this is the last play (for game summary)
+                    is_last_play = (i == len(plays) - 1)
+                    msgs = bdl.generate_messages_from_play(
+                        p, game_info, compare_p, largest_leads_regen,
+                        lead_changes=lead_change_count_regen,
+                        is_game_final=is_last_play
+                    )
 
                     for msg in msgs:
                         msg['action_number'] = p.get('order', 0)
@@ -2854,6 +2882,7 @@ def api_dev_live_feed(game_id):
                     prev_p = p
 
                 history['messages'] = full_messages
+                history['lead_changes'] = lead_change_count_regen
                 # Deduplicate scores (only keep significant changes)
                 if full_scores:
                     deduped_scores = [full_scores[0]]

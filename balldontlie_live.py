@@ -13,6 +13,13 @@ from typing import Optional
 from dotenv import load_dotenv
 load_dotenv()
 
+# Import LLM commentary for quarter/game summaries
+try:
+    from llm_commentary import generate_llm_commentary
+    LLM_AVAILABLE = True
+except ImportError:
+    LLM_AVAILABLE = False
+
 # API Configuration
 API_BASE = 'https://api.balldontlie.io/v1'
 CACHE_TTL = 5  # seconds between API calls for same data
@@ -264,7 +271,7 @@ def extract_player_from_text(text: str) -> str:
     return ''
 
 
-def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = None, largest_leads: dict = None) -> list:
+def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = None, largest_leads: dict = None, lead_changes: int = 0, is_game_final: bool = False) -> list:
     """
     Generate chat messages from a BallDontLie play.
 
@@ -273,6 +280,8 @@ def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = N
         game_info: Dict with home_team, away_team
         prev_play: Previous play for lead change detection
         largest_leads: Dict tracking largest leads for each team
+        lead_changes: Total number of lead changes so far
+        is_game_final: Whether the game has ended (for game summary)
 
     Returns:
         List of message dicts
@@ -435,14 +444,59 @@ def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = N
                 'text': f"⏱️ End of Q{period}. Score: {away_team} {away_score} - {home_team} {home_score}",
                 'type': 'period',
             })
-            # StatsNerd quarter summary
+            # LLM-generated quarter summary (longer, analytical)
             lead = home_score - away_score
             leader = home_team if lead > 0 else away_team
-            messages.append({
-                'bot': 'stats_nerd',
-                'text': f"📊 Quarter {period} complete. {leader} leads by {abs(lead)}.",
-                'type': 'summary',
-            })
+            lead_diff = abs(lead) if lead != 0 else 0
+
+            # Determine largest lead info
+            largest_home = largest_leads.get('home', 0) if largest_leads else 0
+            largest_away = largest_leads.get('away', 0) if largest_leads else 0
+            if largest_home > largest_away:
+                largest_lead_team = home_team
+                largest_lead = largest_home
+            elif largest_away > largest_home:
+                largest_lead_team = away_team
+                largest_lead = largest_away
+            else:
+                largest_lead_team = 'Neither'
+                largest_lead = 0
+
+            # Generate LLM quarter summary
+            if LLM_AVAILABLE:
+                llm_context = {
+                    'home_team': home_team,
+                    'away_team': away_team,
+                    'period': period,
+                    'home_score': home_score,
+                    'away_score': away_score,
+                    'leader': leader if lead != 0 else 'Tied',
+                    'lead_diff': str(lead_diff) if lead_diff > 0 else 'tied',
+                    'lead_changes': lead_changes,
+                    'largest_lead_team': largest_lead_team,
+                    'largest_lead': largest_lead,
+                }
+                llm_summary = generate_llm_commentary('quarter_summary', llm_context)
+                if llm_summary:
+                    messages.append({
+                        'bot': 'ai_commentator',
+                        'text': f"🤖 {llm_summary}",
+                        'type': 'ai_summary',
+                    })
+                else:
+                    # Fallback to simple summary if LLM fails
+                    messages.append({
+                        'bot': 'stats_nerd',
+                        'text': f"📊 Quarter {period} complete. {leader} leads by {lead_diff}.",
+                        'type': 'summary',
+                    })
+            else:
+                # No LLM available - use simple summary
+                messages.append({
+                    'bot': 'stats_nerd',
+                    'text': f"📊 Quarter {period} complete. {leader} leads by {lead_diff}.",
+                    'type': 'summary',
+                })
         elif 'start' in play_type.lower():
             messages.append({
                 'bot': 'play_by_play',
@@ -507,6 +561,54 @@ def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = N
                     'lead_amount': away_lead,
                 })
             largest_leads['away'] = away_lead
+
+    # Game summary (when game is final)
+    if is_game_final and LLM_AVAILABLE:
+        # Determine winner and margin
+        if home_score > away_score:
+            winner = home_team
+            margin = home_score - away_score
+        elif away_score > home_score:
+            winner = away_team
+            margin = away_score - home_score
+        else:
+            winner = 'Tie'
+            margin = 0
+
+        # Determine largest lead info
+        largest_home = largest_leads.get('home', 0) if largest_leads else 0
+        largest_away = largest_leads.get('away', 0) if largest_leads else 0
+        if largest_home > largest_away:
+            largest_lead_team = home_team
+            largest_lead = largest_home
+        elif largest_away > largest_home:
+            largest_lead_team = away_team
+            largest_lead = largest_away
+        else:
+            largest_lead_team = 'Neither'
+            largest_lead = 0
+
+        llm_context = {
+            'home_team': home_team,
+            'away_team': away_team,
+            'home_score': home_score,
+            'away_score': away_score,
+            'winner': winner,
+            'margin': margin,
+            'lead_changes': lead_changes,
+            'largest_lead_team': largest_lead_team,
+            'largest_lead': largest_lead,
+        }
+        llm_summary = generate_llm_commentary('game_summary', llm_context)
+        if llm_summary:
+            messages.append({
+                'bot': 'ai_commentator',
+                'text': f"🤖 FINAL RECAP: {llm_summary}",
+                'type': 'ai_summary',
+                'score': f"{away_team} {away_score} - {home_team} {home_score}",
+                'period': period,
+                'clock': '',
+            })
 
     # Add metadata to all messages
     for msg in messages:

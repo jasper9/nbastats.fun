@@ -73,7 +73,44 @@ Quarter completed: Q{period}
 Leader: {leader} by {lead_diff}
 
 IMPORTANT: Vary your analysis! Sometimes focus on offense, sometimes defense. Mention momentum, energy, crowd, or strategy shifts. Be analytical but fresh. No hashtags or emojis.""",
+
+    'quarter_summary': """You are an expert NBA analyst providing a detailed quarter recap. Write a comprehensive 3-4 sentence summary of the quarter that just ended.
+
+Game: {away_team} vs {home_team}
+Quarter completed: Q{period}
+Current Score: {away_team} {away_score} - {home_team} {home_score}
+Leader: {leader} by {lead_diff}
+Lead changes this game: {lead_changes}
+Largest lead: {largest_lead_team} +{largest_lead}
+
+Provide insightful analysis covering:
+- Who controlled the quarter and how
+- Key momentum shifts or runs
+- What each team needs to do going forward
+- The overall flow and pace of the game
+
+Be analytical and engaging. Write like you're on ESPN. No hashtags or emojis.""",
+
+    'game_summary': """You are an expert NBA analyst providing a final game recap. Write a comprehensive 4-5 sentence summary of the completed game.
+
+Game: {away_team} vs {home_team}
+Final Score: {away_team} {away_score} - {home_team} {home_score}
+Winner: {winner}
+Margin of victory: {margin}
+Total lead changes: {lead_changes}
+Largest lead: {largest_lead_team} +{largest_lead}
+
+Provide a complete game recap covering:
+- The story of the game and turning points
+- Which team dominated and when
+- The final stretch and how it was decided
+- What this result means for both teams
+
+Write like you're giving the postgame wrap-up on ESPN. Be engaging and capture the drama. No hashtags or emojis.""",
 }
+
+# Event types that require longer responses
+LONG_SUMMARY_EVENTS = {'quarter_summary', 'game_summary'}
 
 
 def get_client():
@@ -91,7 +128,8 @@ def generate_llm_commentary(event_type, context):
     Generate LLM commentary for an exciting event.
 
     Args:
-        event_type: One of 'lead_change', 'largest_lead', 'dunk', 'tie_game', 'quarter_end'
+        event_type: One of 'lead_change', 'largest_lead', 'dunk', 'tie_game', 'quarter_end',
+                   'quarter_summary', 'game_summary'
         context: Dict with event-specific context (teams, scores, players, etc.)
 
     Returns:
@@ -119,12 +157,16 @@ def generate_llm_commentary(event_type, context):
         # Format the prompt with context
         prompt = prompt_template.format(**context)
 
+        # Use more tokens for longer summaries (quarter/game recaps)
+        max_tokens = 250 if event_type in LONG_SUMMARY_EVENTS else 50
+        # Use slightly lower temperature for longer summaries for coherence
+        temperature = 0.8 if event_type in LONG_SUMMARY_EVENTS else 1.0
+
         # Call Claude Haiku - fast and cheap
-        # Using temperature=1.0 for maximum creativity and variety
         response = client.messages.create(
             model="claude-3-5-haiku-latest",
-            max_tokens=50,  # Keep responses short
-            temperature=1.0,  # Max temperature for variety
+            max_tokens=max_tokens,
+            temperature=temperature,
             messages=[
                 {"role": "user", "content": prompt}
             ]
