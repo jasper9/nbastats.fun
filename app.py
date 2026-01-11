@@ -1383,6 +1383,118 @@ TEAM_STARS = {
     'WAS': ['Kyle Kuzma', 'Jordan Poole', 'Tyus Jones'],
 }
 
+# Notable NBA rivalries with brief descriptions
+TEAM_RIVALRIES = {
+    # Classic rivalries
+    ('BOS', 'LAL'): "The NBA's greatest rivalry - 12 Finals meetings, 22 championships combined",
+    ('LAL', 'BOS'): "The NBA's greatest rivalry - 12 Finals meetings, 22 championships combined",
+    ('NYK', 'BKN'): "Battle of New York - city bragging rights on the line",
+    ('BKN', 'NYK'): "Battle of New York - city bragging rights on the line",
+    ('LAL', 'LAC'): "Battle of LA - Staples Center roommates turned rivals",
+    ('LAC', 'LAL'): "Battle of LA - Staples Center roommates turned rivals",
+    ('CHI', 'DET'): "Bad Boys era rivalry - physical, intense basketball",
+    ('DET', 'CHI'): "Bad Boys era rivalry - physical, intense basketball",
+    ('MIA', 'BOS'): "Eastern Conference foes with playoff history",
+    ('BOS', 'MIA'): "Eastern Conference foes with playoff history",
+    ('GSW', 'CLE'): "Four straight Finals meetings (2015-2018)",
+    ('CLE', 'GSW'): "Four straight Finals meetings (2015-2018)",
+    ('PHX', 'SAS'): "2000s playoff battles - Nash vs Duncan era",
+    ('SAS', 'PHX'): "2000s playoff battles - Nash vs Duncan era",
+    ('DEN', 'LAL'): "Western Conference rivals with playoff history",
+    ('LAL', 'DEN'): "Western Conference rivals with playoff history",
+    ('DEN', 'MIN'): "Northwest Division rivals - young star showdown",
+    ('MIN', 'DEN'): "Northwest Division rivals - young star showdown",
+    ('PHI', 'BOS'): "Historic Atlantic Division rivalry",
+    ('BOS', 'PHI'): "Historic Atlantic Division rivalry",
+    ('DAL', 'HOU'): "Texas rivalry - Lone Star State bragging rights",
+    ('HOU', 'DAL'): "Texas rivalry - Lone Star State bragging rights",
+    ('DAL', 'SAS'): "Texas rivalry - decades of playoff battles",
+    ('SAS', 'DAL'): "Texas rivalry - decades of playoff battles",
+    ('OKC', 'GSW'): "Durant's departure added fuel to this rivalry",
+    ('GSW', 'OKC'): "Durant's departure added fuel to this rivalry",
+    ('MIL', 'DEN'): "Recent playoff foes - Jokic vs Giannis MVP showdown",
+    ('DEN', 'MIL'): "Recent playoff foes - Jokic vs Giannis MVP showdown",
+    ('MIL', 'MIA'): "Playoff rivals - Butler's bubble dominance still stings",
+    ('MIA', 'MIL'): "Playoff rivals - Butler's bubble dominance still stings",
+}
+
+# Team abbreviation to full name mapping
+TEAM_ABBREV_TO_CITY = {
+    'ATL': 'Atlanta', 'BOS': 'Boston', 'BKN': 'Brooklyn', 'CHA': 'Charlotte',
+    'CHI': 'Chicago', 'CLE': 'Cleveland', 'DAL': 'Dallas', 'DEN': 'Denver',
+    'DET': 'Detroit', 'GSW': 'Golden State', 'HOU': 'Houston', 'IND': 'Indiana',
+    'LAC': 'LA Clippers', 'LAL': 'LA Lakers', 'MEM': 'Memphis', 'MIA': 'Miami',
+    'MIL': 'Milwaukee', 'MIN': 'Minnesota', 'NOP': 'New Orleans', 'NYK': 'New York',
+    'OKC': 'Oklahoma City', 'ORL': 'Orlando', 'PHI': 'Philadelphia', 'PHX': 'Phoenix',
+    'POR': 'Portland', 'SAC': 'Sacramento', 'SAS': 'San Antonio', 'TOR': 'Toronto',
+    'UTA': 'Utah', 'WAS': 'Washington',
+}
+
+
+def get_team_standings_info(team_abbrev):
+    """Get standings info for a team including record, streak, and rank."""
+    standings_cache = load_cache('standings.json')
+    if not standings_cache:
+        return None
+
+    # Search both conferences
+    for conf in ['east', 'west']:
+        for team in standings_cache.get(conf, []):
+            # Match by city name (standings uses city, not abbrev)
+            city = TEAM_ABBREV_TO_CITY.get(team_abbrev, '')
+            if team.get('TeamCity', '').lower() == city.lower():
+                return {
+                    'wins': team.get('WINS', 0),
+                    'losses': team.get('LOSSES', 0),
+                    'win_pct': team.get('WinPCT', 0),
+                    'streak': team.get('strCurrentStreak', ''),
+                    'rank': team.get('PlayoffRank', 0),
+                    'conference': conf.upper(),
+                    'games_back': team.get('ConferenceGamesBack', 0),
+                    'l10': team.get('L10', ''),
+                }
+    return None
+
+
+def generate_standings_context(home_team, away_team):
+    """Generate interesting standings context between two teams."""
+    home_info = get_team_standings_info(home_team)
+    away_info = get_team_standings_info(away_team)
+
+    if not home_info or not away_info:
+        return None
+
+    messages = []
+
+    # Same conference matchup - check standings battle
+    if home_info['conference'] == away_info['conference']:
+        rank_diff = abs(home_info['rank'] - away_info['rank'])
+
+        if rank_diff <= 2:
+            # Close in standings
+            if home_info['rank'] < away_info['rank']:
+                leader, trailer = home_team, away_team
+                leader_rank, trailer_rank = home_info['rank'], away_info['rank']
+            else:
+                leader, trailer = away_team, home_team
+                leader_rank, trailer_rank = away_info['rank'], home_info['rank']
+
+            if leader_rank <= 6:
+                messages.append(f"Standings battle! {leader} (#{leader_rank}) vs {trailer} (#{trailer_rank}) in the {home_info['conference']}")
+            elif leader_rank <= 10:
+                messages.append(f"Play-in implications! {leader} (#{leader_rank}) vs {trailer} (#{trailer_rank}) fighting for position")
+
+    # Check if teams have similar records
+    record_diff = abs(home_info['wins'] - away_info['wins'])
+    if record_diff <= 3 and home_info['wins'] >= 15:
+        home_record = f"{home_info['wins']}-{home_info['losses']}"
+        away_record = f"{away_info['wins']}-{away_info['losses']}"
+        if not messages:  # Only add if we don't have a standings message
+            messages.append(f"Evenly matched! {home_team} ({home_record}) vs {away_team} ({away_record})")
+
+    return messages[0] if messages else None
+
+
 # Cache for team injuries (refreshes every 30 minutes)
 _team_injuries_cache = {}  # team_abbrev -> {injuries: [], updated_at: datetime}
 TEAM_INJURIES_CACHE_TTL = 1800  # 30 minutes
@@ -1620,6 +1732,56 @@ def generate_pregame_preview(home_team, away_team, home_team_name='', away_team_
         'score': pregame_score,
     })
 
+    # Get standings info for context
+    home_standings = get_team_standings_info(home_team)
+    away_standings = get_team_standings_info(away_team)
+
+    # Generate team streaks and records message
+    streak_parts = []
+    if away_standings and away_standings.get('streak'):
+        streak = away_standings['streak']
+        record = f"{away_standings['wins']}-{away_standings['losses']}"
+        streak_parts.append(f"{away_team} ({record}, {streak})")
+    if home_standings and home_standings.get('streak'):
+        streak = home_standings['streak']
+        record = f"{home_standings['wins']}-{home_standings['losses']}"
+        streak_parts.append(f"{home_team} ({record}, {streak})")
+
+    if streak_parts:
+        messages.append({
+            'bot': 'stats_nerd',
+            'text': f"📈 Current form: {' vs '.join(streak_parts)}",
+            'type': 'pregame',
+            'timestamp': datetime.now().isoformat(),
+            'action_number': -99,
+            'score': pregame_score,
+        })
+
+    # Check for rivalry
+    rivalry_key = (away_team, home_team)
+    rivalry_info = TEAM_RIVALRIES.get(rivalry_key)
+    if rivalry_info:
+        messages.append({
+            'bot': 'historian',
+            'text': f"📜 Rivalry alert! {rivalry_info}",
+            'type': 'pregame',
+            'timestamp': datetime.now().isoformat(),
+            'action_number': -98,
+            'score': pregame_score,
+        })
+
+    # Check for standings battle
+    standings_context = generate_standings_context(home_team, away_team)
+    if standings_context:
+        messages.append({
+            'bot': 'stats_nerd',
+            'text': f"🏆 {standings_context}",
+            'type': 'pregame',
+            'timestamp': datetime.now().isoformat(),
+            'action_number': -97,
+            'score': pregame_score,
+        })
+
     # Generate star players preview
     stars_text_parts = []
     if away_available_stars:
@@ -1633,7 +1795,7 @@ def generate_pregame_preview(home_team, away_team, home_team_name='', away_team_
             'text': f"⭐ Key players to watch: {' vs '.join(stars_text_parts)}",
             'type': 'pregame',
             'timestamp': datetime.now().isoformat(),
-            'action_number': -99,
+            'action_number': -96,
             'score': pregame_score,
         })
 
