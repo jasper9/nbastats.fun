@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Archive - NBA Stats Fun</title>
+    {% if ga_tracking_id %}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_tracking_id }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{ ga_tracking_id }}');
+    </script>
+    {% endif %}
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23f85' stroke='%23333' stroke-width='3'/><path d='M50 5 v90 M5 50 h90 M15 20 Q50 50 15 80 M85 20 Q50 50 85 80' fill='none' stroke='%23333' stroke-width='3'/></svg>">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: #1c2128;
+            --border: #30363d;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b8c1;
+            --text-muted: #6b7280;
+            --nuggets-gold: #fec524;
+            --nuggets-navy: #0d2240;
+            --positive: #34d399;
+            --negative: #f87171;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+        /* Navigation */
+        nav {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+        }
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .nav-brand {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--nuggets-gold);
+            text-decoration: none;
+            padding: 15px 0;
+        }
+        .nav-links {
+            display: flex;
+            gap: 5px;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 15px 15px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-links a:hover { color: var(--text-primary); }
+        .nav-links a.active {
+            color: var(--nuggets-gold);
+            border-bottom-color: var(--nuggets-gold);
+        }
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--nuggets-navy) 0%, #1a3a5c 100%);
+            text-align: center;
+            padding: 12px 20px;
+            border-bottom: 3px solid var(--nuggets-gold);
+        }
+        .page-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-primary);
+        }
+        .page-subtitle {
+            color: var(--nuggets-gold);
+            font-size: 0.8rem;
+            margin-top: 3px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        /* Back link */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--nuggets-gold);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            padding: 8px 12px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .back-link:hover {
+            background: var(--bg-card);
+        }
+        /* Archive cards */
+        .archive-section {
+            margin-bottom: 25px;
+        }
+        .date-header {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.1rem;
+            color: var(--nuggets-gold);
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border);
+        }
+        .game-card {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: border-color 0.2s;
+        }
+        .game-card:hover {
+            border-color: var(--nuggets-gold);
+        }
+        .game-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .team-logos {
+            display: flex;
+            gap: 5px;
+        }
+        .team-logo {
+            width: 32px;
+            height: 32px;
+        }
+        .matchup {
+            font-weight: 600;
+        }
+        .score {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .view-btn {
+            padding: 8px 16px;
+            background: var(--nuggets-gold);
+            color: var(--nuggets-navy);
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .view-btn:hover {
+            opacity: 0.9;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+        .no-games {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+        @media (max-width: 600px) {
+            .game-card {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            .game-info {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="nav-brand">NBA STATS FUN</a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/jokic">Jokic</a>
+                <a href="/more">Nuggets</a>
+                <a href="/leaders">Leaders</a>
+                <a href="/live">Live</a>
+                <a href="/dev-live" class="active">Dev Live</a>
+            </div>
+        </div>
+    </nav>
+
+    <header>
+        <h1 class="page-title">Game Archive</h1>
+        <p class="page-subtitle">Past games with saved chat history</p>
+    </header>
+
+    <div class="container">
+        <a href="/dev-live" class="back-link">
+            <span>&larr;</span> Back to Live Feed
+        </a>
+
+        <div id="archive-container">
+            <div class="loading">Loading archived games...</div>
+        </div>
+    </div>
+
+    <script>
+        // NBA team ID mapping for logos
+        const teamIds = {
+            'ATL': 1610612737, 'BOS': 1610612738, 'BKN': 1610612751, 'CHA': 1610612766,
+            'CHI': 1610612741, 'CLE': 1610612739, 'DAL': 1610612742, 'DEN': 1610612743,
+            'DET': 1610612765, 'GSW': 1610612744, 'HOU': 1610612745, 'IND': 1610612754,
+            'LAC': 1610612746, 'LAL': 1610612747, 'MEM': 1610612763, 'MIA': 1610612748,
+            'MIL': 1610612749, 'MIN': 1610612750, 'NOP': 1610612740, 'NYK': 1610612752,
+            'OKC': 1610612760, 'ORL': 1610612753, 'PHI': 1610612755, 'PHX': 1610612756,
+            'POR': 1610612757, 'SAC': 1610612758, 'SAS': 1610612759, 'TOR': 1610612761,
+            'UTA': 1610612762, 'WAS': 1610612764
+        };
+
+        function getTeamLogoUrl(abbrev) {
+            const teamId = teamIds[abbrev];
+            if (teamId) {
+                return `https://cdn.nba.com/logos/nba/${teamId}/primary/L/logo.svg`;
+            }
+            return '';
+        }
+
+        async function loadArchive() {
+            const container = document.getElementById('archive-container');
+
+            try {
+                const response = await fetch('/api/dev-live/games');
+                const data = await response.json();
+
+                if (data.error) {
+                    container.innerHTML = `<div class="no-games">Error: ${data.error}</div>`;
+                    return;
+                }
+
+                // Filter to only games with history
+                const archivedGames = data.games.filter(g => g.has_history);
+
+                if (archivedGames.length === 0) {
+                    container.innerHTML = '<div class="no-games">No archived games yet. Watch some live games to build the archive!</div>';
+                    return;
+                }
+
+                // Get today's date
+                const today = new Date().toISOString().split('T')[0];
+
+                // Group by date (exclude today)
+                const gamesByDate = {};
+                archivedGames.forEach(game => {
+                    const gameDate = game.game_date || 'Unknown';
+                    if (gameDate === today) return; // Skip today's games
+                    if (!gamesByDate[gameDate]) {
+                        gamesByDate[gameDate] = [];
+                    }
+                    gamesByDate[gameDate].push(game);
+                });
+
+                // Sort dates (newest first)
+                const sortedDates = Object.keys(gamesByDate).sort().reverse();
+
+                if (sortedDates.length === 0) {
+                    container.innerHTML = '<div class="no-games">No archived games from past days yet.</div>';
+                    return;
+                }
+
+                let html = '';
+                sortedDates.forEach(date => {
+                    const games = gamesByDate[date];
+                    const dateObj = new Date(date + 'T12:00:00');
+                    const formattedDate = dateObj.toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric'
+                    });
+
+                    html += `<div class="archive-section">`;
+                    html += `<h2 class="date-header">${formattedDate}</h2>`;
+
+                    games.forEach(game => {
+                        const awayLogo = getTeamLogoUrl(game.away_team);
+                        const homeLogo = getTeamLogoUrl(game.home_team);
+
+                        html += `
+                            <div class="game-card">
+                                <div class="game-info">
+                                    <div class="team-logos">
+                                        ${awayLogo ? `<img src="${awayLogo}" alt="${game.away_team}" class="team-logo">` : ''}
+                                        ${homeLogo ? `<img src="${homeLogo}" alt="${game.home_team}" class="team-logo">` : ''}
+                                    </div>
+                                    <div>
+                                        <div class="matchup">${game.away_team} @ ${game.home_team}</div>
+                                        <div class="score">${game.away_score} - ${game.home_score} (Final)</div>
+                                    </div>
+                                </div>
+                                <a href="/dev-live?game=${game.game_id}" class="view-btn">View Replay</a>
+                            </div>
+                        `;
+                    });
+
+                    html += `</div>`;
+                });
+
+                container.innerHTML = html;
+
+            } catch (error) {
+                container.innerHTML = `<div class="no-games">Failed to load archive: ${error.message}</div>`;
+            }
+        }
+
+        loadArchive();
+    </script>
+</body>
+</html>

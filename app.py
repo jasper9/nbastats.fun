@@ -2254,12 +2254,21 @@ def dev_live():
     return render_template('dev_live.html')
 
 
+@app.route('/dev-live/archive')
+def dev_live_archive():
+    """Archive of past games with saved history."""
+    return render_template('dev_live_archive.html')
+
+
 @app.route('/api/dev-live/games')
 def api_dev_live_games():
     """Get current live NBA games and games with saved history using BallDontLie API."""
     try:
         if not BDL_AVAILABLE:
             return jsonify({'error': 'BallDontLie API module not available'}), 500
+
+        # Check if we should only return today's games (for main page performance)
+        today_only = request.args.get('today_only', 'false').lower() == 'true'
 
         # Get today's games from BallDontLie
         game_date = datetime.now().strftime('%Y-%m-%d')
@@ -2355,8 +2364,8 @@ def api_dev_live_games():
             seen_matchups.add(matchup)
 
         # Also include saved historical games not in today's scoreboard
-        # Skip if we already have this matchup from BallDontLie
-        if os.path.exists(DEV_LIVE_HISTORY_DIR):
+        # Skip if today_only mode or if we already have this matchup from BallDontLie
+        if not today_only and os.path.exists(DEV_LIVE_HISTORY_DIR):
             for filename in os.listdir(DEV_LIVE_HISTORY_DIR):
                 if filename.startswith('game_') and filename.endswith('.json'):
                     game_id = filename.replace('game_', '').replace('.json', '')

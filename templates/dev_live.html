@@ -167,6 +167,16 @@
             color: var(--text-primary);
             padding: 8px 12px;
         }
+        .archive-link {
+            float: right;
+            color: var(--nuggets-gold);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: normal;
+        }
+        .archive-link:hover {
+            text-decoration: underline;
+        }
         /* Scoreboard */
         .scoreboard {
             background: var(--bg-secondary);
@@ -1054,7 +1064,10 @@
 
     <div class="container">
         <div class="game-selector">
-            <label>Select a live game: <span id="timezone-label" style="font-weight: normal; opacity: 0.7;"></span></label>
+            <label>
+                Select a live game: <span id="timezone-label" style="font-weight: normal; opacity: 0.7;"></span>
+                <a href="/dev-live/archive" class="archive-link">View Past Games</a>
+            </label>
             <select id="game-select">
                 <option value="">Loading games...</option>
             </select>
@@ -2397,7 +2410,8 @@
 
         async function loadGames() {
             try {
-                const response = await fetch('/api/dev-live/games');
+                // Only fetch today's games for faster loading
+                const response = await fetch('/api/dev-live/games?today_only=true');
                 const data = await response.json();
 
                 const select = document.getElementById('game-select');
@@ -2407,85 +2421,47 @@
                 gamesData = {};
 
                 if (data.games && data.games.length > 0) {
-                    // Get today's date in YYYY-MM-DD format
-                    const today = new Date().toISOString().split('T')[0];
-
-                    // Group games by date
-                    const gamesByDate = {};
-                    data.games.forEach(game => {
-                        const gameDate = game.game_date || today;
-                        if (!gamesByDate[gameDate]) {
-                            gamesByDate[gameDate] = [];
-                        }
-                        gamesByDate[gameDate].push(game);
-                    });
-
-                    // Sort dates (most recent first)
-                    const sortedDates = Object.keys(gamesByDate).sort((a, b) => b.localeCompare(a));
-
-                    // Sort games within each date: Live first, then upcoming, then final
+                    // Sort games: Live first, then upcoming, then final
                     const getGameOrder = (game) => {
                         if (game.status.includes('Q') || game.status === 'Half' || game.status.includes('OT')) return 0;  // Live
                         if (game.status === 'Final' || game.status === 'Final (Saved)') return 2;  // Final
                         return 1;  // Upcoming
                     };
 
-                    sortedDates.forEach(date => {
-                        gamesByDate[date].sort((a, b) => getGameOrder(a) - getGameOrder(b));
-                    });
+                    data.games.sort((a, b) => getGameOrder(a) - getGameOrder(b));
 
-                    // Create option groups for each date
-                    sortedDates.forEach(date => {
-                        const games = gamesByDate[date];
-                        const isToday = date === today;
+                    // Add all games directly (no optgroups needed for today only)
+                    data.games.forEach(game => {
+                        // Store game data for later access
+                        gamesData[game.game_id] = game;
 
-                        // Create optgroup
-                        const optgroup = document.createElement('optgroup');
-                        if (isToday) {
-                            optgroup.label = "Today's Games";
-                        } else {
-                            // Format date nicely (e.g., "Jan 10, 2026")
-                            const dateObj = new Date(date + 'T12:00:00');
-                            const formatted = dateObj.toLocaleDateString('en-US', {
-                                month: 'short', day: 'numeric', year: 'numeric'
-                            });
-                            optgroup.label = `📜 Archived - ${formatted}`;
+                        const option = document.createElement('option');
+                        option.value = game.game_id;
+                        const statusText = getGameStatusText(game);
+
+                        // Build team names - use abbreviation as fallback
+                        let awayFull = game.away_team_city && game.away_team_name
+                            ? `${game.away_team_city} ${game.away_team_name}`.trim()
+                            : game.away_team;
+                        let homeFull = game.home_team_city && game.home_team_name
+                            ? `${game.home_team_city} ${game.home_team_name}`.trim()
+                            : game.home_team;
+
+                        let text = `${awayFull} @ ${homeFull} - ${statusText}`;
+                        if (game.status.includes('Q') || game.status === 'Half' || game.status.includes('OT')) {
+                            text += ` (${game.away_score}-${game.home_score})`;
+                        } else if (game.status === 'Final' || game.status === 'Final (Saved)') {
+                            text += ` (${game.away_score}-${game.home_score})`;
                         }
-
-                        games.forEach(game => {
-                            // Store game data for later access
-                            gamesData[game.game_id] = game;
-
-                            const option = document.createElement('option');
-                            option.value = game.game_id;
-                            const statusText = getGameStatusText(game);
-
-                            // Build team names - use abbreviation as fallback
-                            let awayFull = game.away_team_city && game.away_team_name
-                                ? `${game.away_team_city} ${game.away_team_name}`.trim()
-                                : game.away_team;
-                            let homeFull = game.home_team_city && game.home_team_name
-                                ? `${game.home_team_city} ${game.home_team_name}`.trim()
-                                : game.home_team;
-
-                            let text = `${awayFull} @ ${homeFull} - ${statusText}`;
-                            if (game.status.includes('Q') || game.status === 'Half' || game.status.includes('OT')) {
-                                text += ` (${game.away_score}-${game.home_score})`;
-                            } else if (game.status === 'Final' || game.status === 'Final (Saved)') {
-                                text += ` (${game.away_score}-${game.home_score})`;
-                            }
-                            // Add history indicator for today's games only (archived already have 📜)
-                            if (isToday && game.has_history) {
-                                text += ' 📜';
-                            }
-                            option.textContent = text;
-                            optgroup.appendChild(option);
-                        });
-
-                        select.appendChild(optgroup);
+                        // Add history indicator
+                        if (game.has_history) {
+                            text += ' 📜';
+                        }
+                        option.textContent = text;
+                        select.appendChild(option);
                     });
                 } else {
-                    select.innerHTML = '<option value="">No games available</option>';
+                    select.innerHTML = '<option value="">No games today</option>';
                 }
 
                 // Check URL for game parameter and auto-select
