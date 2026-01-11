@@ -733,6 +733,10 @@
         let pollInterval = null;
         let clientId = 'client_' + Math.random().toString(36).substr(2, 9);
 
+        // Current team names for chart labels
+        let currentHomeTeam = 'HOME';
+        let currentAwayTeam = 'AWAY';
+
         // Chart instances and data
         let leadChart = null;
         let probChart = null;
@@ -943,7 +947,7 @@
                                 label: (ctx) => {
                                     const val = ctx.parsed.y;
                                     if (val === 0) return 'Tied';
-                                    return val > 0 ? `Home +${val}` : `Away +${Math.abs(val)}`;
+                                    return val > 0 ? `${currentHomeTeam} +${val}` : `${currentAwayTeam} +${Math.abs(val)}`;
                                 }
                             }
                         }
@@ -1001,9 +1005,9 @@
                                 color: '#6b7280',
                                 stepSize: 50,
                                 callback: v => {
-                                    if (v === 100) return 'HOME';
+                                    if (v === 100) return currentHomeTeam;
                                     if (v === 0) return 'EVEN';
-                                    if (v === -100) return 'AWAY';
+                                    if (v === -100) return currentAwayTeam;
                                     return '';
                                 }
                             },
@@ -1029,7 +1033,7 @@
                                     const swingVal = ctx.parsed.y;
                                     const homeProb = Math.round(50 + swingVal / 2);
                                     const awayProb = 100 - homeProb;
-                                    return `Home ${homeProb}% | Away ${awayProb}%`;
+                                    return `${currentHomeTeam} ${homeProb}% | ${currentAwayTeam} ${awayProb}%`;
                                 }
                             }
                         }
@@ -1377,6 +1381,10 @@
                 document.getElementById('home-score').textContent = gameData.home_score || 0;
                 document.getElementById('away-score').textContent = gameData.away_score || 0;
 
+                // Set team names for chart labels (use abbreviations for compactness)
+                currentHomeTeam = gameData.home_team || 'HOME';
+                currentAwayTeam = gameData.away_team || 'AWAY';
+
                 // Display odds if available (pass both abbrev and city for display flexibility)
                 if (gameData.odds) {
                     updateOddsDisplay(gameData.odds, gameData.home_team, gameData.away_team, gameData.home_team_city, gameData.away_team_city);
@@ -1385,7 +1393,7 @@
                 }
             }
 
-            // Initialize charts
+            // Initialize charts (will use currentHomeTeam/currentAwayTeam for labels)
             initCharts();
 
             // Start polling
