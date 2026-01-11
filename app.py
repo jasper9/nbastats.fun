@@ -1356,6 +1356,97 @@ TEAM_STARS = {
 _team_injuries_cache = {}  # team_abbrev -> {injuries: [], updated_at: datetime}
 TEAM_INJURIES_CACHE_TTL = 1800  # 30 minutes
 
+# Cache for team rosters (refreshes every hour)
+_team_roster_cache = {}  # team_abbrev -> {players: set(), updated_at: datetime}
+TEAM_ROSTER_CACHE_TTL = 3600  # 1 hour
+
+
+def normalize_name(name):
+    """Normalize player name for comparison (remove accents, lowercase)."""
+    import unicodedata
+    # Normalize unicode characters (remove accents)
+    normalized = unicodedata.normalize('NFD', name)
+    # Remove combining characters (accents)
+    ascii_name = ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
+    return ascii_name.lower().strip()
+
+
+def fetch_team_roster(team_abbrev):
+    """Fetch current ACTIVE roster for a team from balldontlie API."""
+    global _team_roster_cache
+
+    now = datetime.now()
+
+    # Check cache first
+    if team_abbrev in _team_roster_cache:
+        cached = _team_roster_cache[team_abbrev]
+        age = (now - cached['updated_at']).total_seconds()
+        if age < TEAM_ROSTER_CACHE_TTL:
+            return cached['players']
+
+    api_key = os.getenv('BALLDONTLIE_API_KEY')
+    if not api_key:
+        return set()
+
+    team_id = TEAM_IDS.get(team_abbrev)
+    if not team_id:
+        return set()
+
+    try:
+        # Use /players/active endpoint to get only current active players
+        response = requests.get(
+            'https://api.balldontlie.io/v1/players/active',
+            params={'team_ids[]': team_id, 'per_page': 50},
+            headers={'Authorization': api_key},
+            timeout=15
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        # Store both original and normalized names for matching
+        players = {}  # normalized_name -> original_name
+        for player in data.get('data', []):
+            full_name = f"{player.get('first_name', '')} {player.get('last_name', '')}".strip()
+            if full_name:
+                normalized = normalize_name(full_name)
+                players[normalized] = full_name
+
+        # Cache the result
+        _team_roster_cache[team_abbrev] = {
+            'players': players,
+            'updated_at': now,
+        }
+
+        return players
+    except Exception as e:
+        print(f"Error fetching roster for {team_abbrev}: {e}")
+        return {}
+
+
+def get_verified_stars(team_abbrev):
+    """Get star players that are verified to be on the current roster."""
+    stars = TEAM_STARS.get(team_abbrev, [])
+    if not stars:
+        return []
+
+    # Fetch current roster (returns dict of normalized_name -> original_name)
+    roster = fetch_team_roster(team_abbrev)
+    if not roster:
+        # If we can't get roster, don't show any stars (fail safe)
+        return []
+
+    # Only return stars that are on the current roster
+    # Use normalized name matching to handle accents
+    verified = []
+    roster_normalized = set(roster.keys())
+    for star in stars:
+        star_normalized = normalize_name(star)
+        if star_normalized in roster_normalized:
+            # Use the roster's version of the name (API-provided)
+            verified.append(roster[star_normalized])
+
+    return verified
+
 
 def fetch_team_injuries(team_abbrev):
     """Fetch injuries for a specific team from balldontlie API."""
@@ -1418,16 +1509,20 @@ def generate_pregame_preview(home_team, away_team, home_team_name='', away_team_
     home_injuries = fetch_team_injuries(home_team)
     away_injuries = fetch_team_injuries(away_team)
 
-    # Get star players
-    home_stars = TEAM_STARS.get(home_team, [])
-    away_stars = TEAM_STARS.get(away_team, [])
+    # Get star players - VERIFIED to be on current roster
+    home_stars = get_verified_stars(home_team)
+    away_stars = get_verified_stars(away_team)
 
     # Filter out injured stars
-    home_injured_stars = [inj['name'] for inj in home_injuries if inj['name'] in home_stars]
-    away_injured_stars = [inj['name'] for inj in away_injuries if inj['name'] in away_stars]
+    injured_names = set()
+    for inj in home_injuries + away_injuries:
+        injured_names.add(inj['name'])
 
-    home_available_stars = [s for s in home_stars if s not in home_injured_stars]
-    away_available_stars = [s for s in away_stars if s not in away_injured_stars]
+    home_injured_stars = [s for s in home_stars if s in injured_names]
+    away_injured_stars = [s for s in away_stars if s in injured_names]
+
+    home_available_stars = [s for s in home_stars if s not in injured_names]
+    away_available_stars = [s for s in away_stars if s not in injured_names]
 
     # Use full team names if available, otherwise use abbreviations
     home_display = home_team_name or home_team
