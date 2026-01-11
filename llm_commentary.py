@@ -91,26 +91,30 @@ Provide insightful analysis covering:
 
 Be analytical and engaging. Write like you're on ESPN. No hashtags or emojis.""",
 
-    'game_summary': """You are an expert NBA analyst providing a final game recap. Write a comprehensive 4-5 sentence summary of the completed game.
+    'game_summary': """You are an NBA analyst. Provide a brief final game recap in EXACTLY this bullet point format:
 
-Game: {away_team} vs {home_team}
-Final Score: {away_team} {away_score} - {home_team} {home_score}
-Winner: {winner}
-Margin of victory: {margin}
-Total lead changes: {lead_changes}
-Largest lead: {largest_lead_team} +{largest_lead}
+Game: {away_team} {away_score} - {home_team} {home_score}
+Winner: {winner} by {margin}
+Lead changes: {lead_changes}
+Biggest lead: {largest_lead_team} +{largest_lead}
 
-Provide a complete game recap covering:
-- The story of the game and turning points
-- Which team dominated and when
-- The final stretch and how it was decided
-- What this result means for both teams
+Respond with EXACTLY 3 bullet points (use • character), each 8-12 words max:
+• [Key storyline or turning point]
+• [Standout performance or deciding factor]
+• [What this means going forward]
 
-Write like you're giving the postgame wrap-up on ESPN. Be engaging and capture the drama. No hashtags or emojis.""",
+Example format:
+• Jazz dominated early but couldn't sustain momentum
+• Hornets' bench outscored starters in crucial third quarter
+• Charlotte improves playoff positioning with this road win
+
+Keep it punchy and insightful. No hashtags or emojis.""",
 }
 
-# Event types that require longer responses
-LONG_SUMMARY_EVENTS = {'quarter_summary', 'game_summary'}
+# Event types that require longer responses (quarter summaries need more tokens)
+LONG_SUMMARY_EVENTS = {'quarter_summary'}
+# Game summary uses bullet points so needs less tokens
+MEDIUM_SUMMARY_EVENTS = {'game_summary'}
 
 
 def get_client():
@@ -157,10 +161,16 @@ def generate_llm_commentary(event_type, context):
         # Format the prompt with context
         prompt = prompt_template.format(**context)
 
-        # Use more tokens for longer summaries (quarter/game recaps)
-        max_tokens = 250 if event_type in LONG_SUMMARY_EVENTS else 50
-        # Use slightly lower temperature for longer summaries for coherence
-        temperature = 0.8 if event_type in LONG_SUMMARY_EVENTS else 1.0
+        # Use more tokens for longer summaries (quarter recaps)
+        if event_type in LONG_SUMMARY_EVENTS:
+            max_tokens = 250
+            temperature = 0.8
+        elif event_type in MEDIUM_SUMMARY_EVENTS:
+            max_tokens = 120  # Bullet points need less
+            temperature = 0.7
+        else:
+            max_tokens = 50
+            temperature = 1.0
 
         # Call Claude Haiku - fast and cheap
         response = client.messages.create(
