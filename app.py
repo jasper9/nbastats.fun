@@ -1502,6 +1502,13 @@ def check_player_milestones(game_id, player_id, player_name, team):
             'team': team,
             'is_milestone': True,
         })
+        # Historian provides context for triple-doubles
+        messages.append({
+            'bot': 'historian',
+            'text': f"📜 Triple-doubles are special - only about 120-150 happen per NBA season. {player_name} joins elite company tonight!",
+            'type': 'historical_context',
+            'team': team,
+        })
         stats['announced_td'] = True
         stats['announced_dd'] = True  # Don't also announce DD
 
@@ -1514,6 +1521,13 @@ def check_player_milestones(game_id, player_id, player_name, team):
             'type': 'double_double',
             'team': team,
             'is_milestone': True,
+        })
+        # Historian provides context for double-doubles
+        messages.append({
+            'bot': 'historian',
+            'text': f"📜 Double-doubles show all-around excellence - about 15-20 happen across the league each night.",
+            'type': 'historical_context',
+            'team': team,
         })
         stats['announced_dd'] = True
 
@@ -1564,6 +1578,13 @@ def check_player_milestones(game_id, player_id, player_name, team):
             'type': 'high_scorer',
             'team': team,
         })
+        # Historian provides context for 40+ point games
+        messages.append({
+            'bot': 'historian',
+            'text': f"📜 40-point games are rare - only about 150 occur each NBA season. {player_name} is having a historic night!",
+            'type': 'historical_context',
+            'team': team,
+        })
         stats['announced_pts_40'] = True
         stats['announced_pts_30'] = True
         stats['announced_pts_20'] = True
@@ -1572,6 +1593,13 @@ def check_player_milestones(game_id, player_id, player_name, team):
             'bot': 'stats_nerd',
             'text': f"🔥 {player_name} is cooking! {pts} points and counting!",
             'type': 'high_scorer',
+            'team': team,
+        })
+        # Historian provides context for 30+ point games
+        messages.append({
+            'bot': 'historian',
+            'text': f"📜 30-point performances are elite - {player_name} joins an average of just 3-4 players per night reaching this mark.",
+            'type': 'historical_context',
             'team': team,
         })
         stats['announced_pts_30'] = True
@@ -1593,11 +1621,25 @@ def check_player_milestones(game_id, player_id, player_name, team):
             'type': 'defensive_milestone',
             'team': team,
         })
+        # Historian context for 5+ blocks
+        messages.append({
+            'bot': 'historian',
+            'text': f"📜 5+ blocks in a game is elite rim protection - only happens about 1-2 times per night across the league.",
+            'type': 'historical_context',
+            'team': team,
+        })
     if stl == 5:
         messages.append({
             'bot': 'stats_nerd',
             'text': f"👋 {player_name} with {stl} STEALS! Picking pockets all night!",
             'type': 'defensive_milestone',
+            'team': team,
+        })
+        # Historian context for 5+ steals
+        messages.append({
+            'bot': 'historian',
+            'text': f"📜 5+ steals is rare - averaging just one such game per night league-wide. {player_name} is disrupting everything!",
+            'type': 'historical_context',
             'team': team,
         })
 
@@ -1840,6 +1882,21 @@ def generate_chat_message(action, game_info, prev_action=None, largest_leads=Non
                     'is_largest_lead': True,
                     'lead_amount': home_lead,
                 })
+                # Historian provides context for blowout leads
+                if home_lead >= 25 and largest_leads.get('home', 0) < 25:
+                    messages.append({
+                        'bot': 'historian',
+                        'text': f"📜 A 25+ point lead is historically insurmountable - teams win 99%+ of games when leading by this much.",
+                        'type': 'historical_context',
+                        'team': home_team,
+                    })
+                elif home_lead >= 20 and largest_leads.get('home', 0) < 20:
+                    messages.append({
+                        'bot': 'historian',
+                        'text': f"📜 20-point leads in the NBA are dominant - historically held in about 15% of games.",
+                        'type': 'historical_context',
+                        'team': home_team,
+                    })
             largest_leads['home'] = home_lead
 
         if away_lead > 0 and away_lead > largest_leads.get('away', 0):
@@ -1853,6 +1910,21 @@ def generate_chat_message(action, game_info, prev_action=None, largest_leads=Non
                     'is_largest_lead': True,
                     'lead_amount': away_lead,
                 })
+                # Historian provides context for blowout leads
+                if away_lead >= 25 and largest_leads.get('away', 0) < 25:
+                    messages.append({
+                        'bot': 'historian',
+                        'text': f"📜 A 25+ point lead is historically insurmountable - teams win 99%+ of games when leading by this much.",
+                        'type': 'historical_context',
+                        'team': away_team,
+                    })
+                elif away_lead >= 20 and largest_leads.get('away', 0) < 20:
+                    messages.append({
+                        'bot': 'historian',
+                        'text': f"📜 20-point leads in the NBA are dominant - historically held in about 15% of games.",
+                        'type': 'historical_context',
+                        'team': away_team,
+                    })
             largest_leads['away'] = away_lead
 
     # Track player stats and check for milestones (StatsNerd individual player commentary)
