@@ -1146,6 +1146,268 @@ def load_dev_live_history(game_id):
             print(f"Error loading dev-live history: {e}")
     return None
 
+# Team ID mapping for balldontlie API
+TEAM_IDS = {
+    'ATL': 1, 'BOS': 2, 'BKN': 3, 'CHA': 4, 'CHI': 5, 'CLE': 6, 'DAL': 7, 'DEN': 8,
+    'DET': 9, 'GSW': 10, 'HOU': 11, 'IND': 12, 'LAC': 13, 'LAL': 14, 'MEM': 15, 'MIA': 16,
+    'MIL': 17, 'MIN': 18, 'NOP': 19, 'NYK': 20, 'OKC': 21, 'ORL': 22, 'PHI': 23, 'PHX': 24,
+    'POR': 25, 'SAC': 26, 'SAS': 27, 'TOR': 28, 'UTA': 29, 'WAS': 30,
+}
+
+# Star players by team - used for pre-game previews
+TEAM_STARS = {
+    'ATL': ['Trae Young', 'Dejounte Murray'],
+    'BOS': ['Jayson Tatum', 'Jaylen Brown', 'Derrick White'],
+    'BKN': ['Mikal Bridges', 'Cameron Johnson'],
+    'CHA': ['LaMelo Ball', 'Brandon Miller'],
+    'CHI': ['Zach LaVine', 'DeMar DeRozan', 'Coby White'],
+    'CLE': ['Donovan Mitchell', 'Darius Garland', 'Evan Mobley', 'Jarrett Allen'],
+    'DAL': ['Luka Dončić', 'Kyrie Irving'],
+    'DEN': ['Nikola Jokić', 'Jamal Murray', 'Michael Porter Jr.', 'Aaron Gordon'],
+    'DET': ['Cade Cunningham', 'Jaden Ivey'],
+    'GSW': ['Stephen Curry', 'Draymond Green', 'Jonathan Kuminga'],
+    'HOU': ['Jalen Green', 'Alperen Şengün', 'Jabari Smith Jr.'],
+    'IND': ['Tyrese Haliburton', 'Pascal Siakam', 'Myles Turner'],
+    'LAC': ['Kawhi Leonard', 'Paul George', 'James Harden'],
+    'LAL': ['LeBron James', 'Anthony Davis', 'Austin Reaves'],
+    'MEM': ['Ja Morant', 'Desmond Bane', 'Jaren Jackson Jr.'],
+    'MIA': ['Jimmy Butler', 'Bam Adebayo', 'Tyler Herro'],
+    'MIL': ['Giannis Antetokounmpo', 'Damian Lillard', 'Khris Middleton'],
+    'MIN': ['Anthony Edwards', 'Karl-Anthony Towns', 'Rudy Gobert'],
+    'NOP': ['Zion Williamson', 'Brandon Ingram', 'CJ McCollum'],
+    'NYK': ['Jalen Brunson', 'Julius Randle', 'OG Anunoby'],
+    'OKC': ['Shai Gilgeous-Alexander', 'Chet Holmgren', 'Jalen Williams'],
+    'ORL': ['Paolo Banchero', 'Franz Wagner', 'Jalen Suggs'],
+    'PHI': ['Joel Embiid', 'Tyrese Maxey'],
+    'PHX': ['Kevin Durant', 'Devin Booker', 'Bradley Beal'],
+    'POR': ['Anfernee Simons', 'Scoot Henderson', 'Jerami Grant'],
+    'SAC': ['De\'Aaron Fox', 'Domantas Sabonis', 'Keegan Murray'],
+    'SAS': ['Victor Wembanyama', 'Devin Vassell'],
+    'TOR': ['Scottie Barnes', 'RJ Barrett', 'Immanuel Quickley'],
+    'UTA': ['Lauri Markkanen', 'Collin Sexton', 'Walker Kessler'],
+    'WAS': ['Kyle Kuzma', 'Jordan Poole', 'Tyus Jones'],
+}
+
+# Cache for team injuries (refreshes every 30 minutes)
+_team_injuries_cache = {}  # team_abbrev -> {injuries: [], updated_at: datetime}
+TEAM_INJURIES_CACHE_TTL = 1800  # 30 minutes
+
+
+def fetch_team_injuries(team_abbrev):
+    """Fetch injuries for a specific team from balldontlie API."""
+    global _team_injuries_cache
+
+    now = datetime.now()
+
+    # Check cache first
+    if team_abbrev in _team_injuries_cache:
+        cached = _team_injuries_cache[team_abbrev]
+        age = (now - cached['updated_at']).total_seconds()
+        if age < TEAM_INJURIES_CACHE_TTL:
+            return cached['injuries']
+
+    api_key = os.getenv('BALLDONTLIE_API_KEY')
+    if not api_key:
+        return []
+
+    team_id = TEAM_IDS.get(team_abbrev)
+    if not team_id:
+        return []
+
+    try:
+        response = requests.get(
+            'https://api.balldontlie.io/nba/v1/player_injuries',
+            params={'team_ids[]': team_id},
+            headers={'Authorization': api_key},
+            timeout=15
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        injuries = []
+        for injury in data.get('data', []):
+            player = injury.get('player', {})
+            injuries.append({
+                'name': f"{player.get('first_name', '')} {player.get('last_name', '')}".strip(),
+                'status': injury.get('status', ''),
+                'return_date': injury.get('return_date', ''),
+            })
+
+        # Cache the result
+        _team_injuries_cache[team_abbrev] = {
+            'injuries': injuries,
+            'updated_at': now,
+        }
+
+        return injuries
+
+    except Exception as e:
+        print(f"Error fetching injuries for {team_abbrev}: {e}")
+        return []
+
+
+def generate_pregame_preview(home_team, away_team, home_team_name='', away_team_name='', odds=None):
+    """Generate pre-game preview messages with injuries and star players."""
+    messages = []
+
+    # Fetch injuries for both teams
+    home_injuries = fetch_team_injuries(home_team)
+    away_injuries = fetch_team_injuries(away_team)
+
+    # Get star players
+    home_stars = TEAM_STARS.get(home_team, [])
+    away_stars = TEAM_STARS.get(away_team, [])
+
+    # Filter out injured stars
+    home_injured_stars = [inj['name'] for inj in home_injuries if inj['name'] in home_stars]
+    away_injured_stars = [inj['name'] for inj in away_injuries if inj['name'] in away_stars]
+
+    home_available_stars = [s for s in home_stars if s not in home_injured_stars]
+    away_available_stars = [s for s in away_stars if s not in away_injured_stars]
+
+    # Use full team names if available, otherwise use abbreviations
+    home_display = home_team_name or home_team
+    away_display = away_team_name or away_team
+
+    # Common score text for pregame messages (shows 0-0)
+    pregame_score = f"{away_team} 0 - {home_team} 0"
+
+    # Generate welcome message
+    messages.append({
+        'bot': 'play_by_play',
+        'text': f"🏀 Welcome to {away_display} @ {home_display}! The game is about to begin.",
+        'type': 'pregame',
+        'timestamp': datetime.now().isoformat(),
+        'action_number': -100,
+        'score': pregame_score,
+    })
+
+    # Generate star players preview
+    stars_text_parts = []
+    if away_available_stars:
+        stars_text_parts.append(f"{away_team}: {', '.join(away_available_stars[:2])}")
+    if home_available_stars:
+        stars_text_parts.append(f"{home_team}: {', '.join(home_available_stars[:2])}")
+
+    if stars_text_parts:
+        messages.append({
+            'bot': 'stats_nerd',
+            'text': f"⭐ Key players to watch: {' vs '.join(stars_text_parts)}",
+            'type': 'pregame',
+            'timestamp': datetime.now().isoformat(),
+            'action_number': -99,
+            'score': pregame_score,
+        })
+
+    # Generate injury report
+    injury_parts = []
+
+    # Check for significant injuries (injured stars)
+    if away_injured_stars:
+        injury_parts.append(f"📋 {away_team} missing: {', '.join(away_injured_stars)}")
+    if home_injured_stars:
+        injury_parts.append(f"📋 {home_team} missing: {', '.join(home_injured_stars)}")
+
+    # Also mention total injuries if there are more
+    away_other_injuries = len(away_injuries) - len(away_injured_stars)
+    home_other_injuries = len(home_injuries) - len(home_injured_stars)
+
+    if injury_parts:
+        injury_text = ' | '.join(injury_parts)
+        if away_other_injuries > 0 or home_other_injuries > 0:
+            injury_text += f" (+{away_other_injuries + home_other_injuries} more players out)"
+        messages.append({
+            'bot': 'stats_nerd',
+            'text': injury_text,
+            'type': 'injury_report',
+            'timestamp': datetime.now().isoformat(),
+            'action_number': -98,
+            'score': pregame_score,
+        })
+    elif home_injuries or away_injuries:
+        # No star injuries but some players out
+        total_injuries = len(home_injuries) + len(away_injuries)
+        messages.append({
+            'bot': 'stats_nerd',
+            'text': f"📋 Injury report: {total_injuries} players listed as out/questionable between both teams.",
+            'type': 'injury_report',
+            'timestamp': datetime.now().isoformat(),
+            'action_number': -98,
+            'score': pregame_score,
+        })
+    else:
+        messages.append({
+            'bot': 'stats_nerd',
+            'text': "📋 Both teams appear to be healthy - no major injuries reported!",
+            'type': 'injury_report',
+            'timestamp': datetime.now().isoformat(),
+            'action_number': -98,
+            'score': pregame_score,
+        })
+
+    # Add odds preview if available
+    if odds and odds.get('consensus'):
+        consensus = odds['consensus']
+        spread = consensus.get('spread')
+        total = consensus.get('total')
+        home_prob = consensus.get('home_prob')
+        away_prob = consensus.get('away_prob')
+
+        odds_parts = []
+        if spread is not None:
+            spread_str = f"+{spread}" if spread > 0 else str(spread)
+            odds_parts.append(f"{home_team} {spread_str}")
+        if total is not None:
+            odds_parts.append(f"O/U {total}")
+        if home_prob and away_prob:
+            if home_prob > away_prob:
+                odds_parts.append(f"{home_team} {home_prob:.0f}% favorite")
+            else:
+                odds_parts.append(f"{away_team} {away_prob:.0f}% favorite")
+
+        if odds_parts:
+            messages.append({
+                'bot': 'stats_nerd',
+                'text': f"📊 Line: {' | '.join(odds_parts)} (consensus from {consensus.get('vendor_count', '?')} books)",
+                'type': 'odds_preview',
+                'timestamp': datetime.now().isoformat(),
+                'action_number': -97,
+                'score': pregame_score,
+            })
+
+    # Add hype message
+    matchup_descriptions = []
+    if 'Nikola Jokić' in (home_available_stars + away_available_stars):
+        matchup_descriptions.append("the MVP in the building")
+    if 'LeBron James' in (home_available_stars + away_available_stars):
+        matchup_descriptions.append("the King is playing")
+    if 'Stephen Curry' in (home_available_stars + away_available_stars):
+        matchup_descriptions.append("Chef Curry cooking")
+    if 'Giannis Antetokounmpo' in (home_available_stars + away_available_stars):
+        matchup_descriptions.append("the Greek Freak unleashed")
+
+    if matchup_descriptions:
+        messages.append({
+            'bot': 'hype_man',
+            'text': f"🔥 Get ready! {matchup_descriptions[0].capitalize()}! Let's GO!",
+            'type': 'hype',
+            'timestamp': datetime.now().isoformat(),
+            'action_number': -96,
+            'score': pregame_score,
+        })
+    else:
+        messages.append({
+            'bot': 'hype_man',
+            'text': "🔥 Let's get this game started! Time for some basketball!",
+            'type': 'hype',
+            'timestamp': datetime.now().isoformat(),
+            'action_number': -96,
+            'score': pregame_score,
+        })
+
+    return messages
+
+
 # Bot personality definitions
 BOT_PERSONALITIES = {
     'play_by_play': {
@@ -1779,28 +2041,73 @@ def api_dev_live_feed(game_id):
             home_score = game_match['homeTeam'].get('score', 0) or 0
             away_score = game_match['awayTeam'].get('score', 0) or 0
 
+        # Get full team names for pregame display
+        home_team_name = ''
+        away_team_name = ''
+        game_time_utc = None
+        if game_match:
+            home_team_name = f"{game_match['homeTeam'].get('teamCity', '')} {game_match['homeTeam'].get('teamName', '')}".strip()
+            away_team_name = f"{game_match['awayTeam'].get('teamCity', '')} {game_match['awayTeam'].get('teamName', '')}".strip()
+            game_time_utc = game_match.get('gameTimeUTC')
+
         game_info = {
             'home_team': home_team,
             'away_team': away_team,
             'game_id': game_id,
         }
 
-        # For games that haven't started yet, return early with empty data (before calling play-by-play API)
+        # For games that haven't started yet, return pregame preview
         # Check: not Final, not in a quarter (Q1-Q4), and no scores yet
         is_pregame = game_status and game_status != 'Final' and 'Q' not in game_status and home_score == 0 and away_score == 0
         if is_pregame:
+            pregame_messages = []
+
+            # Only show pregame preview on fresh load (not polling updates)
+            if last_action == 0:
+                # Check if game starts within 30 minutes
+                show_preview = False
+                if game_time_utc:
+                    try:
+                        game_dt = datetime.fromisoformat(game_time_utc.replace('Z', '+00:00'))
+                        now_utc = datetime.now(ZoneInfo('UTC'))
+                        minutes_until_game = (game_dt - now_utc).total_seconds() / 60
+
+                        # Show preview if game is within 30 minutes or has just started (negative means past scheduled time)
+                        if -10 < minutes_until_game < 30:
+                            show_preview = True
+                    except Exception as e:
+                        print(f"Error parsing game time: {e}")
+                        # Default to showing preview if we can't parse time
+                        show_preview = True
+                else:
+                    # No game time - show preview anyway
+                    show_preview = True
+
+                if show_preview:
+                    # Get odds for pregame preview
+                    game_date = datetime.now().strftime('%Y-%m-%d')
+                    team_key = f"{away_team}@{home_team}"
+                    game_odds = get_cached_odds(team_key, game_date)
+
+                    pregame_messages = generate_pregame_preview(
+                        home_team, away_team,
+                        home_team_name, away_team_name,
+                        game_odds
+                    )
+
             return jsonify({
-                'messages': [],
-                'last_action': 0,
+                'messages': pregame_messages,
+                'last_action': -95,  # Negative to indicate pregame messages
                 'game_info': game_info,
                 'score': {'home': 0, 'away': 0},
                 'scores': [],
                 'total_actions': 0,
-                'viewer_count': 0,
+                'viewer_count': viewer_count,
                 'client_id': client_id,
                 'lead_changes': 0,
                 'status': game_status,
                 'is_historical': False,
+                'is_pregame': True,
             })
 
         # Get play-by-play (only for games that have started or finished)
@@ -1938,6 +2245,21 @@ def api_dev_live_feed(game_id):
                 elif aw > h:
                     _dev_live_largest_leads[game_id]['away'] = max(_dev_live_largest_leads[game_id]['away'], aw - h)
 
+        # For fresh loads of games that just started, prepend pregame messages
+        # This ensures viewers joining early see the matchup preview
+        pregame_msgs_to_add = []
+        if last_action == 0 and 'Q1' in game_status and len(actions) < 50:
+            # Game just started - add pregame preview
+            game_date = datetime.now().strftime('%Y-%m-%d')
+            team_key = f"{away_team}@{home_team}"
+            game_odds = get_cached_odds(team_key, game_date)
+
+            pregame_msgs_to_add = generate_pregame_preview(
+                home_team, away_team,
+                home_team_name, away_team_name,
+                game_odds
+            )
+
         for i, action in enumerate(new_actions):
             # Use previous action for comparison (either from before batch or previous in batch)
             compare_action = prev_action if i == 0 else new_actions[i - 1]
@@ -1975,6 +2297,10 @@ def api_dev_live_feed(game_id):
                             print(f"LLM enhancement error: {e}")
 
             all_messages.extend(messages)
+
+        # Prepend pregame messages for early game loads
+        if pregame_msgs_to_add:
+            all_messages = pregame_msgs_to_add + all_messages
 
         # Count total lead changes from all actions if this is a fresh load
         if last_action == 0 and len(actions) > 1:

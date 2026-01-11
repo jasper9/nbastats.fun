@@ -21,6 +21,7 @@ except ImportError:
     ANTHROPIC_AVAILABLE = False
 
 # Commentary styles for different events
+# Each prompt emphasizes variety and unique phrasing
 COMMENTARY_PROMPTS = {
     'lead_change': """You are an exciting NBA play-by-play commentator. Generate ONE short, enthusiastic sentence (max 15 words) about a lead change.
 
@@ -29,7 +30,7 @@ New leader: {leader}
 Score: {away_team} {away_score} - {home_team} {home_score}
 Quarter: Q{period}
 
-Be energetic but concise. Use NBA slang. No hashtags or emojis.""",
+IMPORTANT: Be creative and unique! Vary your word choice. Avoid cliches like "takes the lead" - find fresh ways to describe it. Use NBA slang but be original. No hashtags or emojis.""",
 
     'largest_lead': """You are an NBA stats analyst. Generate ONE insightful sentence (max 15 words) about a team building their largest lead.
 
@@ -39,7 +40,7 @@ Lead amount: +{lead_amount}
 Score: {away_team} {away_score} - {home_team} {home_score}
 Quarter: Q{period}
 
-Focus on momentum or game control. No hashtags or emojis.""",
+IMPORTANT: Be creative! Don't just say "largest lead" - describe the momentum shift uniquely. Focus on game control or psychological edge. No hashtags or emojis.""",
 
     'dunk': """You are a hype NBA announcer. Generate ONE explosive sentence (max 15 words) about a huge dunk.
 
@@ -47,7 +48,7 @@ Player: {player}
 Team: {team}
 Description: {description}
 
-Be electric! Use power words. No hashtags or emojis.""",
+IMPORTANT: Be WILDLY creative! Every dunk call should be different. Don't repeat phrases like "throws it down" or "slams it home". Use vivid imagery - earthquakes, explosions, destruction. Mix up your vocabulary every time. No hashtags or emojis.""",
 
     'tie_game': """You are a drama-building NBA announcer. Generate ONE tense sentence (max 15 words) about a tie game.
 
@@ -55,7 +56,7 @@ Game: {away_team} vs {home_team}
 Score: {score}-{score}
 Quarter: Q{period}
 
-Build suspense. No hashtags or emojis.""",
+IMPORTANT: Build unique suspense each time! Avoid "all tied up" or "back to even". Find fresh metaphors - chess match, boxing bout, thriller movie vibes. No hashtags or emojis.""",
 
     'quarter_end': """You are an NBA analyst. Generate ONE brief summary sentence (max 20 words) about the end of a quarter.
 
@@ -64,7 +65,7 @@ Score: {away_team} {away_score} - {home_team} {home_score}
 Quarter completed: Q{period}
 Leader: {leader} by {lead_diff}
 
-Be analytical. No hashtags or emojis.""",
+IMPORTANT: Vary your analysis! Sometimes focus on offense, sometimes defense. Mention momentum, energy, crowd, or strategy shifts. Be analytical but fresh. No hashtags or emojis.""",
 }
 
 
@@ -102,9 +103,11 @@ def generate_llm_commentary(event_type, context):
         prompt = prompt_template.format(**context)
 
         # Call Claude Haiku - fast and cheap
+        # Using temperature=0.9 for more creative/varied responses
         response = client.messages.create(
             model="claude-3-5-haiku-latest",
             max_tokens=50,  # Keep responses short
+            temperature=0.9,  # Higher temperature for more variety
             messages=[
                 {"role": "user", "content": prompt}
             ]
@@ -198,16 +201,25 @@ def enhance_message_with_llm(message, game_info):
 
 
 # Cache for LLM responses to avoid duplicate calls
+# Note: We intentionally DON'T cache 'dunk' events to ensure variety
 _llm_cache = {}
 MAX_CACHE_SIZE = 100
+
+# Events that should always generate fresh responses (no caching)
+UNCACHED_EVENTS = {'dunk'}
 
 
 def get_cached_or_generate(event_key, event_type, context):
     """
     Get cached LLM response or generate new one.
     Prevents duplicate API calls for the same event.
+    Note: Dunk events are never cached to ensure variety.
     """
     global _llm_cache
+
+    # Don't cache certain event types to ensure variety
+    if event_type in UNCACHED_EVENTS:
+        return generate_llm_commentary(event_type, context)
 
     if event_key in _llm_cache:
         return _llm_cache[event_key]

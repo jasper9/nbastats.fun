@@ -1255,6 +1255,23 @@
                 return game.status;
             }
 
+            // For upcoming games, check if it's about to start (within 30 minutes)
+            if (game.game_time_utc) {
+                try {
+                    const gameTime = new Date(game.game_time_utc);
+                    const now = new Date();
+                    const minutesUntilGame = (gameTime - now) / 60000;
+
+                    // If within 30 minutes of start or just past start time, show "Pregame"
+                    if (minutesUntilGame <= 30 && minutesUntilGame > -10) {
+                        const localTime = formatLocalTime(game.game_time_utc);
+                        return `Pregame (${localTime})`;
+                    }
+                } catch (e) {
+                    // Ignore parsing errors
+                }
+            }
+
             // For upcoming games, convert to local time
             const localTime = formatLocalTime(game.game_time_utc);
             if (localTime) {
@@ -1411,6 +1428,8 @@
                     let scoreText = `${awayCity} ${data.score.away} - ${homeCity} ${data.score.home}`;
                     if (data.status === 'Final') {
                         scoreText += ' (FINAL)';
+                    } else if (data.is_pregame) {
+                        scoreText = `${awayCity} @ ${homeCity} (PREGAME)`;
                     }
                     document.getElementById('stat-score').textContent = scoreText;
 
@@ -1429,20 +1448,22 @@
 
                 // Update stats in header
                 document.getElementById('stat-lead-changes').textContent = `🔄 ${data.lead_changes || 0}`;
-                // Show "FINAL" instead of viewer count for historical games
+                // Show appropriate status based on game state
                 if (data.is_historical) {
                     document.getElementById('stat-viewers').textContent = '📺 Replay';
+                } else if (data.is_pregame) {
+                    document.getElementById('stat-viewers').textContent = '⏰ Starting Soon';
                 } else {
                     document.getElementById('stat-viewers').textContent = `👁 ${data.viewer_count || 1}`;
                 }
 
-                // Update last action number
-                if (data.last_action > lastActionNumber) {
+                // Update last action number (handle pregame with negative action numbers)
+                if (data.last_action > lastActionNumber || (data.is_pregame && lastActionNumber === 0)) {
                     lastActionNumber = data.last_action;
                 }
 
-                // Add new messages
-                if (data.messages && data.messages.length > 0) {
+                // Add new messages (but don't re-add pregame messages we already have)
+                if (data.messages && data.messages.length > 0 && !(data.is_pregame && lastActionNumber < 0 && document.querySelectorAll('.chat-message').length > 0)) {
                     const feed = document.getElementById('chat-feed');
                     const loading = document.getElementById('loading');
                     if (loading) loading.remove();
@@ -1482,7 +1503,8 @@
 
             const emoji = botEmojis[msg.bot] || '&#x1F4AC;';
             const botName = botNames[msg.bot] || msg.bot;
-            const time = msg.clock ? `Q${msg.period} ${msg.clock}` : '';
+            // Show "PRE-GAME" for pregame messages (negative action numbers), otherwise show quarter/clock
+            const time = (msg.action_number < 0) ? 'PRE-GAME' : (msg.clock ? `Q${msg.period} ${msg.clock}` : '');
 
             div.innerHTML = `
                 <div class="msg-avatar">${emoji}</div>
