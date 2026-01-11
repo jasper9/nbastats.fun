@@ -2512,7 +2512,8 @@
                 hasMoreHistory = false;
                 historyCutoffAction = 0;
                 isLoadingFullHistory = false;
-                document.getElementById('load-more-container').style.display = 'none';
+                const loadMoreEl = document.getElementById('load-more-container');
+                if (loadMoreEl) loadMoreEl.style.display = 'none';
 
                 // Reset on-court player tracking
                 onCourtPlayers = { home: new Set(), away: new Set() };
@@ -2592,9 +2593,18 @@
 
             // Only reinitialize charts for a new game
             if (!isSameGame) {
-                // Clear chat feed for new game
+                // Clear chat feed for new game (preserve load-more-container structure)
                 const chatFeed = document.getElementById('chat-feed');
-                chatFeed.innerHTML = '<div class="loading" id="loading"><div class="spinner"></div><p>Loading game feed...</p></div>';
+                chatFeed.innerHTML = `
+                    <div class="load-more-container" id="load-more-container" style="display: none;">
+                        <button class="load-more-btn" id="load-more-btn">
+                            <span class="load-more-icon">⏮</span>
+                            Load Full Game History
+                        </button>
+                        <span class="load-more-hint">Showing recent plays only</span>
+                    </div>
+                    <div class="loading" id="loading"><div class="spinner"></div><p>Loading game feed...</p></div>
+                `;
 
                 // Clear quarter scores and box score from previous game
                 document.getElementById('quarter-scores').style.display = 'none';
