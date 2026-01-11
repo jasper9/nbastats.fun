@@ -3644,11 +3644,17 @@ def api_beta_live_feed(game_id):
             })
 
         # Initialize lead change tracking for this game
-        if game_id not in _dev_live_lead_changes:
+        # Track if we need to recalculate from full history (server restart scenario)
+        needs_lead_change_calc = game_id not in _dev_live_lead_changes
+        if needs_lead_change_calc:
             _dev_live_lead_changes[game_id] = {'count': 0, 'last_leader': None}
 
         # Initialize largest lead tracking for this game
-        if game_id not in _dev_live_largest_leads:
+        # IMPORTANT: If this is a new game for the server (not in tracking dict),
+        # we need to calculate largest leads from ALL plays, even if client has last_action > 0
+        # This handles server restarts where globals are cleared but client state persists
+        needs_full_history_calc = game_id not in _dev_live_largest_leads
+        if needs_full_history_calc:
             _dev_live_largest_leads[game_id] = {'home': 0, 'away': 0}
 
         # Filter to new plays only (BallDontLie uses 'order' instead of 'actionNumber')
@@ -3689,7 +3695,8 @@ def api_beta_live_feed(game_id):
                 prev_play = prev_plays[0]
 
         # Calculate largest leads and player stats from history if this is a fresh load
-        if last_action == 0 and len(plays) > 0:
+        # OR if server was restarted (needs_full_history_calc) even if client has last_action > 0
+        if (last_action == 0 or needs_full_history_calc) and len(plays) > 0:
             for p in plays:
                 h = int(p.get('home_score', 0) or 0)
                 aw = int(p.get('away_score', 0) or 0)
@@ -3805,7 +3812,8 @@ def api_beta_live_feed(game_id):
             all_messages = pregame_msgs_to_add + all_messages
 
         # Count total lead changes from all plays if this is a fresh load
-        if last_action == 0 and len(plays) > 1:
+        # OR if server was restarted (needs_lead_change_calc) even if client has last_action > 0
+        if (last_action == 0 or needs_lead_change_calc) and len(plays) > 1:
             lead_change_count = 0
             for i in range(1, len(plays)):
                 prev = plays[i - 1]
