@@ -260,6 +260,13 @@ A real-time play-by-play chat feed with bot "personalities":
 - Largest lead for each team (announced when 5+ points)
 - Viewer count (heartbeat-based, 15s timeout)
 
+**Pregame Countdown**:
+- Automatic countdown messages as game time approaches
+- Time brackets: 60min, 30min, 15min, 10min, 5min, 2min, 1min, tipoff
+- Messages update on each poll (every 5 seconds)
+- Uses HypeMan bot for exciting countdowns, PlayByPlay for informational
+- Only shows when game status contains valid time (e.g., "7:00 PM ET")
+
 **Consensus Odds Display** (below scoreboard):
 - Shows spread, total (O/U), and win probability from balldontlie v2 API
 - Consensus calculated from 11-12+ bookmakers

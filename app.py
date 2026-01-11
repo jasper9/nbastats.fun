@@ -1996,6 +1996,98 @@ def fetch_team_injuries(team_abbrev):
         return []
 
 
+def generate_countdown_message(time_until_game, home_team, away_team):
+    """Generate a countdown message based on time until game starts.
+
+    Args:
+        time_until_game: Minutes until game start (can be negative if past start time)
+        home_team: Home team abbreviation
+        away_team: Away team abbreviation
+
+    Returns:
+        A message dict or None if no countdown message should be shown
+    """
+    pregame_score = f"{away_team} 0 - {home_team} 0"
+
+    # Define countdown milestones (in minutes) with messages
+    if time_until_game <= 0:
+        # Game should be starting any moment
+        return {
+            'bot': 'hype_man',
+            'text': "🚨 GAME TIME! Tipoff is imminent!",
+            'type': 'countdown',
+            'timestamp': datetime.now().isoformat(),
+            'action_number': -80,
+            'score': pregame_score,
+        }
+    elif time_until_game <= 1:
+        return {
+            'bot': 'hype_man',
+            'text': "⏱️ Less than a minute until tipoff!",
+            'type': 'countdown',
+            'timestamp': datetime.now().isoformat(),
+            'action_number': -81,
+            'score': pregame_score,
+        }
+    elif time_until_game <= 2:
+        return {
+            'bot': 'play_by_play',
+            'text': "⏱️ 2 minutes until tipoff. Players taking the court...",
+            'type': 'countdown',
+            'timestamp': datetime.now().isoformat(),
+            'action_number': -82,
+            'score': pregame_score,
+        }
+    elif time_until_game <= 5:
+        return {
+            'bot': 'hype_man',
+            'text': "🔥 5 minutes until tipoff! Get ready!",
+            'type': 'countdown',
+            'timestamp': datetime.now().isoformat(),
+            'action_number': -83,
+            'score': pregame_score,
+        }
+    elif time_until_game <= 10:
+        return {
+            'bot': 'play_by_play',
+            'text': "⏱️ 10 minutes until tipoff. Warm-ups wrapping up.",
+            'type': 'countdown',
+            'timestamp': datetime.now().isoformat(),
+            'action_number': -84,
+            'score': pregame_score,
+        }
+    elif time_until_game <= 15:
+        return {
+            'bot': 'play_by_play',
+            'text': "⏱️ 15 minutes until tipoff. Teams finishing warm-ups.",
+            'type': 'countdown',
+            'timestamp': datetime.now().isoformat(),
+            'action_number': -85,
+            'score': pregame_score,
+        }
+    elif time_until_game <= 30:
+        return {
+            'bot': 'play_by_play',
+            'text': "⏱️ 30 minutes until tipoff. Teams warming up on the court.",
+            'type': 'countdown',
+            'timestamp': datetime.now().isoformat(),
+            'action_number': -86,
+            'score': pregame_score,
+        }
+    elif time_until_game <= 60:
+        return {
+            'bot': 'play_by_play',
+            'text': "⏱️ About an hour until tipoff.",
+            'type': 'countdown',
+            'timestamp': datetime.now().isoformat(),
+            'action_number': -87,
+            'score': pregame_score,
+        }
+
+    # No countdown message for games more than an hour away
+    return None
+
+
 def generate_pregame_preview(home_team, away_team, home_team_name='', away_team_name='', odds=None, show_hype=True):
     """Generate pre-game preview messages with injuries and star players.
 
@@ -3303,6 +3395,34 @@ def api_beta_live_feed(game_id):
         if is_pregame:
             pregame_messages = []
 
+            # Calculate time until game (used for both countdown and hype messages)
+            time_until_game = None
+            try:
+                import re
+                time_match = re.match(r'(\d{1,2}):(\d{2})\s*(AM|PM)', game_status)
+                if time_match:
+                    hour = int(time_match.group(1))
+                    minute = int(time_match.group(2))
+                    ampm = time_match.group(3)
+
+                    # Convert to 24-hour (assume ET, convert to local)
+                    if ampm == 'PM' and hour != 12:
+                        hour += 12
+                    elif ampm == 'AM' and hour == 12:
+                        hour = 0
+
+                    # Create game datetime (assume today, ET timezone)
+                    from datetime import timezone
+                    # ET is UTC-5 (or UTC-4 during DST)
+                    et_offset = timedelta(hours=-5)  # EST
+                    now_utc = datetime.now(timezone.utc)
+                    game_time_et = datetime(now_utc.year, now_utc.month, now_utc.day,
+                                            hour, minute, tzinfo=timezone(et_offset))
+
+                    time_until_game = (game_time_et - now_utc).total_seconds() / 60
+            except Exception as e:
+                print(f"Error parsing game time: {e}")
+
             # Only show pregame preview on fresh load (not polling updates)
             if last_action == 0:
                 # Get odds for pregame preview
@@ -3310,37 +3430,8 @@ def api_beta_live_feed(game_id):
                 team_key = f"{away_team}@{home_team}"
                 game_odds = get_cached_odds(team_key, game_date)
 
-                # Check if game is starting soon (within 30 minutes)
-                # game_status contains time like "7:00 PM ET"
-                show_hype = False
-                try:
-                    import re
-                    time_match = re.match(r'(\d{1,2}):(\d{2})\s*(AM|PM)', game_status)
-                    if time_match:
-                        hour = int(time_match.group(1))
-                        minute = int(time_match.group(2))
-                        ampm = time_match.group(3)
-
-                        # Convert to 24-hour (assume ET, convert to local)
-                        if ampm == 'PM' and hour != 12:
-                            hour += 12
-                        elif ampm == 'AM' and hour == 12:
-                            hour = 0
-
-                        # Create game datetime (assume today, ET timezone)
-                        from datetime import timezone
-                        # ET is UTC-5 (or UTC-4 during DST)
-                        et_offset = timedelta(hours=-5)  # EST
-                        now_utc = datetime.now(timezone.utc)
-                        game_time_et = datetime(now_utc.year, now_utc.month, now_utc.day,
-                                                hour, minute, tzinfo=timezone(et_offset))
-
-                        # Check if within 30 minutes
-                        time_until_game = (game_time_et - now_utc).total_seconds() / 60
-                        show_hype = time_until_game <= 30
-                except Exception as e:
-                    print(f"Error parsing game time: {e}")
-                    show_hype = False
+                # Show hype messages only if game is within 30 minutes
+                show_hype = time_until_game is not None and time_until_game <= 30
 
                 pregame_messages = generate_pregame_preview(
                     home_team, away_team,
@@ -3348,6 +3439,12 @@ def api_beta_live_feed(game_id):
                     game_odds,
                     show_hype=show_hype
                 )
+
+            # Always add countdown message if within range (updates on each poll)
+            if time_until_game is not None:
+                countdown_msg = generate_countdown_message(time_until_game, home_team, away_team)
+                if countdown_msg:
+                    pregame_messages.append(countdown_msg)
 
             return jsonify({
                 'messages': pregame_messages,

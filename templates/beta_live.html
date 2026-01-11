@@ -3025,22 +3025,37 @@
             }
 
             // Add new messages
-            if (data.messages && data.messages.length > 0 && !(data.is_pregame && lastActionNumber < 0 && document.querySelectorAll('.chat-message').length > 0)) {
+            if (data.messages && data.messages.length > 0) {
                 const feed = document.getElementById('chat-feed');
                 const loading = document.getElementById('loading');
                 if (loading) loading.remove();
 
-                data.messages.forEach(msg => {
-                    const msgEl = createMessageElement(msg);
-                    msgEl.dataset.actionNumber = msg.action_number;
-                    feed.appendChild(msgEl);
+                // Get existing action numbers to avoid duplicates
+                const existingActionNumbers = new Set();
+                feed.querySelectorAll('.chat-message').forEach(el => {
+                    if (el.dataset.actionNumber) {
+                        existingActionNumbers.add(String(el.dataset.actionNumber));
+                    }
                 });
 
-                // Track on-court players from messages
-                processMessagesForOnCourt(data.messages);
+                // Filter to only new messages (not already displayed)
+                const newMessages = data.messages.filter(msg =>
+                    !existingActionNumbers.has(String(msg.action_number))
+                );
 
-                // Auto-scroll to bottom
-                feed.scrollTop = feed.scrollHeight;
+                if (newMessages.length > 0) {
+                    newMessages.forEach(msg => {
+                        const msgEl = createMessageElement(msg);
+                        msgEl.dataset.actionNumber = msg.action_number;
+                        feed.appendChild(msgEl);
+                    });
+
+                    // Track on-court players from messages
+                    processMessagesForOnCourt(newMessages);
+
+                    // Auto-scroll to bottom
+                    feed.scrollTop = feed.scrollHeight;
+                }
             }
 
             // Handle empty feed for completed games
