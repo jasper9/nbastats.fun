@@ -1482,10 +1482,29 @@ def fetch_team_injuries(team_abbrev):
         injuries = []
         for injury in data.get('data', []):
             player = injury.get('player', {})
+            description = injury.get('description', '')
+
+            # Try to extract injury type from description
+            # Look for common patterns like "knee", "ankle", "hamstring", etc.
+            injury_type = ''
+            desc_lower = description.lower()
+            # Common injury keywords to look for
+            injury_keywords = [
+                'knee', 'ankle', 'hamstring', 'calf', 'quad', 'hip', 'back',
+                'shoulder', 'wrist', 'thumb', 'finger', 'toe', 'foot',
+                'groin', 'concussion', 'illness', 'rest', 'load management',
+                'achilles', 'elbow', 'neck', 'rib', 'abdominal', 'oblique'
+            ]
+            for keyword in injury_keywords:
+                if keyword in desc_lower:
+                    injury_type = keyword.title()
+                    break
+
             injuries.append({
                 'name': f"{player.get('first_name', '')} {player.get('last_name', '')}".strip(),
-                'status': injury.get('status', ''),
+                'status': injury.get('status', 'Out'),
                 'return_date': injury.get('return_date', ''),
+                'injury_type': injury_type,
             })
 
         # Cache the result
@@ -1558,27 +1577,36 @@ def generate_pregame_preview(home_team, away_team, home_team_name='', away_team_
             'score': pregame_score,
         })
 
-    # Generate injury report - show ALL injuries for both teams
+    # Generate injury report - show ALL injuries for both teams with details
     if away_injuries or home_injuries:
-        # Get all injured player names for each team
-        away_injured_names = [inj['name'] for inj in away_injuries]
-        home_injured_names = [inj['name'] for inj in home_injuries]
+        # Format injury details: "Player (Injury - Status)"
+        def format_injury(inj):
+            name = inj['name']
+            injury_type = inj.get('injury_type', '')
+            status = inj.get('status', 'Out')
+            if injury_type:
+                return f"{name} ({injury_type} - {status})"
+            else:
+                return f"{name} ({status})"
+
+        away_injury_details = [format_injury(inj) for inj in away_injuries]
+        home_injury_details = [format_injury(inj) for inj in home_injuries]
 
         # Create separate messages for each team's injuries
-        if away_injured_names:
+        if away_injury_details:
             messages.append({
                 'bot': 'stats_nerd',
-                'text': f"📋 {away_team} injury report: {', '.join(away_injured_names)}",
+                'text': f"📋 {away_team} injury report: {', '.join(away_injury_details)}",
                 'type': 'injury_report',
                 'timestamp': datetime.now().isoformat(),
                 'action_number': -98,
                 'score': pregame_score,
             })
 
-        if home_injured_names:
+        if home_injury_details:
             messages.append({
                 'bot': 'stats_nerd',
-                'text': f"📋 {home_team} injury report: {', '.join(home_injured_names)}",
+                'text': f"📋 {home_team} injury report: {', '.join(home_injury_details)}",
                 'type': 'injury_report',
                 'timestamp': datetime.now().isoformat(),
                 'action_number': -97,
