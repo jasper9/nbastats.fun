@@ -2699,7 +2699,8 @@ def api_dev_live_feed(game_id):
                     _dev_live_lead_changes[game_id]['count'] += 1
 
             # Try to add LLM commentary for exciting events
-            if LLM_AVAILABLE:
+            # Only call LLM when there are actual viewers to save API costs
+            if LLM_AVAILABLE and viewer_count > 0:
                 for msg in messages:
                     # Only enhance lead changes, largest leads, dunks, ties, quarter summaries
                     if msg.get('is_lead_change') or msg.get('is_largest_lead') or \
