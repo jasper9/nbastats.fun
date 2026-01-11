@@ -2023,18 +2023,25 @@ def api_dev_live_games():
             # Parse game status from BallDontLie format
             status = g.get('status', '')
             period = g.get('period', 0)
-            time_str = g.get('time', '')
+            time_str = g.get('time', '')  # Can be "7:21" or "Q4 7:21" or empty
 
             # Build status text similar to NBA API format
             if status == 'Final':
                 status_text = 'Final'
             elif period > 0:
-                # Game in progress
-                status_text = f"Q{period}" if period <= 4 else f"OT{period-4}"
+                # Game in progress - time_str might already include quarter
                 if time_str:
-                    status_text = f"{status_text} {time_str}"
+                    # If time_str already has "Q" prefix, use it as-is
+                    if time_str.startswith('Q') or time_str.startswith('OT'):
+                        status_text = time_str
+                    else:
+                        # Add quarter prefix
+                        quarter = f"Q{period}" if period <= 4 else f"OT{period-4}"
+                        status_text = f"{quarter} {time_str}"
+                else:
+                    status_text = f"Q{period}" if period <= 4 else f"OT{period-4}"
             else:
-                # Scheduled game - status is the time (e.g., "7:00 PM")
+                # Scheduled game - status might be time like "7:00 PM" or ISO timestamp
                 status_text = status
 
             game_data = {
@@ -2074,7 +2081,15 @@ def api_dev_live_games():
 
             games.append(game_data)
 
+        # Track seen team matchups to avoid duplicates from old NBA API history
+        seen_matchups = set()
+        for g in games:
+            # Create matchup key: "away@home" with scores to identify same game
+            matchup = f"{g['away_team']}@{g['home_team']}"
+            seen_matchups.add(matchup)
+
         # Also include saved historical games not in today's scoreboard
+        # Skip if we already have this matchup from BallDontLie
         if os.path.exists(DEV_LIVE_HISTORY_DIR):
             for filename in os.listdir(DEV_LIVE_HISTORY_DIR):
                 if filename.startswith('game_') and filename.endswith('.json'):
@@ -2084,11 +2099,19 @@ def api_dev_live_games():
                             history = load_dev_live_history(game_id)
                             if history:
                                 game_info = history.get('game_info', {})
+                                away = game_info.get('away_team', 'AWAY')
+                                home = game_info.get('home_team', 'HOME')
+                                matchup = f"{away}@{home}"
+
+                                # Skip if we already have this matchup from BallDontLie
+                                if matchup in seen_matchups:
+                                    continue
+
                                 final_score = history.get('final_score', {'home': 0, 'away': 0})
                                 games.append({
                                     'game_id': game_id,
-                                    'home_team': game_info.get('home_team', 'HOME'),
-                                    'away_team': game_info.get('away_team', 'AWAY'),
+                                    'home_team': home,
+                                    'away_team': away,
                                     'home_team_name': '',
                                     'away_team_name': '',
                                     'status': 'Final (Saved)',
@@ -2096,6 +2119,7 @@ def api_dev_live_games():
                                     'away_score': final_score.get('away', 0),
                                     'has_history': True,
                                 })
+                                seen_matchups.add(matchup)
                         except Exception:
                             pass
 
