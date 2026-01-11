@@ -671,6 +671,46 @@
             border-color: var(--nuggets-gold);
             color: #000;
         }
+        .quarter-scores {
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        .quarter-scores-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .quarter-scores-table th,
+        .quarter-scores-table td {
+            padding: 8px 12px;
+            text-align: center;
+        }
+        .quarter-scores-table th {
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+        .quarter-scores-table th:first-child,
+        .quarter-scores-table td:first-child {
+            text-align: left;
+            font-weight: 600;
+        }
+        .quarter-scores-table td {
+            color: var(--text-secondary);
+        }
+        .quarter-scores-table td.total-col {
+            color: var(--text-primary);
+            font-weight: 700;
+            font-family: 'Oswald', sans-serif;
+            font-size: 1rem;
+        }
+        .quarter-scores-table td.current-quarter {
+            color: var(--nuggets-gold);
+            font-weight: 600;
+        }
+        .quarter-scores-table tr.winner td.total-col {
+            color: var(--positive);
+        }
         .box-score-content {
             padding: 10px;
             overflow-x: auto;
@@ -906,6 +946,23 @@
                     <button class="team-toggle-btn active" id="toggle-away" data-team="away">Away</button>
                     <button class="team-toggle-btn" id="toggle-home" data-team="home">Home</button>
                 </div>
+            </div>
+            <div class="quarter-scores" id="quarter-scores">
+                <table class="quarter-scores-table">
+                    <thead>
+                        <tr>
+                            <th>Team</th>
+                            <th>Q1</th>
+                            <th>Q2</th>
+                            <th>Q3</th>
+                            <th>Q4</th>
+                            <th class="ot-col" style="display:none;">OT</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="quarter-scores-body">
+                    </tbody>
+                </table>
             </div>
             <div class="box-score-content">
                 <table class="player-stats-table">
@@ -1546,6 +1603,70 @@
             });
         }
 
+        // Render quarter-by-quarter scores
+        function renderQuarterScores(homePeriods, awayPeriods, homeTeam, awayTeam, homeTotal, awayTotal, currentPeriod) {
+            const tbody = document.getElementById('quarter-scores-body');
+            if (!homePeriods || !awayPeriods) {
+                tbody.innerHTML = '';
+                return;
+            }
+
+            // Check if there's overtime (more than 4 periods)
+            const hasOT = homePeriods.length > 4 || awayPeriods.length > 4;
+
+            // Show/hide OT columns in header
+            document.querySelectorAll('.ot-col').forEach(el => {
+                el.style.display = hasOT ? '' : 'none';
+            });
+
+            // Helper to get score for a period (0 if not played yet)
+            const getScore = (periods, periodNum) => {
+                const p = periods.find(p => p.period === periodNum);
+                return p ? p.score : 0;
+            };
+
+            // Build rows for away and home teams
+            let html = '';
+
+            // Away team row
+            const awayQ1 = getScore(awayPeriods, 1);
+            const awayQ2 = getScore(awayPeriods, 2);
+            const awayQ3 = getScore(awayPeriods, 3);
+            const awayQ4 = getScore(awayPeriods, 4);
+            const awayOT = hasOT ? awayPeriods.filter(p => p.period > 4).reduce((sum, p) => sum + p.score, 0) : 0;
+            const awayWinner = awayTotal > homeTotal ? 'winner' : '';
+
+            html += `<tr class="${awayWinner}">
+                <td>${awayTeam}</td>
+                <td class="${currentPeriod === 1 ? 'current-quarter' : ''}">${awayQ1 || '-'}</td>
+                <td class="${currentPeriod === 2 ? 'current-quarter' : ''}">${awayQ2 || '-'}</td>
+                <td class="${currentPeriod === 3 ? 'current-quarter' : ''}">${awayQ3 || '-'}</td>
+                <td class="${currentPeriod === 4 ? 'current-quarter' : ''}">${awayQ4 || '-'}</td>
+                ${hasOT ? `<td class="ot-col ${currentPeriod > 4 ? 'current-quarter' : ''}">${awayOT || '-'}</td>` : ''}
+                <td class="total-col">${awayTotal}</td>
+            </tr>`;
+
+            // Home team row
+            const homeQ1 = getScore(homePeriods, 1);
+            const homeQ2 = getScore(homePeriods, 2);
+            const homeQ3 = getScore(homePeriods, 3);
+            const homeQ4 = getScore(homePeriods, 4);
+            const homeOT = hasOT ? homePeriods.filter(p => p.period > 4).reduce((sum, p) => sum + p.score, 0) : 0;
+            const homeWinner = homeTotal > awayTotal ? 'winner' : '';
+
+            html += `<tr class="${homeWinner}">
+                <td>${homeTeam}</td>
+                <td class="${currentPeriod === 1 ? 'current-quarter' : ''}">${homeQ1 || '-'}</td>
+                <td class="${currentPeriod === 2 ? 'current-quarter' : ''}">${homeQ2 || '-'}</td>
+                <td class="${currentPeriod === 3 ? 'current-quarter' : ''}">${homeQ3 || '-'}</td>
+                <td class="${currentPeriod === 4 ? 'current-quarter' : ''}">${homeQ4 || '-'}</td>
+                ${hasOT ? `<td class="ot-col ${currentPeriod > 4 ? 'current-quarter' : ''}">${homeOT || '-'}</td>` : ''}
+                <td class="total-col">${homeTotal}</td>
+            </tr>`;
+
+            tbody.innerHTML = html;
+        }
+
         // Update box score display
         function updateBoxScore(stats) {
             playerStats = stats || { home: [], away: [] };
@@ -1944,9 +2065,22 @@
                     }
                 }
 
-                // Update box score with player stats
+                // Update box score with player stats and quarter scores
                 if (data.player_stats) {
                     updateBoxScore(data.player_stats);
+                }
+
+                // Update quarter-by-quarter scores
+                if (data.home_periods && data.away_periods && data.score) {
+                    renderQuarterScores(
+                        data.home_periods,
+                        data.away_periods,
+                        currentHomeTeam,
+                        currentAwayTeam,
+                        data.score.home,
+                        data.score.away,
+                        data.period || 0
+                    );
                 }
 
                 // Update stats in header

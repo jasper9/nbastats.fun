@@ -2129,6 +2129,8 @@ def api_dev_live_feed(game_id):
         away_timeouts = 0
         home_in_bonus = False
         away_in_bonus = False
+        home_periods = []
+        away_periods = []
 
         if game_match:
             home_team = game_match['homeTeam']['teamTricode']
@@ -2160,6 +2162,10 @@ def api_dev_live_feed(game_id):
             # Bonus status (API returns string '0' or '1', not int)
             home_in_bonus = game_match['homeTeam'].get('inBonus', '0') == '1'
             away_in_bonus = game_match['awayTeam'].get('inBonus', '0') == '1'
+
+            # Quarter-by-quarter scores
+            home_periods = game_match['homeTeam'].get('periods', [])
+            away_periods = game_match['awayTeam'].get('periods', [])
 
         # Get full team names for pregame display
         home_team_name = ''
@@ -2610,6 +2616,9 @@ def api_dev_live_feed(game_id):
             'away_timeouts': away_timeouts,
             'home_in_bonus': home_in_bonus,
             'away_in_bonus': away_in_bonus,
+            # Quarter-by-quarter scores
+            'home_periods': home_periods,
+            'away_periods': away_periods,
         }
 
         # Include score history on first load for chart reconstruction
