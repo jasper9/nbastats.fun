@@ -3068,6 +3068,37 @@ def api_beta_live_games():
         # Pre-fetch odds for all games (single API call)
         all_odds = fetch_dev_live_odds([], game_date)
 
+        # Merge pre_game_odds from file cache (captured once, never changes)
+        # This preserves the opening line before any in-game movement
+        if all_odds:
+            file_cache = {}
+            try:
+                if os.path.exists(DEV_LIVE_ODDS_CACHE_FILE):
+                    with open(DEV_LIVE_ODDS_CACHE_FILE, 'r') as f:
+                        file_cache = json.load(f)
+            except Exception:
+                pass
+
+            # For each game's odds, preserve or capture pre_game_odds
+            for key, odds_data in all_odds.items():
+                if key in file_cache and 'pre_game_odds' in file_cache[key]:
+                    # Use preserved pre_game_odds from file cache
+                    odds_data['pre_game_odds'] = file_cache[key]['pre_game_odds']
+                elif 'pre_game_odds' not in odds_data:
+                    # First time seeing this game - capture pre_game_odds
+                    odds_data['pre_game_odds'] = {
+                        'consensus': odds_data.get('consensus', {}),
+                        'captured_at': datetime.now().isoformat()
+                    }
+                    # Save to file cache for persistence
+                    file_cache[key] = odds_data
+                    try:
+                        os.makedirs(os.path.dirname(DEV_LIVE_ODDS_CACHE_FILE), exist_ok=True)
+                        with open(DEV_LIVE_ODDS_CACHE_FILE, 'w') as f:
+                            json.dump(file_cache, f)
+                    except Exception:
+                        pass
+
         games = []
         seen_game_ids = set()
 
