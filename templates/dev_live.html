@@ -538,6 +538,10 @@
         .chat-message.bot-hype_man {
             border-left-color: #f97316;
         }
+        .chat-message.bot-referee {
+            border-left-color: #fbbf24;
+            background: linear-gradient(90deg, rgba(251, 191, 36, 0.1), var(--bg-card));
+        }
         .chat-message.bot-historian {
             border-left-color: #a855f7;
         }
@@ -567,6 +571,7 @@
         .msg-bot-name.bot-stats_nerd { color: #22d3ee; }
         .msg-bot-name.bot-odds_shark { color: #34d399; }
         .msg-bot-name.bot-hype_man { color: #f97316; }
+        .msg-bot-name.bot-referee { color: #fbbf24; }
         .msg-bot-name.bot-historian { color: #a855f7; }
         .msg-bot-name.bot-ai_commentator { color: #60a5fa; }
         .msg-time {
@@ -1031,6 +1036,10 @@
                 <span class="filter-dot"></span>
                 HypeMan
             </button>
+            <button class="filter-btn active" data-bot="referee" style="--btn-color: #fbbf24;">
+                <span class="filter-dot"></span>
+                Referee
+            </button>
             <button class="filter-btn active" data-bot="historian" style="--btn-color: #a855f7;">
                 <span class="filter-dot"></span>
                 Historian
@@ -1096,6 +1105,7 @@
             'stats_nerd': '&#x1F4CA;',
             'odds_shark': '&#x1F3B0;',
             'hype_man': '&#x1F525;',
+            'referee': '&#x1F6A8;',  // Police light/siren for ref calls
             'historian': '&#x1F4DC;',
             'ai_commentator': '&#x1F916;'
         };
@@ -1105,6 +1115,7 @@
             'stats_nerd': 'StatsNerd',
             'odds_shark': 'OddsShark',
             'hype_man': 'HypeMan',
+            'referee': 'Referee',
             'historian': 'Historian',
             'ai_commentator': 'AI'
         };

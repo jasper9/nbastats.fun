@@ -363,6 +363,70 @@ def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = N
                 'team': team,
             })
 
+    # Fouls - show referee calls
+    elif 'foul' in play_type:
+        # Determine foul type from play_type or text
+        foul_type = 'foul'
+        if 'personal' in play_type.lower() or 'personal' in text.lower():
+            foul_type = 'personal foul'
+        elif 'shooting' in play_type.lower() or 'shooting' in text.lower():
+            foul_type = 'shooting foul'
+        elif 'offensive' in play_type.lower() or 'offensive' in text.lower():
+            foul_type = 'offensive foul'
+        elif 'technical' in play_type.lower() or 'technical' in text.lower():
+            foul_type = 'technical foul'
+        elif 'flagrant' in play_type.lower() or 'flagrant' in text.lower():
+            foul_type = 'flagrant foul'
+        elif 'loose ball' in play_type.lower() or 'loose ball' in text.lower():
+            foul_type = 'loose ball foul'
+        elif 'away from play' in text.lower():
+            foul_type = 'away from play foul'
+
+        # Extract who was fouled if in text
+        fouled_player = ''
+        if ' on ' in text.lower():
+            # "Player commits foul on OtherPlayer"
+            parts = text.lower().split(' on ')
+            if len(parts) > 1:
+                fouled_part = parts[1].split()[0:2]  # Get first two words
+                fouled_player = ' '.join(fouled_part).title()
+
+        foul_msg = f"🚨 {foul_type.upper()} called on {player} ({team})"
+        if fouled_player:
+            foul_msg += f" - fouled {fouled_player}"
+
+        messages.append({
+            'bot': 'referee',
+            'text': foul_msg,
+            'type': 'foul',
+            'team': team,
+        })
+
+    # Coach's Challenge / Replay Review
+    elif 'challenge' in play_type.lower() or 'replay' in play_type.lower() or 'review' in play_type.lower():
+        challenge_team = team if team else 'Team'
+        if 'overturn' in text.lower() or 'successful' in text.lower():
+            messages.append({
+                'bot': 'referee',
+                'text': f"⚖️ CHALLENGE SUCCESSFUL! {challenge_team}'s challenge overturns the call.",
+                'type': 'challenge',
+                'team': team,
+            })
+        elif 'stands' in text.lower() or 'unsuccessful' in text.lower() or 'upheld' in text.lower():
+            messages.append({
+                'bot': 'referee',
+                'text': f"⚖️ CHALLENGE FAILED. The call on the floor stands. {challenge_team} loses a timeout.",
+                'type': 'challenge',
+                'team': team,
+            })
+        else:
+            messages.append({
+                'bot': 'referee',
+                'text': f"⚖️ COACH'S CHALLENGE - {challenge_team} is challenging the call. Play under review.",
+                'type': 'challenge',
+                'team': team,
+            })
+
     # Period events
     elif 'period' in play_type:
         if 'end' in play_type.lower():
