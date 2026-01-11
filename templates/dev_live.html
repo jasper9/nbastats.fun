@@ -179,9 +179,45 @@
             font-size: 3rem;
             font-weight: 700;
         }
-        .score-divider {
+        .game-clock-section {
+            text-align: center;
+            min-width: 80px;
+        }
+        .game-quarter {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+        .game-clock {
+            font-family: 'Oswald', sans-serif;
             font-size: 2rem;
+            font-weight: 700;
+            color: var(--nuggets-gold);
+        }
+        .team-info {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 5px;
+            font-size: 0.7rem;
+        }
+        .timeouts {
             color: var(--text-muted);
+            background: rgba(255,255,255,0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .bonus-indicator {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.2);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 600;
+            display: none;
+        }
+        .bonus-indicator.active {
+            display: inline;
         }
         /* Odds Display */
         .odds-section {
@@ -733,11 +769,22 @@
             <div class="team-score">
                 <div class="team-abbrev" id="away-team">AWAY</div>
                 <div class="team-points" id="away-score">0</div>
+                <div class="team-info">
+                    <span class="timeouts" id="away-timeouts" title="Timeouts remaining">⏱ 7</span>
+                    <span class="bonus-indicator" id="away-bonus" title="In bonus">BONUS</span>
+                </div>
             </div>
-            <div class="score-divider">@</div>
+            <div class="game-clock-section" id="game-clock-section">
+                <div class="game-quarter" id="game-quarter">Q1</div>
+                <div class="game-clock" id="game-clock">12:00</div>
+            </div>
             <div class="team-score">
                 <div class="team-abbrev" id="home-team">HOME</div>
                 <div class="team-points" id="home-score">0</div>
+                <div class="team-info">
+                    <span class="timeouts" id="home-timeouts" title="Timeouts remaining">⏱ 7</span>
+                    <span class="bonus-indicator" id="home-bonus" title="In bonus">BONUS</span>
+                </div>
             </div>
         </div>
 
@@ -1794,6 +1841,56 @@
                 if (data.game_info) {
                     document.getElementById('home-team').textContent = homeCity;
                     document.getElementById('away-team').textContent = awayCity;
+                }
+
+                // Update game clock, quarter, timeouts, and bonus indicators
+                const isGameLive = data.period > 0 && data.status !== 'Final';
+                const clockSection = document.getElementById('game-clock-section');
+
+                if (isGameLive && data.game_clock) {
+                    // Show game clock during live games
+                    clockSection.style.display = 'block';
+                    const periodText = data.period <= 4 ? `Q${data.period}` : `OT${data.period - 4}`;
+                    document.getElementById('game-quarter').textContent = periodText;
+                    document.getElementById('game-clock').textContent = data.game_clock;
+                } else if (data.status === 'Final') {
+                    // Show "FINAL" for completed games
+                    clockSection.style.display = 'block';
+                    document.getElementById('game-quarter').textContent = 'FINAL';
+                    document.getElementById('game-clock').textContent = '';
+                } else if (data.is_pregame) {
+                    // Show "PRE-GAME" for upcoming games
+                    clockSection.style.display = 'block';
+                    document.getElementById('game-quarter').textContent = 'PRE-GAME';
+                    document.getElementById('game-clock').textContent = '';
+                } else {
+                    // Hide clock section when no relevant status
+                    clockSection.style.display = 'none';
+                }
+
+                // Update timeouts (only show during live games)
+                const awayTimeouts = document.getElementById('away-timeouts');
+                const homeTimeouts = document.getElementById('home-timeouts');
+                if (isGameLive) {
+                    awayTimeouts.style.display = 'inline';
+                    homeTimeouts.style.display = 'inline';
+                    awayTimeouts.textContent = `⏱ ${data.away_timeouts ?? 7}`;
+                    homeTimeouts.textContent = `⏱ ${data.home_timeouts ?? 7}`;
+                } else {
+                    awayTimeouts.style.display = 'none';
+                    homeTimeouts.style.display = 'none';
+                }
+
+                // Update bonus indicators (team is "in bonus" when opponent has 5+ fouls in quarter)
+                // Only show during live games
+                const awayBonus = document.getElementById('away-bonus');
+                const homeBonus = document.getElementById('home-bonus');
+                if (isGameLive) {
+                    awayBonus.classList.toggle('active', data.away_in_bonus || false);
+                    homeBonus.classList.toggle('active', data.home_in_bonus || false);
+                } else {
+                    awayBonus.classList.remove('active');
+                    homeBonus.classList.remove('active');
                 }
                 if (data.score) {
                     document.getElementById('home-score').textContent = data.score.home;

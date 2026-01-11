@@ -2122,12 +2122,44 @@ def api_dev_live_feed(game_id):
         game_status = ''
         home_score = 0
         away_score = 0
+        # Extract game clock, timeouts, and bonus info
+        game_clock = ''
+        current_period = 0
+        home_timeouts = 0
+        away_timeouts = 0
+        home_in_bonus = False
+        away_in_bonus = False
+
         if game_match:
             home_team = game_match['homeTeam']['teamTricode']
             away_team = game_match['awayTeam']['teamTricode']
             game_status = game_match.get('gameStatusText', '')
             home_score = game_match['homeTeam'].get('score', 0) or 0
             away_score = game_match['awayTeam'].get('score', 0) or 0
+
+            # Game clock (format: PT04M33.00S -> 4:33)
+            raw_clock = game_match.get('gameClock', '')
+            if raw_clock and raw_clock.startswith('PT'):
+                try:
+                    # Parse ISO 8601 duration: PT04M33.00S
+                    import re
+                    match = re.match(r'PT(\d+)M([\d.]+)S', raw_clock)
+                    if match:
+                        mins = int(match.group(1))
+                        secs = int(float(match.group(2)))
+                        game_clock = f"{mins}:{secs:02d}"
+                except:
+                    pass
+
+            current_period = game_match.get('period', 0)
+
+            # Timeouts remaining
+            home_timeouts = game_match['homeTeam'].get('timeoutsRemaining', 0)
+            away_timeouts = game_match['awayTeam'].get('timeoutsRemaining', 0)
+
+            # Bonus status
+            home_in_bonus = bool(game_match['homeTeam'].get('inBonus', 0))
+            away_in_bonus = bool(game_match['awayTeam'].get('inBonus', 0))
 
         # Get full team names for pregame display
         home_team_name = ''
@@ -2572,6 +2604,12 @@ def api_dev_live_feed(game_id):
             'status': game_status,
             'period': current_period,  # Current quarter for chart quarter markers
             'player_stats': player_stats_by_team,
+            # Game clock, timeouts, and bonus info
+            'game_clock': game_clock,
+            'home_timeouts': home_timeouts,
+            'away_timeouts': away_timeouts,
+            'home_in_bonus': home_in_bonus,
+            'away_in_bonus': away_in_bonus,
         }
 
         # Include score history on first load for chart reconstruction
