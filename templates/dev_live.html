@@ -170,6 +170,12 @@
         .team-score {
             text-align: center;
         }
+        .team-logo {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            margin-bottom: 5px;
+        }
         .team-abbrev {
             font-family: 'Oswald', sans-serif;
             font-size: 1.2rem;
@@ -1010,6 +1016,7 @@
             .page-title { font-size: 1.4rem; }
             .chat-feed { height: 400px; }
             .scoreboard { gap: 15px; }
+            .team-logo { width: 45px; height: 45px; }
             .team-points { font-size: 2.5rem; }
             .nav-links a { padding: 15px 10px; font-size: 0.8rem; }
         }
@@ -1044,6 +1051,7 @@
 
         <div class="scoreboard" id="scoreboard" style="display: none;">
             <div class="team-score">
+                <img class="team-logo" id="away-logo" src="" alt="Away team logo">
                 <div class="team-abbrev" id="away-team">AWAY</div>
                 <div class="team-points" id="away-score">0</div>
                 <div class="team-info">
@@ -1056,6 +1064,7 @@
                 <div class="game-clock" id="game-clock">12:00</div>
             </div>
             <div class="team-score">
+                <img class="team-logo" id="home-logo" src="" alt="Home team logo">
                 <div class="team-abbrev" id="home-team">HOME</div>
                 <div class="team-points" id="home-score">0</div>
                 <div class="team-info">
@@ -1263,6 +1272,27 @@
             'historian': 'Historian',
             'ai_commentator': 'AI'
         };
+
+        // NBA team ID mapping for logos (abbreviation -> NBA team ID)
+        const teamIds = {
+            'ATL': 1610612737, 'BOS': 1610612738, 'BKN': 1610612751, 'CHA': 1610612766,
+            'CHI': 1610612741, 'CLE': 1610612739, 'DAL': 1610612742, 'DEN': 1610612743,
+            'DET': 1610612765, 'GSW': 1610612744, 'HOU': 1610612745, 'IND': 1610612754,
+            'LAC': 1610612746, 'LAL': 1610612747, 'MEM': 1610612763, 'MIA': 1610612748,
+            'MIL': 1610612749, 'MIN': 1610612750, 'NOP': 1610612740, 'NYK': 1610612752,
+            'OKC': 1610612760, 'ORL': 1610612753, 'PHI': 1610612755, 'PHX': 1610612756,
+            'POR': 1610612757, 'SAC': 1610612758, 'SAS': 1610612759, 'TOR': 1610612761,
+            'UTA': 1610612762, 'WAS': 1610612764
+        };
+
+        // Get team logo URL from abbreviation
+        function getTeamLogoUrl(abbrev) {
+            const teamId = teamIds[abbrev];
+            if (teamId) {
+                return `https://cdn.nba.com/logos/nba/${teamId}/primary/L/logo.svg`;
+            }
+            return '';
+        }
 
         let currentGameId = null;
         let lastActionNumber = 0;
@@ -2498,6 +2528,10 @@
                 document.getElementById('away-team').textContent = gameData.away_team_city || gameData.away_team;
                 document.getElementById('home-score').textContent = gameData.home_score || 0;
                 document.getElementById('away-score').textContent = gameData.away_score || 0;
+
+                // Set team logos
+                document.getElementById('home-logo').src = getTeamLogoUrl(gameData.home_team);
+                document.getElementById('away-logo').src = getTeamLogoUrl(gameData.away_team);
 
                 // Show initial status from games data (will be updated by feed)
                 const clockSection = document.getElementById('game-clock-section');
