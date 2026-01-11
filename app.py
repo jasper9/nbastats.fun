@@ -1080,17 +1080,33 @@ def get_cached_odds(game_id, game_date=None):
     fresh_odds = fetch_dev_live_odds([game_id], game_date)
 
     if fresh_odds:
-        # Update both memory and file cache
+        # Load existing file cache to preserve pre_game_odds
+        existing = {}
+        try:
+            if os.path.exists(DEV_LIVE_ODDS_CACHE_FILE):
+                with open(DEV_LIVE_ODDS_CACHE_FILE, 'r') as f:
+                    existing = json.load(f)
+        except Exception:
+            pass
+
+        # For each game, preserve pre_game_odds if it exists
+        for gid, odds_data in fresh_odds.items():
+            # If pre_game_odds already saved, preserve it
+            if gid in existing and 'pre_game_odds' in existing[gid]:
+                odds_data['pre_game_odds'] = existing[gid]['pre_game_odds']
+            else:
+                # First time seeing this game - capture pre_game_odds
+                odds_data['pre_game_odds'] = {
+                    'consensus': odds_data.get('consensus', {}),
+                    'captured_at': datetime.now().isoformat()
+                }
+
+        # Update memory cache
         _dev_live_odds_cache.update(fresh_odds)
 
         # Save to file
         try:
             os.makedirs(os.path.dirname(DEV_LIVE_ODDS_CACHE_FILE), exist_ok=True)
-            # Load existing, merge, and save
-            existing = {}
-            if os.path.exists(DEV_LIVE_ODDS_CACHE_FILE):
-                with open(DEV_LIVE_ODDS_CACHE_FILE, 'r') as f:
-                    existing = json.load(f)
             existing.update(fresh_odds)
             with open(DEV_LIVE_ODDS_CACHE_FILE, 'w') as f:
                 json.dump(existing, f)
@@ -2020,6 +2036,10 @@ def api_dev_live_games():
                         'away_ml': consensus.get('away_ml'),
                     }
                 }
+                # Add pre_game_odds (captured once, never changes)
+                pre_game = game_odds.get('pre_game_odds', {})
+                if pre_game:
+                    game_data['pre_game_odds'] = pre_game.get('consensus', consensus)
 
             games.append(game_data)
 

@@ -1465,7 +1465,7 @@
             container.innerHTML = html;
         }
 
-        function updateOddsDisplay(odds, homeTeam, awayTeam, homeCity = null, awayCity = null) {
+        function updateOddsDisplay(odds, homeTeam, awayTeam, homeCity = null, awayCity = null, fixedPreGameOdds = null) {
             const oddsSection = document.getElementById('odds-section');
             if (!odds || !odds.consensus) {
                 oddsSection.classList.remove('visible');
@@ -1515,15 +1515,17 @@
                 homeMlEl.className = 'ml-value ' + (homeMl < awayMl ? 'favorite' : 'underdog');
             }
 
-            // Pre-Game Odds: Only set once, then lock forever (never updates during game)
-            // This captures the opening line before any in-game movement
+            // Pre-Game Odds: Use fixedPreGameOdds from server (captured once, never changes)
+            // This shows the opening line before any in-game movement
             if (!preGameOddsLocked) {
-                preGameOdds = odds;
+                // Use server-provided pre_game_odds if available, otherwise use current odds
+                const preGameConsensus = fixedPreGameOdds || consensus;
+                preGameOdds = { consensus: preGameConsensus };
                 preGameOddsLocked = true;
 
                 // Update probability display with team colors (only on first load)
-                const homeProb = consensus.home_prob || 50;
-                const awayProb = consensus.away_prob || 50;
+                const homeProb = preGameConsensus.home_prob || 50;
+                const awayProb = preGameConsensus.away_prob || 50;
 
                 // Normalize to 100% total (remove vig)
                 const totalProb = homeProb + awayProb;
@@ -1940,8 +1942,9 @@
                 currentAwayTeam = gameData.away_team || 'AWAY';
 
                 // Display odds if available (pass both abbrev and city for display flexibility)
+                // Pass pre_game_odds separately so it's fixed and never changes
                 if (gameData.odds) {
-                    updateOddsDisplay(gameData.odds, gameData.home_team, gameData.away_team, gameData.home_team_city, gameData.away_team_city);
+                    updateOddsDisplay(gameData.odds, gameData.home_team, gameData.away_team, gameData.home_team_city, gameData.away_team_city, gameData.pre_game_odds);
                 } else {
                     document.getElementById('odds-section').classList.remove('visible');
                 }
