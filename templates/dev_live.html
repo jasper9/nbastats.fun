@@ -555,6 +555,110 @@
         .chat-message.filtered {
             display: none !important;
         }
+        /* Box Score Section */
+        .box-score-section {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            margin-top: 15px;
+            overflow: hidden;
+            display: none;
+        }
+        .box-score-section.visible {
+            display: block;
+        }
+        .box-score-header {
+            background: var(--bg-card);
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .box-score-title {
+            font-family: 'Oswald', sans-serif;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+        }
+        .team-toggle {
+            display: flex;
+            gap: 5px;
+        }
+        .team-toggle-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .team-toggle-btn:hover {
+            border-color: var(--text-secondary);
+        }
+        .team-toggle-btn.active {
+            background: var(--nuggets-gold);
+            border-color: var(--nuggets-gold);
+            color: #000;
+        }
+        .box-score-content {
+            padding: 10px;
+            overflow-x: auto;
+        }
+        .player-stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+        .player-stats-table th {
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            font-weight: 500;
+            padding: 8px 6px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+        }
+        .player-stats-table th.player-col,
+        .player-stats-table td.player-col {
+            text-align: left;
+            padding-left: 10px;
+            min-width: 120px;
+        }
+        .player-stats-table td {
+            padding: 8px 6px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        .player-stats-table td.player-col {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        .player-stats-table tr:hover {
+            background: rgba(255,255,255,0.03);
+        }
+        .player-stats-table tr.totals-row {
+            background: var(--bg-card);
+        }
+        .player-stats-table tr.totals-row td {
+            font-weight: 600;
+            color: var(--text-primary);
+            border-top: 2px solid var(--border);
+        }
+        .player-stats-table .highlight {
+            color: var(--nuggets-gold);
+            font-weight: 600;
+        }
+        .player-stats-table .pct {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
         @media (max-width: 600px) {
             .page-title { font-size: 1.4rem; }
             .chat-feed { height: 400px; }
@@ -702,6 +806,40 @@
                 AI
             </button>
         </div>
+
+        <!-- Box Score Section -->
+        <div class="box-score-section" id="box-score-section">
+            <div class="box-score-header">
+                <span class="box-score-title">Box Score</span>
+                <div class="team-toggle">
+                    <button class="team-toggle-btn active" id="toggle-away" data-team="away">Away</button>
+                    <button class="team-toggle-btn" id="toggle-home" data-team="home">Home</button>
+                </div>
+            </div>
+            <div class="box-score-content">
+                <table class="player-stats-table">
+                    <thead>
+                        <tr>
+                            <th class="player-col">Player</th>
+                            <th>PTS</th>
+                            <th>REB</th>
+                            <th>AST</th>
+                            <th>STL</th>
+                            <th>BLK</th>
+                            <th>FGM</th>
+                            <th>FGA</th>
+                            <th>FG%</th>
+                            <th>3PM</th>
+                            <th>FTM</th>
+                            <th>FTA</th>
+                        </tr>
+                    </thead>
+                    <tbody id="player-stats-body">
+                        <!-- Player rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <div class="footer">
@@ -750,6 +888,10 @@
             quarterLabels: []    // labels for quarter markers (Q1, Q2, etc.)
         };
         let lastPeriod = 0;  // Track current period for quarter markers
+
+        // Player stats data
+        let playerStats = { home: [], away: [] };
+        let currentStatsTeam = 'away';  // Currently displayed team
 
         // Custom Chart.js plugin to draw vertical quarter lines
         const quarterLinesPlugin = {
@@ -1261,6 +1403,98 @@
             });
         }
 
+        // Update box score display
+        function updateBoxScore(stats) {
+            playerStats = stats || { home: [], away: [] };
+
+            // Update toggle button labels with team names
+            document.getElementById('toggle-away').textContent = currentAwayTeam;
+            document.getElementById('toggle-home').textContent = currentHomeTeam;
+
+            // Show box score section if we have any stats
+            const hasStats = playerStats.home.length > 0 || playerStats.away.length > 0;
+            document.getElementById('box-score-section').classList.toggle('visible', hasStats);
+
+            // Render current team's stats
+            renderPlayerStats(currentStatsTeam);
+        }
+
+        function renderPlayerStats(team) {
+            const players = playerStats[team] || [];
+            const tbody = document.getElementById('player-stats-body');
+
+            if (players.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="12" style="text-align: center; padding: 20px; color: var(--text-muted);">No player stats yet</td></tr>';
+                return;
+            }
+
+            // Calculate totals
+            const totals = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fgm: 0, fga: 0, fg3m: 0, ftm: 0, fta: 0 };
+
+            let html = '';
+            players.forEach(p => {
+                const fgPct = p.fga > 0 ? (p.fgm / p.fga * 100).toFixed(1) : '0.0';
+                const ptsClass = p.pts >= 20 ? 'highlight' : '';
+
+                html += `<tr>
+                    <td class="player-col">${p.name}</td>
+                    <td class="${ptsClass}">${p.pts}</td>
+                    <td>${p.reb}</td>
+                    <td>${p.ast}</td>
+                    <td>${p.stl}</td>
+                    <td>${p.blk}</td>
+                    <td>${p.fgm}</td>
+                    <td>${p.fga}</td>
+                    <td class="pct">${fgPct}</td>
+                    <td>${p.fg3m}</td>
+                    <td>${p.ftm}</td>
+                    <td>${p.fta}</td>
+                </tr>`;
+
+                // Add to totals
+                totals.pts += p.pts || 0;
+                totals.reb += p.reb || 0;
+                totals.ast += p.ast || 0;
+                totals.stl += p.stl || 0;
+                totals.blk += p.blk || 0;
+                totals.fgm += p.fgm || 0;
+                totals.fga += p.fga || 0;
+                totals.fg3m += p.fg3m || 0;
+                totals.ftm += p.ftm || 0;
+                totals.fta += p.fta || 0;
+            });
+
+            // Add totals row
+            const totalFgPct = totals.fga > 0 ? (totals.fgm / totals.fga * 100).toFixed(1) : '0.0';
+            html += `<tr class="totals-row">
+                <td class="player-col">TOTAL</td>
+                <td>${totals.pts}</td>
+                <td>${totals.reb}</td>
+                <td>${totals.ast}</td>
+                <td>${totals.stl}</td>
+                <td>${totals.blk}</td>
+                <td>${totals.fgm}</td>
+                <td>${totals.fga}</td>
+                <td class="pct">${totalFgPct}</td>
+                <td>${totals.fg3m}</td>
+                <td>${totals.ftm}</td>
+                <td>${totals.fta}</td>
+            </tr>`;
+
+            tbody.innerHTML = html;
+        }
+
+        function switchTeamStats(team) {
+            currentStatsTeam = team;
+
+            // Update toggle buttons
+            document.getElementById('toggle-away').classList.toggle('active', team === 'away');
+            document.getElementById('toggle-home').classList.toggle('active', team === 'home');
+
+            // Re-render stats
+            renderPlayerStats(team);
+        }
+
         // Format UTC time to local time
         function formatLocalTime(utcTimeStr) {
             if (!utcTimeStr) return null;
@@ -1480,6 +1714,11 @@
                     }
                 }
 
+                // Update box score with player stats
+                if (data.player_stats) {
+                    updateBoxScore(data.player_stats);
+                }
+
                 // Update stats in header
                 document.getElementById('stat-lead-changes').textContent = `🔄 ${data.lead_changes || 0}`;
                 // Show appropriate status based on game state
@@ -1564,6 +1803,13 @@
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 toggleFilter(btn.dataset.bot);
+            });
+        });
+
+        // Team toggle button click handlers
+        document.querySelectorAll('.team-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchTeamStats(btn.dataset.team);
             });
         });
 

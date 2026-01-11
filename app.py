@@ -2437,6 +2437,35 @@ def api_dev_live_feed(game_id):
         else:
             history['status'] = game_status
 
+        # Collect player stats grouped by team
+        player_stats_by_team = {'home': [], 'away': []}
+        if game_id in _player_game_stats:
+            for player_id, stats in _player_game_stats[game_id].items():
+                if stats['name']:  # Only include players with recorded stats
+                    player_data = {
+                        'name': stats['name'],
+                        'team': stats['team'],
+                        'pts': stats['pts'],
+                        'reb': stats['reb'],
+                        'ast': stats['ast'],
+                        'stl': stats['stl'],
+                        'blk': stats['blk'],
+                        'fgm': stats['fgm'],
+                        'fga': stats['fga'],
+                        'ftm': stats['ftm'],
+                        'fta': stats['fta'],
+                        'fg3m': stats['3pm'],
+                    }
+                    # Group by home/away
+                    if stats['team'] == home_team:
+                        player_stats_by_team['home'].append(player_data)
+                    elif stats['team'] == away_team:
+                        player_stats_by_team['away'].append(player_data)
+
+            # Sort each team by points (descending)
+            player_stats_by_team['home'].sort(key=lambda x: x['pts'], reverse=True)
+            player_stats_by_team['away'].sort(key=lambda x: x['pts'], reverse=True)
+
         # Build response
         response_data = {
             'messages': all_messages,
@@ -2449,6 +2478,7 @@ def api_dev_live_feed(game_id):
             'lead_changes': _dev_live_lead_changes[game_id]['count'],
             'status': game_status,
             'period': current_period,  # Current quarter for chart quarter markers
+            'player_stats': player_stats_by_team,
         }
 
         # Include score history on first load for chart reconstruction
