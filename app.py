@@ -2157,9 +2157,9 @@ def api_dev_live_feed(game_id):
             home_timeouts = game_match['homeTeam'].get('timeoutsRemaining', 0)
             away_timeouts = game_match['awayTeam'].get('timeoutsRemaining', 0)
 
-            # Bonus status
-            home_in_bonus = bool(game_match['homeTeam'].get('inBonus', 0))
-            away_in_bonus = bool(game_match['awayTeam'].get('inBonus', 0))
+            # Bonus status (API returns string '0' or '1', not int)
+            home_in_bonus = game_match['homeTeam'].get('inBonus', '0') == '1'
+            away_in_bonus = game_match['awayTeam'].get('inBonus', '0') == '1'
 
         # Get full team names for pregame display
         home_team_name = ''
