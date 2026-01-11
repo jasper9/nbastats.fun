@@ -304,7 +304,7 @@ def extract_player_from_text(text: str) -> str:
     return ''
 
 
-def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = None, largest_leads: dict = None, lead_changes: int = 0, is_game_final: bool = False) -> list:
+def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = None, largest_leads: dict = None, lead_changes: int = 0, is_game_final: bool = False, skip_llm: bool = False) -> list:
     """
     Generate chat messages from a BallDontLie play.
 
@@ -315,6 +315,7 @@ def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = N
         largest_leads: Dict tracking largest leads for each team
         lead_changes: Total number of lead changes so far
         is_game_final: Whether the game has ended (for game summary)
+        skip_llm: If True, skip LLM calls (for historical regeneration, faster loading)
 
     Returns:
         List of message dicts
@@ -550,8 +551,8 @@ def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = N
                 largest_lead_team = 'Neither'
                 largest_lead = 0
 
-            # Generate LLM quarter summary
-            if LLM_AVAILABLE:
+            # Generate LLM quarter summary (skip for historical regeneration)
+            if LLM_AVAILABLE and not skip_llm:
                 llm_context = {
                     'home_team': home_team,
                     'away_team': away_team,
@@ -650,8 +651,8 @@ def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = N
                 })
             largest_leads['away'] = away_lead
 
-    # Game summary (when game is final)
-    if is_game_final and LLM_AVAILABLE:
+    # Game summary (when game is final, skip for historical regeneration)
+    if is_game_final and LLM_AVAILABLE and not skip_llm:
         # Determine winner and margin
         if home_score > away_score:
             winner = home_team

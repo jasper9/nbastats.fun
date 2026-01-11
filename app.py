@@ -3546,14 +3546,15 @@ def api_beta_live_feed(game_id):
                     if (prev_diff > 0 and curr_diff < 0) or (prev_diff < 0 and curr_diff > 0):
                         lead_change_count += 1
 
-                # Generate messages using BallDontLie module (no LLM)
+                # Generate messages using BallDontLie module (skip LLM for faster loading)
                 compare_play = prev_play if i > 0 else None
                 # Check if this is the last play (for game summary)
                 is_last_play = (i == len(plays) - 1)
                 msgs = bdl.generate_messages_from_play(
                     play, game_info, compare_play, largest_leads_regen,
                     lead_changes=lead_change_count,
-                    is_game_final=is_last_play
+                    is_game_final=is_last_play,
+                    skip_llm=True  # Skip LLM for historical regeneration
                 )
                 for msg in msgs:
                     msg['action_number'] = play.get('order', 0)
@@ -3922,14 +3923,15 @@ def api_beta_live_feed(game_id):
                         if (prev_diff > 0 and curr_diff < 0) or (prev_diff < 0 and curr_diff > 0):
                             lead_change_count_regen += 1
 
-                    # Generate messages using BallDontLie module
+                    # Generate messages using BallDontLie module (skip LLM for faster loading)
                     compare_p = prev_p if i > 0 else None
                     # Check if this is the last play (for game summary)
                     is_last_play = (i == len(plays) - 1)
                     msgs = bdl.generate_messages_from_play(
                         p, game_info, compare_p, largest_leads_regen,
                         lead_changes=lead_change_count_regen,
-                        is_game_final=is_last_play
+                        is_game_final=is_last_play,
+                        skip_llm=True  # Skip LLM for historical regeneration
                     )
 
                     for msg in msgs:
