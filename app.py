@@ -3399,27 +3399,40 @@ def api_beta_live_feed(game_id):
             time_until_game = None
             try:
                 import re
-                time_match = re.match(r'(\d{1,2}):(\d{2})\s*(AM|PM)', game_status)
-                if time_match:
-                    hour = int(time_match.group(1))
-                    minute = int(time_match.group(2))
-                    ampm = time_match.group(3)
+                from datetime import timezone as tz
 
-                    # Convert to 24-hour (assume ET, convert to local)
-                    if ampm == 'PM' and hour != 12:
-                        hour += 12
-                    elif ampm == 'AM' and hour == 12:
-                        hour = 0
+                now_utc = datetime.now(tz.utc)
 
-                    # Create game datetime (assume today, ET timezone)
-                    from datetime import timezone
-                    # ET is UTC-5 (or UTC-4 during DST)
-                    et_offset = timedelta(hours=-5)  # EST
-                    now_utc = datetime.now(timezone.utc)
-                    game_time_et = datetime(now_utc.year, now_utc.month, now_utc.day,
-                                            hour, minute, tzinfo=timezone(et_offset))
+                # Try ISO format first (e.g., "2026-01-11T20:00:00Z")
+                iso_match = re.match(r'(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z?', game_status)
+                if iso_match:
+                    year = int(iso_match.group(1))
+                    month = int(iso_match.group(2))
+                    day = int(iso_match.group(3))
+                    hour = int(iso_match.group(4))
+                    minute = int(iso_match.group(5))
+                    game_time_utc = datetime(year, month, day, hour, minute, tzinfo=tz.utc)
+                    time_until_game = (game_time_utc - now_utc).total_seconds() / 60
+                else:
+                    # Try human-readable format (e.g., "7:00 PM ET")
+                    time_match = re.match(r'(\d{1,2}):(\d{2})\s*(AM|PM)', game_status)
+                    if time_match:
+                        hour = int(time_match.group(1))
+                        minute = int(time_match.group(2))
+                        ampm = time_match.group(3)
 
-                    time_until_game = (game_time_et - now_utc).total_seconds() / 60
+                        # Convert to 24-hour (assume ET, convert to local)
+                        if ampm == 'PM' and hour != 12:
+                            hour += 12
+                        elif ampm == 'AM' and hour == 12:
+                            hour = 0
+
+                        # Create game datetime (assume today, ET timezone)
+                        # ET is UTC-5 (or UTC-4 during DST)
+                        et_offset = timedelta(hours=-5)  # EST
+                        game_time_et = datetime(now_utc.year, now_utc.month, now_utc.day,
+                                                hour, minute, tzinfo=tz(et_offset))
+                        time_until_game = (game_time_et - now_utc).total_seconds() / 60
             except Exception as e:
                 print(f"Error parsing game time: {e}")
 
