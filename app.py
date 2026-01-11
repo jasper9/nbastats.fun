@@ -938,6 +938,21 @@ def ml_to_prob(ml):
         return None
 
 
+def prob_to_ml(prob):
+    """Convert implied probability (0-1) to American moneyline odds."""
+    if prob is None or prob <= 0 or prob >= 1:
+        return None
+    try:
+        if prob >= 0.5:
+            # Favorite: negative moneyline
+            return round(-100 * prob / (1 - prob))
+        else:
+            # Underdog: positive moneyline
+            return round(100 * (1 - prob) / prob)
+    except (ValueError, ZeroDivisionError):
+        return None
+
+
 def fetch_dev_live_odds(game_ids, game_date=None):
     """Fetch odds for multiple games from balldontlie API.
     Returns dict with both game_id and team-pair keys for flexible matching."""
@@ -1026,16 +1041,24 @@ def fetch_dev_live_odds(game_ids, game_date=None):
                         totals.append(float(o.get('total_value')))
 
             if home_probs:
+                # Calculate average probabilities
+                avg_home_prob = sum(home_probs) / len(home_probs)
+                avg_away_prob = sum(away_probs) / len(away_probs)
+
+                # Convert average probabilities to moneylines (more meaningful than averaging raw MLs)
+                consensus_home_ml = prob_to_ml(avg_home_prob / 100)  # prob_to_ml expects 0-1
+                consensus_away_ml = prob_to_ml(avg_away_prob / 100)
+
                 odds_data = {
                     'vendors': vendors,
                     'consensus': {
-                        'home_prob': round(sum(home_probs) / len(home_probs), 1),
-                        'away_prob': round(sum(away_probs) / len(away_probs), 1),
+                        'home_prob': round(avg_home_prob, 1),
+                        'away_prob': round(avg_away_prob, 1),
                         'vendor_count': len(vendors),
                         'spread': round(sum(spreads) / len(spreads), 1) if spreads else None,
                         'total': round(sum(totals) / len(totals), 1) if totals else None,
-                        'home_ml': round(sum(home_mls) / len(home_mls)) if home_mls else None,
-                        'away_ml': round(sum(away_mls) / len(away_mls)) if away_mls else None,
+                        'home_ml': consensus_home_ml,
+                        'away_ml': consensus_away_ml,
                     },
                     'updated_at': datetime.now().isoformat(),
                 }
