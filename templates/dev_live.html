@@ -1045,6 +1045,32 @@
             document.getElementById('mini-charts').classList.add('visible');
         }
 
+        // Estimate win probability based on score and game progress
+        // Uses a simple model: each point of lead shifts probability, with more impact as game progresses
+        function estimateWinProbability(homeScore, awayScore, period) {
+            const lead = homeScore - awayScore;
+
+            // Estimate game progress (0-1 scale based on period)
+            let gameProgress = 0.25;  // Default to early game
+            if (period) {
+                if (period <= 4) {
+                    gameProgress = period / 4;  // Q1=0.25, Q2=0.5, Q3=0.75, Q4=1.0
+                } else {
+                    gameProgress = 1.0;  // Overtime
+                }
+            }
+
+            // Each point shifts probability more as game progresses
+            // Early game: ~2% per point, Late game: ~5% per point
+            const pointValue = 2 + gameProgress * 3;
+            let probAdjust = lead * pointValue;
+
+            // Cap at reasonable bounds (-45 to +45 around 50%)
+            probAdjust = Math.max(-45, Math.min(45, probAdjust));
+
+            return 50 + probAdjust;
+        }
+
         function updateCharts(homeScore, awayScore, homeTeam, awayTeam, homeProb = null, period = null) {
             if (!leadChart || !probChart) return;
 
@@ -1064,18 +1090,15 @@
             chartData.leadDiffs.push(homeScore - awayScore);
 
             // Add probability data point (convert to swing scale: 50% → 0, 100% → +100, 0% → -100)
+            let prob;
             if (homeProb !== null) {
-                const swingValue = (homeProb - 50) * 2;  // 50% → 0, 75% → +50, 25% → -50
-                chartData.homeProbs.push(swingValue);
-            } else if (currentOdds && currentOdds.consensus) {
-                // Use current odds as default probability
-                const prob = currentOdds.consensus.home_prob || 50;
-                const swingValue = (prob - 50) * 2;
-                chartData.homeProbs.push(swingValue);
+                prob = homeProb;
             } else {
-                // No probability data - use 0 (even)
-                chartData.homeProbs.push(0);
+                // Estimate win probability based on score differential and game progress
+                prob = estimateWinProbability(homeScore, awayScore, period);
             }
+            const swingValue = (prob - 50) * 2;  // 50% → 0, 75% → +50, 25% → -50
+            chartData.homeProbs.push(swingValue);
 
             // Limit data points for performance (keep last 100)
             const maxPoints = 100;
