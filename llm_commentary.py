@@ -193,74 +193,98 @@ Example format:
 Keep it punchy and insightful. No hashtags or emojis.""",
 
     # Historian prompts for stat milestones
-    'triple_double': """You are an NBA historian providing fascinating context. A player just recorded a triple-double!
+    'triple_double': """You are an insightful NBA analyst reacting to a triple-double with GENUINE curiosity.
 
 Player: {player}
-Stats: {pts} points, {reb} rebounds, {ast} assists
+Tonight's stats: {pts} points, {reb} rebounds, {ast} assists
 Team: {team}
 Player's season average: {season_avg}
 
-Give ONE sentence (max 25 words) with an interesting historical fact about triple-doubles. Examples of angles:
-- Compare to all-time leaders (Oscar Robertson, Russell Westbrook, Magic Johnson)
-- Note how rare they are (~120-150 per season league-wide)
-- Reference franchise records if it's a star player
-- Mention notable active players who chase them
+CRITICAL: Make this PERSONAL to the player:
+- Is this expected? (Look at their averages - if near 10/10/10, it's their norm)
+- Is this surprising? (Role player? Big man with assists? Guard with rebounds?)
+- Is this historically significant? (Career first? Season trend?)
 
-Be creative and educational. Start with 📜. No hashtags.""",
+Consider:
+- Jokic/Doncic/Westbrook types: Triple-doubles are routine, maybe mention "another one" or their count
+- Stars who rarely get them: Note the rarity, versatility
+- Unexpected players: THIS is the exciting story - emphasize how unusual this is
 
-    'double_double': """You are an NBA historian. A player just got a double-double!
+Write 1-2 authentic sentences (max 35 words). If it's routine, say so. If it's shocking, convey that shock. Start with 📜. No hashtags.""",
+
+    'double_double': """You are an insightful NBA analyst noting a double-double.
 
 Player: {player}
 Stats: {stat1_name} {stat1_val}, {stat2_name} {stat2_val}
 Team: {team}
 Player's season average: {season_avg}
 
-Give ONE sentence (max 20 words) with quick context. Only comment if it's notable - if it's routine for this player, mention their consistency. Reference how common double-doubles are (~15-20 per night league-wide). Start with 📜. No hashtags.""",
+Be GENUINE - double-doubles are common (~15-20 per night), so only get excited if:
+- It's an unusual combo (points/blocks, assists/steals, etc.)
+- The player isn't known for this (guard with 10+ rebounds? Center with 10+ assists?)
+- The numbers are BIG (15-15? 20-20? Much rarer)
 
-    'scoring_milestone': """You are an NBA historian. A player just hit a scoring milestone!
+For routine double-doubles (star center with points/rebounds), keep it brief and factual.
+For surprising ones, convey genuine interest.
+
+Write ONE sentence (max 25 words). Be authentic. Start with 📜. No hashtags.""",
+
+    'scoring_milestone': """You are an insightful NBA analyst providing PERSONALIZED context about a scoring milestone.
 
 Player: {player}
-Points: {pts}
+Points scored: {pts}
 Milestone: {milestone}+ point game
 Team: {team}
-Player's scoring average: {ppg} PPG this season
+Player's season average: {ppg} PPG
 
-Give ONE sentence (max 25 words) with fascinating historical context. Angles to consider:
-- 30+ pts: "Only 3-4 players per night reach this mark"
-- 40+ pts: "Only ~150 occur per season across the NBA"
-- 50+ pts: "Historic performance - fewer than 30 per season league-wide"
-- 60+ pts: "Legendary territory - only happens a handful of times per year"
+CRITICAL: Analyze THIS specific player's context. Consider:
+- Points above average: {pts_above_avg} (huge gap = remarkable, small gap = expected)
+- If {ppg} is low (under 15): This is a CAREER-type game, emphasize how rare this is for them
+- If {ppg} is medium (15-25): Note if they're hot tonight, or stepping up big
+- If {ppg} is high (25+): This is more routine, but still elite company
 
-Reference similar performances by legends if relevant. Start with 📜. No hashtags.""",
+Be genuinely curious and specific. Ask yourself:
+- Is this player known for big games, or is this a surprise?
+- Would fans be shocked or expecting this?
+- Compare to their typical role (star vs role player having a breakout game)
 
-    'blocks_milestone': """You are an NBA historian. A player just hit a blocks milestone!
+Write 1-2 punchy sentences (max 35 words). Be authentic - a role player with 31 is WAY more interesting than a star with 31. Start with 📜. No hashtags.""",
+
+    'blocks_milestone': """You are an insightful NBA analyst commenting on a blocks milestone.
 
 Player: {player}
-Blocks: {blocks}
+Blocks tonight: {blocks}
 Milestone: {milestone}+ blocks
 Team: {team}
-Player's blocks average: {bpg} BPG this season
+Player's season average: {bpg} BPG
 
-Give ONE sentence (max 25 words) with context about this defensive feat. Angles:
-- 5+ blocks: "Only happens 1-2 times per night league-wide"
-- 10+ blocks: "Ultra-rare - maybe 2-3 times per season"
-- 15+ blocks: "Historic - would tie/break NBA records"
+PERSONALIZE this:
+- Compare to their average: {blocks} blocks vs {bpg} BPG - how many times their normal?
+- Is this player known as a shot-blocker? Or is this unusually high for them?
+- Rarity context: 5+ happens 1-2x/night, 10+ is ultra-rare (2-3x/season)
 
-Reference shot-blocking legends (Hakeem, Mutombo, Mark Eaton). Start with 📜. No hashtags.""",
+For elite rim protectors (averages 2+ BPG): Note if this is big even for them.
+For guards/forwards with blocks: This is the STORY - emphasize how unusual.
 
-    'steals_milestone': """You are an NBA historian. A player just hit a steals milestone!
+Write 1-2 sentences (max 30 words). Be genuine and specific. Start with 📜. No hashtags.""",
+
+    'steals_milestone': """You are an insightful NBA analyst commenting on a steals milestone.
 
 Player: {player}
-Steals: {steals}
+Steals tonight: {steals}
 Milestone: {milestone}+ steals
 Team: {team}
-Player's steals average: {spg} SPG this season
+Player's season average: {spg} SPG
 
-Give ONE sentence (max 25 words) with context. Angles:
-- 5+ steals: "Averages just one such game per night league-wide"
-- 10+ steals: "Incredibly rare - maybe 1-2 times per season"
+PERSONALIZE this:
+- Compare to their average: {steals} steals vs {spg} SPG - how far above normal?
+- Is this player known for active hands? Or is this a surprising stat line?
+- Rarity: 5+ steals happens ~once per night league-wide, 10+ is historic (1-2x/season)
 
-Reference steal leaders (John Stockton, Chris Paul, Gary Payton). Start with 📜. No hashtags.""",
+For known defenders (1.5+ SPG): Note if this is exceptional even for them.
+For unexpected players: This is the fun story - a center with 5 steals? A shooter?
+
+Write 1-2 sentences (max 30 words). Be genuine and curious. Start with 📜. No hashtags.""",
 
     'big_lead': """You are an NBA historian commenting on a big lead.
 
@@ -281,6 +305,8 @@ Make it dramatic but factual. Start with 📜. No hashtags.""",
 LONG_SUMMARY_EVENTS = {'quarter_summary'}
 # Game summary uses bullet points so needs less tokens
 MEDIUM_SUMMARY_EVENTS = {'game_summary'}
+# Historian milestone messages need medium-length responses for personality
+HISTORIAN_EVENTS = {'triple_double', 'double_double', 'scoring_milestone', 'blocks_milestone', 'steals_milestone', 'big_lead'}
 
 
 def get_client():
@@ -342,6 +368,9 @@ def generate_llm_commentary(event_type, context):
         elif event_type in MEDIUM_SUMMARY_EVENTS:
             max_tokens = 120  # Bullet points need less
             temperature = 0.7
+        elif event_type in HISTORIAN_EVENTS:
+            max_tokens = 100  # Historian needs room for personality
+            temperature = 0.9  # Higher temp for variety
         else:
             max_tokens = 50
             temperature = 1.0

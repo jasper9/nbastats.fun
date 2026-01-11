@@ -1132,9 +1132,11 @@ def check_stat_milestones(game_id, player, game_info):
             milestone_key = f"{player}_{threshold}pts"
             if milestone_key not in announced:
                 announced.add(milestone_key)
+                ppg = avgs.get('ppg', 0)
+                pts_above_avg = pts - ppg if ppg > 0 else pts
                 msg = generate_historian_milestone_message(
                     'scoring_milestone', player, team,
-                    {'pts': pts, 'milestone': threshold, 'ppg': avgs.get('ppg', 0)},
+                    {'pts': pts, 'milestone': threshold, 'ppg': ppg, 'pts_above_avg': round(pts_above_avg, 1)},
                     game_info
                 )
                 if msg:
