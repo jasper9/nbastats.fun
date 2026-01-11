@@ -16,6 +16,13 @@ try:
 except ImportError:
     LLM_AVAILABLE = False
 
+# BallDontLie API for live game data (play-by-play, stats)
+try:
+    import balldontlie_live as bdl
+    BDL_AVAILABLE = True
+except ImportError:
+    BDL_AVAILABLE = False
+
 # Load .env file if python-dotenv is available
 try:
     from dotenv import load_dotenv
@@ -1984,42 +1991,66 @@ def dev_live():
 
 @app.route('/api/dev-live/games')
 def api_dev_live_games():
-    """Get current live NBA games and games with saved history."""
+    """Get current live NBA games and games with saved history using BallDontLie API."""
     try:
-        from nba_api.live.nba.endpoints import scoreboard
-        sb = scoreboard.ScoreBoard()
-        games_data = sb.get_dict()['scoreboard']['games']
+        if not BDL_AVAILABLE:
+            return jsonify({'error': 'BallDontLie API module not available'}), 500
+
+        # Get today's games from BallDontLie
+        game_date = datetime.now().strftime('%Y-%m-%d')
+        games_data = bdl.get_todays_games(game_date)
 
         # Pre-fetch odds for all games (single API call)
-        game_date = datetime.now().strftime('%Y-%m-%d')
         all_odds = fetch_dev_live_odds([], game_date)
 
         games = []
         seen_game_ids = set()
 
         for g in games_data:
-            game_id = g['gameId']
+            game_id = str(g['id'])  # BallDontLie uses numeric IDs
             seen_game_ids.add(game_id)
+
             # Check if history exists for this game
             has_history = os.path.exists(os.path.join(DEV_LIVE_HISTORY_DIR, f'game_{game_id}.json'))
 
+            home_team = g.get('home_team', {})
+            away_team = g.get('visitor_team', {})
+
             # Get odds for this game - match by team pair since IDs differ between APIs
-            team_key = f"{g['awayTeam']['teamTricode']}@{g['homeTeam']['teamTricode']}"
+            team_key = f"{away_team.get('abbreviation', '')}@{home_team.get('abbreviation', '')}"
             game_odds = all_odds.get(team_key, {})
+
+            # Parse game status from BallDontLie format
+            status = g.get('status', '')
+            period = g.get('period', 0)
+            time_str = g.get('time', '')
+
+            # Build status text similar to NBA API format
+            if status == 'Final':
+                status_text = 'Final'
+            elif period > 0:
+                # Game in progress
+                status_text = f"Q{period}" if period <= 4 else f"OT{period-4}"
+                if time_str:
+                    status_text = f"{status_text} {time_str}"
+            else:
+                # Scheduled game - status is the time (e.g., "7:00 PM")
+                status_text = status
 
             game_data = {
                 'game_id': game_id,
-                'home_team': g['homeTeam']['teamTricode'],
-                'away_team': g['awayTeam']['teamTricode'],
-                'home_team_name': g['homeTeam']['teamName'],
-                'away_team_name': g['awayTeam']['teamName'],
-                'home_team_city': g['homeTeam'].get('teamCity', ''),
-                'away_team_city': g['awayTeam'].get('teamCity', ''),
-                'status': g['gameStatusText'],
-                'game_time_utc': g.get('gameTimeUTC'),  # ISO 8601 UTC time for local conversion
-                'home_score': g['homeTeam'].get('score', 0),
-                'away_score': g['awayTeam'].get('score', 0),
+                'home_team': home_team.get('abbreviation', ''),
+                'away_team': away_team.get('abbreviation', ''),
+                'home_team_name': home_team.get('name', ''),
+                'away_team_name': away_team.get('name', ''),
+                'home_team_city': home_team.get('city', ''),
+                'away_team_city': away_team.get('city', ''),
+                'status': status_text,
+                'game_time_utc': None,  # BallDontLie doesn't provide UTC time directly
+                'home_score': g.get('home_team_score', 0) or 0,
+                'away_score': g.get('visitor_team_score', 0) or 0,
                 'has_history': has_history,
+                'bdl_id': g['id'],  # Keep original BallDontLie ID for API calls
             }
 
             # Add odds if available
@@ -2070,15 +2101,21 @@ def api_dev_live_games():
 
         return jsonify({'games': games})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
 
 
 @app.route('/api/dev-live/feed/<game_id>')
 def api_dev_live_feed(game_id):
-    """Get live chat feed for a specific game."""
+    """Get live chat feed for a specific game using BallDontLie API."""
     try:
-        from nba_api.live.nba.endpoints import playbyplay, scoreboard
         import uuid
+
+        if not BDL_AVAILABLE:
+            return jsonify({'error': 'BallDontLie API module not available'}), 500
+
+        # Convert game_id to int for BallDontLie API
+        bdl_game_id = int(game_id)
 
         # Get last seen action number and client ID from query params
         last_action = int(request.args.get('last_action', 0))
@@ -2102,6 +2139,7 @@ def api_dev_live_feed(game_id):
                     'lead_changes': saved_history.get('lead_changes', 0),
                     'status': 'Final',
                     'is_historical': True,
+                    'player_stats': saved_history.get('player_stats', {'home': [], 'away': []}),
                 })
             else:
                 # Incremental request on completed game - no new messages
@@ -2116,6 +2154,7 @@ def api_dev_live_feed(game_id):
                     'lead_changes': saved_history.get('lead_changes', 0),
                     'status': 'Final',
                     'is_historical': True,
+                    'player_stats': saved_history.get('player_stats', {'home': [], 'away': []}),
                 })
 
         # Track viewer heartbeat
@@ -2132,19 +2171,26 @@ def api_dev_live_feed(game_id):
         }
         viewer_count = len(_dev_live_viewers[game_id])
 
-        # Get game info from scoreboard (play-by-play doesn't include team names)
-        sb = scoreboard.ScoreBoard()
-        games_data = sb.get_dict()['scoreboard']['games']
-        game_match = next((g for g in games_data if g['gameId'] == game_id), None)
+        # Get game info from BallDontLie API
+        game_data = bdl.get_game_info(bdl_game_id)
 
-        home_team = 'HOME'
-        away_team = 'AWAY'
-        game_status = ''
-        home_score = 0
-        away_score = 0
-        # Extract game clock, timeouts, and bonus info
-        game_clock = ''
-        current_period = 0
+        home_team_obj = game_data.get('home_team', {})
+        away_team_obj = game_data.get('visitor_team', {})
+
+        home_team = home_team_obj.get('abbreviation', 'HOME')
+        away_team = away_team_obj.get('abbreviation', 'AWAY')
+        home_team_id = home_team_obj.get('id', 0)
+
+        # Parse game status from BallDontLie
+        period, clock, status_text, is_live = bdl.parse_game_status(game_data)
+        game_status = status_text
+        current_period = period
+        game_clock = clock
+
+        home_score = game_data.get('home_team_score', 0) or 0
+        away_score = game_data.get('visitor_team_score', 0) or 0
+
+        # BallDontLie doesn't provide these, so set defaults
         home_timeouts = 0
         away_timeouts = 0
         home_in_bonus = False
@@ -2152,49 +2198,9 @@ def api_dev_live_feed(game_id):
         home_periods = []
         away_periods = []
 
-        if game_match:
-            home_team = game_match['homeTeam']['teamTricode']
-            away_team = game_match['awayTeam']['teamTricode']
-            game_status = game_match.get('gameStatusText', '')
-            home_score = game_match['homeTeam'].get('score', 0) or 0
-            away_score = game_match['awayTeam'].get('score', 0) or 0
-
-            # Game clock (format: PT04M33.00S -> 4:33)
-            raw_clock = game_match.get('gameClock', '')
-            if raw_clock and raw_clock.startswith('PT'):
-                try:
-                    # Parse ISO 8601 duration: PT04M33.00S
-                    import re
-                    match = re.match(r'PT(\d+)M([\d.]+)S', raw_clock)
-                    if match:
-                        mins = int(match.group(1))
-                        secs = int(float(match.group(2)))
-                        game_clock = f"{mins}:{secs:02d}"
-                except:
-                    pass
-
-            current_period = game_match.get('period', 0)
-
-            # Timeouts remaining
-            home_timeouts = game_match['homeTeam'].get('timeoutsRemaining', 0)
-            away_timeouts = game_match['awayTeam'].get('timeoutsRemaining', 0)
-
-            # Bonus status (API returns string '0' or '1', not int)
-            home_in_bonus = game_match['homeTeam'].get('inBonus', '0') == '1'
-            away_in_bonus = game_match['awayTeam'].get('inBonus', '0') == '1'
-
-            # Quarter-by-quarter scores
-            home_periods = game_match['homeTeam'].get('periods', [])
-            away_periods = game_match['awayTeam'].get('periods', [])
-
         # Get full team names for pregame display
-        home_team_name = ''
-        away_team_name = ''
-        game_time_utc = None
-        if game_match:
-            home_team_name = f"{game_match['homeTeam'].get('teamCity', '')} {game_match['homeTeam'].get('teamName', '')}".strip()
-            away_team_name = f"{game_match['awayTeam'].get('teamCity', '')} {game_match['awayTeam'].get('teamName', '')}".strip()
-            game_time_utc = game_match.get('gameTimeUTC')
+        home_team_name = home_team_obj.get('full_name', '')
+        away_team_name = away_team_obj.get('full_name', '')
 
         game_info = {
             'home_team': home_team,
@@ -2203,43 +2209,22 @@ def api_dev_live_feed(game_id):
         }
 
         # For games that haven't started yet, return pregame preview
-        # Check: not Final, not in a quarter (Q1-Q4), and no scores yet
-        is_pregame = game_status and game_status != 'Final' and 'Q' not in game_status and home_score == 0 and away_score == 0
+        is_pregame = not is_live and game_status != 'Final' and home_score == 0 and away_score == 0
         if is_pregame:
             pregame_messages = []
 
             # Only show pregame preview on fresh load (not polling updates)
             if last_action == 0:
-                # Check if game starts within 30 minutes
-                show_preview = False
-                if game_time_utc:
-                    try:
-                        game_dt = datetime.fromisoformat(game_time_utc.replace('Z', '+00:00'))
-                        now_utc = datetime.now(ZoneInfo('UTC'))
-                        minutes_until_game = (game_dt - now_utc).total_seconds() / 60
+                # Get odds for pregame preview
+                game_date = datetime.now().strftime('%Y-%m-%d')
+                team_key = f"{away_team}@{home_team}"
+                game_odds = get_cached_odds(team_key, game_date)
 
-                        # Show preview if game is within 30 minutes or has just started (negative means past scheduled time)
-                        if -10 < minutes_until_game < 30:
-                            show_preview = True
-                    except Exception as e:
-                        print(f"Error parsing game time: {e}")
-                        # Default to showing preview if we can't parse time
-                        show_preview = True
-                else:
-                    # No game time - show preview anyway
-                    show_preview = True
-
-                if show_preview:
-                    # Get odds for pregame preview
-                    game_date = datetime.now().strftime('%Y-%m-%d')
-                    team_key = f"{away_team}@{home_team}"
-                    game_odds = get_cached_odds(team_key, game_date)
-
-                    pregame_messages = generate_pregame_preview(
-                        home_team, away_team,
-                        home_team_name, away_team_name,
-                        game_odds
-                    )
+                pregame_messages = generate_pregame_preview(
+                    home_team, away_team,
+                    home_team_name, away_team_name,
+                    game_odds
+                )
 
             return jsonify({
                 'messages': pregame_messages,
@@ -2256,47 +2241,42 @@ def api_dev_live_feed(game_id):
                 'is_pregame': True,
             })
 
-        # Get play-by-play (only for games that have started or finished)
-        pbp = playbyplay.PlayByPlay(game_id)
-        data = pbp.get_dict()
-
-        game = data.get('game', {})
-        actions = game.get('actions', [])
+        # Get play-by-play from BallDontLie (only for games that have started or finished)
+        plays = bdl.get_play_by_play(bdl_game_id)
 
         # For completed games without saved history, generate and save immediately (no LLM)
         # This avoids expensive LLM calls on page load for historical games
-        if game_status == 'Final' and not saved_history and actions:
+        if game_status == 'Final' and not saved_history and plays:
             print(f"Generating history for completed game {game_id} (no LLM)...")
             full_messages = []
             full_scores = []
-            prev_a = None
+            prev_play = None
             largest_leads_regen = {'home': 0, 'away': 0}
             lead_change_count = 0
-            reset_player_stats(game_id)  # Reset player stats for fresh tracking
 
-            for i, a in enumerate(actions):
+            for i, play in enumerate(plays):
                 # Track largest leads
-                h = int(a.get('scoreHome', 0) or 0)
-                aw = int(a.get('scoreAway', 0) or 0)
+                h = int(play.get('home_score', 0) or 0)
+                aw = int(play.get('away_score', 0) or 0)
                 if h > aw:
                     largest_leads_regen['home'] = max(largest_leads_regen['home'], h - aw)
                 elif aw > h:
                     largest_leads_regen['away'] = max(largest_leads_regen['away'], aw - h)
 
                 # Count lead changes
-                if prev_a:
-                    prev_h = int(prev_a.get('scoreHome', 0) or 0)
-                    prev_aw = int(prev_a.get('scoreAway', 0) or 0)
+                if prev_play:
+                    prev_h = int(prev_play.get('home_score', 0) or 0)
+                    prev_aw = int(prev_play.get('away_score', 0) or 0)
                     prev_diff = prev_aw - prev_h
                     curr_diff = aw - h
                     if (prev_diff > 0 and curr_diff < 0) or (prev_diff < 0 and curr_diff > 0):
                         lead_change_count += 1
 
-                # Generate messages (no LLM)
-                compare_a = prev_a if i > 0 else None
-                msgs = generate_chat_message(a, game_info, compare_a, largest_leads_regen)
+                # Generate messages using BallDontLie module (no LLM)
+                compare_play = prev_play if i > 0 else None
+                msgs = bdl.generate_messages_from_play(play, game_info, compare_play, largest_leads_regen)
                 for msg in msgs:
-                    msg['action_number'] = a.get('actionNumber', 0)
+                    msg['action_number'] = play.get('order', 0)
                 full_messages.extend(msgs)
 
                 # Track score at each action (include period for quarter markers)
@@ -2304,11 +2284,11 @@ def api_dev_live_feed(game_id):
                     full_scores.append({
                         'home': h,
                         'away': aw,
-                        'action': a.get('actionNumber', 0),
-                        'period': a.get('period', 1)
+                        'action': play.get('order', 0),
+                        'period': play.get('period', 1)
                     })
 
-                prev_a = a
+                prev_play = play
 
             # Deduplicate scores
             deduped_scores = []
@@ -2319,13 +2299,13 @@ def api_dev_live_feed(game_id):
                         deduped_scores.append(s)
 
             # Get final score
-            final_score = {'home': 0, 'away': 0}
-            if actions:
-                last = actions[-1]
-                final_score['home'] = int(last.get('scoreHome', 0) or 0)
-                final_score['away'] = int(last.get('scoreAway', 0) or 0)
+            final_score = {'home': home_score, 'away': away_score}
 
-            max_action = max([a.get('actionNumber', 0) for a in actions]) if actions else 0
+            max_action = max([p.get('order', 0) for p in plays]) if plays else 0
+
+            # Get player stats from BallDontLie (with MIN and plus_minus)
+            player_stats_raw = bdl.get_player_stats(bdl_game_id)
+            player_stats_by_team = bdl.format_player_stats_for_frontend(player_stats_raw, home_team_id)
 
             # Save to history
             history_data = {
@@ -2336,7 +2316,8 @@ def api_dev_live_feed(game_id):
                 'last_action': max_action,
                 'lead_changes': lead_change_count,
                 'final_score': final_score,
-                'total_actions': len(actions),
+                'total_actions': len(plays),
+                'player_stats': player_stats_by_team,
             }
             _dev_live_history[game_id] = history_data
             save_dev_live_history(game_id)
@@ -2349,12 +2330,13 @@ def api_dev_live_feed(game_id):
                 'game_info': game_info,
                 'score': final_score,
                 'scores': deduped_scores,
-                'total_actions': len(actions),
+                'total_actions': len(plays),
                 'viewer_count': 0,
                 'client_id': client_id,
                 'lead_changes': lead_change_count,
                 'status': 'Final',
                 'is_historical': True,
+                'player_stats': player_stats_by_team,
             })
 
         # Initialize lead change tracking for this game
@@ -2365,27 +2347,25 @@ def api_dev_live_feed(game_id):
         if game_id not in _dev_live_largest_leads:
             _dev_live_largest_leads[game_id] = {'home': 0, 'away': 0}
 
-        # Filter to new actions only
-        new_actions = [a for a in actions if a.get('actionNumber', 0) > last_action]
+        # Filter to new plays only (BallDontLie uses 'order' instead of 'actionNumber')
+        new_plays = [p for p in plays if p.get('order', 0) > last_action]
 
         # Generate chat messages with lead change detection
         all_messages = []
         lead_changes_in_batch = 0
 
-        # Get the action just before the new ones for lead change detection
-        prev_action = None
+        # Get the play just before the new ones for lead change detection
+        prev_play = None
         if last_action > 0:
-            prev_actions = [a for a in actions if a.get('actionNumber', 0) == last_action]
-            if prev_actions:
-                prev_action = prev_actions[0]
+            prev_plays = [p for p in plays if p.get('order', 0) == last_action]
+            if prev_plays:
+                prev_play = prev_plays[0]
 
         # Calculate largest leads from history if this is a fresh load
-        # Note: Player stats are tracked via generate_chat_message -> update_player_stats
-        if last_action == 0 and len(actions) > 0:
-            reset_player_stats(game_id)  # Start fresh for player stat tracking
-            for a in actions:
-                h = int(a.get('scoreHome', 0) or 0)
-                aw = int(a.get('scoreAway', 0) or 0)
+        if last_action == 0 and len(plays) > 0:
+            for p in plays:
+                h = int(p.get('home_score', 0) or 0)
+                aw = int(p.get('away_score', 0) or 0)
                 if h > aw:
                     _dev_live_largest_leads[game_id]['home'] = max(_dev_live_largest_leads[game_id]['home'], h - aw)
                 elif aw > h:
@@ -2394,7 +2374,7 @@ def api_dev_live_feed(game_id):
         # For fresh loads of games that just started, prepend pregame messages
         # This ensures viewers joining early see the matchup preview
         pregame_msgs_to_add = []
-        if last_action == 0 and 'Q1' in game_status and len(actions) < 50:
+        if last_action == 0 and current_period == 1 and len(plays) < 50:
             # Game just started - add pregame preview
             game_date = datetime.now().strftime('%Y-%m-%d')
             team_key = f"{away_team}@{home_team}"
@@ -2406,10 +2386,14 @@ def api_dev_live_feed(game_id):
                 game_odds
             )
 
-        for i, action in enumerate(new_actions):
-            # Use previous action for comparison (either from before batch or previous in batch)
-            compare_action = prev_action if i == 0 else new_actions[i - 1]
-            messages = generate_chat_message(action, game_info, compare_action, _dev_live_largest_leads[game_id])
+        for i, play in enumerate(new_plays):
+            # Use previous play for comparison (either from before batch or previous in batch)
+            compare_play = prev_play if i == 0 else new_plays[i - 1]
+            messages = bdl.generate_messages_from_play(play, game_info, compare_play, _dev_live_largest_leads[game_id])
+
+            # Add action_number to each message
+            for msg in messages:
+                msg['action_number'] = play.get('order', 0)
 
             # Count lead changes
             for msg in messages:
@@ -2448,16 +2432,16 @@ def api_dev_live_feed(game_id):
         if pregame_msgs_to_add:
             all_messages = pregame_msgs_to_add + all_messages
 
-        # Count total lead changes from all actions if this is a fresh load
-        if last_action == 0 and len(actions) > 1:
+        # Count total lead changes from all plays if this is a fresh load
+        if last_action == 0 and len(plays) > 1:
             lead_change_count = 0
-            for i in range(1, len(actions)):
-                prev = actions[i - 1]
-                curr = actions[i]
-                prev_home = int(prev.get('scoreHome', 0) or 0)
-                prev_away = int(prev.get('scoreAway', 0) or 0)
-                curr_home = int(curr.get('scoreHome', 0) or 0)
-                curr_away = int(curr.get('scoreAway', 0) or 0)
+            for i in range(1, len(plays)):
+                prev = plays[i - 1]
+                curr = plays[i]
+                prev_home = int(prev.get('home_score', 0) or 0)
+                prev_away = int(prev.get('away_score', 0) or 0)
+                curr_home = int(curr.get('home_score', 0) or 0)
+                curr_away = int(curr.get('away_score', 0) or 0)
                 prev_diff = prev_away - prev_home
                 curr_diff = curr_away - curr_home
                 # Lead change: sign changed and neither is zero (tie doesn't count as lead)
@@ -2465,15 +2449,15 @@ def api_dev_live_feed(game_id):
                     lead_change_count += 1
             _dev_live_lead_changes[game_id]['count'] = lead_change_count
 
-        # Get current score from latest action
-        latest_score = {'home': 0, 'away': 0}
-        if actions:
-            last = actions[-1]
-            latest_score['home'] = int(last.get('scoreHome', 0) or 0)
-            latest_score['away'] = int(last.get('scoreAway', 0) or 0)
+        # Get current score from latest play or game data
+        latest_score = {'home': home_score, 'away': away_score}
+        if plays:
+            last_play = plays[-1]
+            latest_score['home'] = int(last_play.get('home_score', 0) or 0) or home_score
+            latest_score['away'] = int(last_play.get('away_score', 0) or 0) or away_score
 
         # Get the highest action number we've seen
-        max_action = max([a.get('actionNumber', 0) for a in actions]) if actions else 0
+        max_action = max([p.get('order', 0) for p in plays]) if plays else 0
 
         # === HISTORY STORAGE ===
         # Initialize history for this game if not exists
@@ -2502,7 +2486,7 @@ def api_dev_live_feed(game_id):
                 history['messages'].append(msg)
 
         # Track score progression for charts (include period for quarter markers)
-        current_period = actions[-1].get('period', 1) if actions else 1
+        play_period = plays[-1].get('period', 1) if plays else current_period
         if latest_score['home'] > 0 or latest_score['away'] > 0:
             # Only add if score changed from last recorded score
             if not history['scores'] or \
@@ -2512,7 +2496,7 @@ def api_dev_live_feed(game_id):
                     'home': latest_score['home'],
                     'away': latest_score['away'],
                     'action': max_action,
-                    'period': current_period,
+                    'period': play_period,
                 })
 
         # Update history metadata
@@ -2520,7 +2504,7 @@ def api_dev_live_feed(game_id):
         history['last_action'] = max_action
         history['lead_changes'] = _dev_live_lead_changes[game_id]['count']
         history['final_score'] = latest_score
-        history['total_actions'] = len(actions)
+        history['total_actions'] = len(plays)
 
         # Check if game just ended - save history (check BEFORE updating status)
         prev_status = history.get('status', '')
@@ -2528,42 +2512,41 @@ def api_dev_live_feed(game_id):
             history['status'] = 'Final'
 
             # If we don't have any messages accumulated (e.g., game was already Final when first tracked),
-            # regenerate ALL messages from all actions before saving
-            if not history['messages'] and actions:
+            # regenerate ALL messages from all plays before saving
+            if not history['messages'] and plays:
                 print(f"Regenerating messages for completed game {game_id}...")
                 full_messages = []
                 full_scores = []
-                prev_a = None
+                prev_p = None
                 largest_leads_regen = {'home': 0, 'away': 0}
-                reset_player_stats(game_id)  # Reset player stats for fresh tracking
 
-                for i, a in enumerate(actions):
+                for i, p in enumerate(plays):
                     # Track largest leads
-                    h = int(a.get('scoreHome', 0) or 0)
-                    aw = int(a.get('scoreAway', 0) or 0)
+                    h = int(p.get('home_score', 0) or 0)
+                    aw = int(p.get('away_score', 0) or 0)
                     if h > aw:
                         largest_leads_regen['home'] = max(largest_leads_regen['home'], h - aw)
                     elif aw > h:
                         largest_leads_regen['away'] = max(largest_leads_regen['away'], aw - h)
 
-                    # Generate messages
-                    compare_a = prev_a if i > 0 else None
-                    msgs = generate_chat_message(a, game_info, compare_a, largest_leads_regen)
+                    # Generate messages using BallDontLie module
+                    compare_p = prev_p if i > 0 else None
+                    msgs = bdl.generate_messages_from_play(p, game_info, compare_p, largest_leads_regen)
 
                     for msg in msgs:
-                        msg['action_number'] = a.get('actionNumber', 0)
+                        msg['action_number'] = p.get('order', 0)
                     full_messages.extend(msgs)
 
-                    # Track score at each action (include period for quarter markers)
+                    # Track score at each play (include period for quarter markers)
                     if h > 0 or aw > 0:
                         full_scores.append({
                             'home': h,
                             'away': aw,
-                            'action': a.get('actionNumber', 0),
-                            'period': a.get('period', 1)
+                            'action': p.get('order', 0),
+                            'period': p.get('period', 1)
                         })
 
-                    prev_a = a
+                    prev_p = p
 
                 history['messages'] = full_messages
                 # Deduplicate scores (only keep significant changes)
@@ -2575,6 +2558,10 @@ def api_dev_live_feed(game_id):
                     history['scores'] = deduped_scores
                 print(f"Regenerated {len(history['messages'])} messages and {len(history['scores'])} score points")
 
+            # Get player stats from BallDontLie (with MIN and plus_minus) before saving
+            player_stats_raw = bdl.get_player_stats(bdl_game_id)
+            history['player_stats'] = bdl.format_player_stats_for_frontend(player_stats_raw, home_team_id)
+
             # Convert set to list for JSON serialization before saving
             history_to_save = {k: v for k, v in history.items() if k != 'saved_action_numbers'}
             _dev_live_history[game_id] = history_to_save
@@ -2583,39 +2570,9 @@ def api_dev_live_feed(game_id):
         else:
             history['status'] = game_status
 
-        # Collect player stats grouped by team
-        player_stats_by_team = {'home': [], 'away': []}
-        if game_id in _player_game_stats:
-            for player_id, stats in _player_game_stats[game_id].items():
-                if stats['name']:  # Only include players with recorded stats
-                    player_data = {
-                        'name': stats['name'],
-                        'team': stats['team'],
-                        'pts': stats['pts'],
-                        'reb': stats['reb'],
-                        'ast': stats['ast'],
-                        'stl': stats['stl'],
-                        'blk': stats['blk'],
-                        'fgm': stats['fgm'],
-                        'fga': stats['fga'],
-                        'ftm': stats['ftm'],
-                        'fta': stats['fta'],
-                        'fg3m': stats['3pm'],
-                        'fg3a': stats['3pa'],
-                        'oreb': stats['oreb'],
-                        'dreb': stats['dreb'],
-                        'tov': stats['tov'],
-                        'pf': stats['pf'],
-                    }
-                    # Group by home/away
-                    if stats['team'] == home_team:
-                        player_stats_by_team['home'].append(player_data)
-                    elif stats['team'] == away_team:
-                        player_stats_by_team['away'].append(player_data)
-
-            # Sort each team by points (descending)
-            player_stats_by_team['home'].sort(key=lambda x: x['pts'], reverse=True)
-            player_stats_by_team['away'].sort(key=lambda x: x['pts'], reverse=True)
+        # Get player stats from BallDontLie API (includes MIN and plus_minus)
+        player_stats_raw = bdl.get_player_stats(bdl_game_id)
+        player_stats_by_team = bdl.format_player_stats_for_frontend(player_stats_raw, home_team_id)
 
         # Build response
         response_data = {
@@ -2623,7 +2580,7 @@ def api_dev_live_feed(game_id):
             'last_action': max_action,
             'game_info': game_info,
             'score': latest_score,
-            'total_actions': len(actions),
+            'total_actions': len(plays),
             'viewer_count': viewer_count,
             'client_id': client_id,
             'lead_changes': _dev_live_lead_changes[game_id]['count'],
@@ -2642,20 +2599,20 @@ def api_dev_live_feed(game_id):
         }
 
         # Include score history on first load for chart reconstruction
-        if last_action == 0 and actions:
-            # Build full score history from all actions (not just accumulated)
+        if last_action == 0 and plays:
+            # Build full score history from all plays (not just accumulated)
             full_scores = []
-            for a in actions:
-                h = int(a.get('scoreHome', 0) or 0)
-                aw = int(a.get('scoreAway', 0) or 0)
+            for p in plays:
+                h = int(p.get('home_score', 0) or 0)
+                aw = int(p.get('away_score', 0) or 0)
                 if h > 0 or aw > 0:
                     # Only add if score changed
                     if not full_scores or full_scores[-1]['home'] != h or full_scores[-1]['away'] != aw:
                         full_scores.append({
                             'home': h,
                             'away': aw,
-                            'action': a.get('actionNumber', 0),
-                            'period': a.get('period', 1)
+                            'action': p.get('order', 0),
+                            'period': p.get('period', 1)
                         })
             if full_scores:
                 response_data['scores'] = full_scores
