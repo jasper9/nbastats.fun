@@ -1945,12 +1945,6 @@
             document.getElementById('scoreboard').style.display = 'flex';
             document.getElementById('chat-container').style.display = 'block';
 
-            // Only show loading message if chat is empty (first load)
-            const chatFeed = document.getElementById('chat-feed');
-            if (!chatFeed.children.length || chatFeed.querySelector('.loading')) {
-                chatFeed.innerHTML = '<div class="loading" id="loading"><div class="spinner"></div><p>Loading game feed...</p></div>';
-            }
-
             // Get game data from stored games
             const gameData = gamesData[gameId];
 
@@ -1995,6 +1989,15 @@
 
             // Only reinitialize charts for a new game
             if (!isSameGame) {
+                // Clear chat feed for new game
+                const chatFeed = document.getElementById('chat-feed');
+                chatFeed.innerHTML = '<div class="loading" id="loading"><div class="spinner"></div><p>Loading game feed...</p></div>';
+
+                // Clear quarter scores and box score from previous game
+                document.getElementById('quarter-scores').style.display = 'none';
+                document.getElementById('quarter-scores-body').innerHTML = '';
+                document.getElementById('box-score-section').classList.remove('visible');
+
                 // Initialize charts (will use currentHomeTeam/currentAwayTeam for labels)
                 initCharts();
 
