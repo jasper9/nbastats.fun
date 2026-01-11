@@ -203,11 +203,20 @@
             font-size: 0.7rem;
         }
         .timeouts {
-            color: var(--text-secondary);
-            background: rgba(255,255,255,0.15);
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-weight: 500;
+            display: flex;
+            gap: 3px;
+            align-items: center;
+        }
+        .timeout-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--nuggets-gold);
+            transition: opacity 0.3s;
+        }
+        .timeout-dot.used {
+            background: var(--text-muted);
+            opacity: 0.3;
         }
         .bonus-indicator {
             color: #ef4444;
@@ -771,7 +780,7 @@
                 <div class="team-abbrev" id="away-team">AWAY</div>
                 <div class="team-points" id="away-score">0</div>
                 <div class="team-info">
-                    <span class="timeouts" id="away-timeouts" title="Timeouts remaining">⏱ 7</span>
+                    <span class="timeouts" id="away-timeouts" title="Timeouts remaining"></span>
                     <span class="bonus-indicator" id="away-bonus" title="In bonus">BONUS</span>
                 </div>
             </div>
@@ -783,7 +792,7 @@
                 <div class="team-abbrev" id="home-team">HOME</div>
                 <div class="team-points" id="home-score">0</div>
                 <div class="team-info">
-                    <span class="timeouts" id="home-timeouts" title="Timeouts remaining">⏱ 7</span>
+                    <span class="timeouts" id="home-timeouts" title="Timeouts remaining"></span>
                     <span class="bonus-indicator" id="home-bonus" title="In bonus">BONUS</span>
                 </div>
             </div>
@@ -1401,6 +1410,21 @@
             return ml > 0 ? `+${ml}` : ml.toString();
         }
 
+        // Render timeout dots (7 total: lit for remaining, dim for used)
+        function renderTimeoutDots(container, remaining) {
+            const total = 7;
+            const used = total - remaining;
+            let html = '';
+            // Show remaining (lit) dots first, then used (dim) dots
+            for (let i = 0; i < remaining; i++) {
+                html += '<span class="timeout-dot"></span>';
+            }
+            for (let i = 0; i < used; i++) {
+                html += '<span class="timeout-dot used"></span>';
+            }
+            container.innerHTML = html;
+        }
+
         function updateOddsDisplay(odds, homeTeam, awayTeam, homeCity = null, awayCity = null) {
             const oddsSection = document.getElementById('odds-section');
             if (!odds || !odds.consensus) {
@@ -1870,13 +1894,14 @@
                 }
 
                 // Update timeouts (only show during live games)
+                // Show dots: lit for remaining, dim for used (7 total per team)
                 const awayTimeouts = document.getElementById('away-timeouts');
                 const homeTimeouts = document.getElementById('home-timeouts');
                 if (isGameLive) {
-                    awayTimeouts.style.display = 'inline';
-                    homeTimeouts.style.display = 'inline';
-                    awayTimeouts.textContent = `⏱ ${data.away_timeouts ?? 7}`;
-                    homeTimeouts.textContent = `⏱ ${data.home_timeouts ?? 7}`;
+                    awayTimeouts.style.display = 'flex';
+                    homeTimeouts.style.display = 'flex';
+                    renderTimeoutDots(awayTimeouts, data.away_timeouts ?? 7);
+                    renderTimeoutDots(homeTimeouts, data.home_timeouts ?? 7);
                 } else {
                     awayTimeouts.style.display = 'none';
                     homeTimeouts.style.display = 'none';
