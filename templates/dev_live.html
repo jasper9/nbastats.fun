@@ -791,6 +791,20 @@
             color: var(--text-muted);
             font-size: 0.75rem;
         }
+        .player-stats-table tr.section-header td {
+            background: var(--bg-card);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border);
+            border-top: 1px solid var(--border);
+        }
+        .player-stats-table tr.section-header:hover {
+            background: var(--bg-card);
+        }
         @media (max-width: 600px) {
             .page-title { font-size: 1.4rem; }
             .chat-feed { height: 400px; }
@@ -1709,11 +1723,19 @@
                 return;
             }
 
+            // Separate starters and bench
+            const starters = players.filter(p => p.starter === true);
+            const bench = players.filter(p => p.starter !== true);
+
+            // Sort each group by points descending
+            starters.sort((a, b) => (b.pts || 0) - (a.pts || 0));
+            bench.sort((a, b) => (b.pts || 0) - (a.pts || 0));
+
             // Calculate totals
             const totals = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0 };
 
-            let html = '';
-            players.forEach(p => {
+            // Helper to render a player row
+            function renderPlayerRow(p) {
                 const fgPct = p.fga > 0 ? (p.fgm / p.fga * 100).toFixed(1) : '-';
                 const fg3Pct = p.fg3a > 0 ? (p.fg3m / p.fg3a * 100).toFixed(1) : '-';
                 const ftPct = p.fta > 0 ? (p.ftm / p.fta * 100).toFixed(1) : '-';
@@ -1721,7 +1743,24 @@
                 const plusMinus = p.plus_minus !== undefined ? (p.plus_minus > 0 ? `+${p.plus_minus}` : p.plus_minus) : '-';
                 const plusMinusClass = p.plus_minus > 0 ? 'positive' : (p.plus_minus < 0 ? 'negative' : '');
 
-                html += `<tr>
+                // Add to totals
+                totals.pts += p.pts || 0;
+                totals.reb += p.reb || 0;
+                totals.ast += p.ast || 0;
+                totals.stl += p.stl || 0;
+                totals.blk += p.blk || 0;
+                totals.tov += p.tov || 0;
+                totals.pf += p.pf || 0;
+                totals.fgm += p.fgm || 0;
+                totals.fga += p.fga || 0;
+                totals.fg3m += p.fg3m || 0;
+                totals.fg3a += p.fg3a || 0;
+                totals.ftm += p.ftm || 0;
+                totals.fta += p.fta || 0;
+                totals.oreb += p.oreb || 0;
+                totals.dreb += p.dreb || 0;
+
+                return `<tr>
                     <td class="player-col">${p.name}</td>
                     <td>${p.min || '-'}</td>
                     <td class="${ptsClass}">${p.pts}</td>
@@ -1744,24 +1783,21 @@
                     <td>${p.pf || 0}</td>
                     <td class="${plusMinusClass}">${plusMinus}</td>
                 </tr>`;
+            }
 
-                // Add to totals
-                totals.pts += p.pts || 0;
-                totals.reb += p.reb || 0;
-                totals.ast += p.ast || 0;
-                totals.stl += p.stl || 0;
-                totals.blk += p.blk || 0;
-                totals.tov += p.tov || 0;
-                totals.pf += p.pf || 0;
-                totals.fgm += p.fgm || 0;
-                totals.fga += p.fga || 0;
-                totals.fg3m += p.fg3m || 0;
-                totals.fg3a += p.fg3a || 0;
-                totals.ftm += p.ftm || 0;
-                totals.fta += p.fta || 0;
-                totals.oreb += p.oreb || 0;
-                totals.dreb += p.dreb || 0;
-            });
+            let html = '';
+
+            // Starters section
+            if (starters.length > 0) {
+                html += `<tr class="section-header"><td colspan="21">Starters</td></tr>`;
+                starters.forEach(p => { html += renderPlayerRow(p); });
+            }
+
+            // Bench section
+            if (bench.length > 0) {
+                html += `<tr class="section-header"><td colspan="21">Bench</td></tr>`;
+                bench.forEach(p => { html += renderPlayerRow(p); });
+            }
 
             // Add totals row
             const totalFgPct = totals.fga > 0 ? (totals.fgm / totals.fga * 100).toFixed(1) : '-';

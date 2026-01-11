@@ -2148,6 +2148,54 @@ def api_dev_live_feed(game_id):
         # Check for saved history first (for completed games)
         saved_history = load_dev_live_history(game_id)
         if saved_history and saved_history.get('status') == 'Final':
+            # Check if we need to enrich with starter info (for games saved before starter feature)
+            player_stats = saved_history.get('player_stats', {'home': [], 'away': []})
+            needs_starter_info = (
+                player_stats.get('home') and
+                len(player_stats['home']) > 0 and
+                'starter' not in player_stats['home'][0]
+            )
+
+            if needs_starter_info:
+                # Try to add starter info from NBA API (only works for today's games)
+                try:
+                    from nba_api.live.nba.endpoints import scoreboard, boxscore
+                    game_info = saved_history.get('game_info', {})
+                    home_team = game_info.get('home_team', '')
+                    away_team = game_info.get('away_team', '')
+
+                    sb = scoreboard.ScoreBoard()
+                    nba_games = sb.get_dict()['scoreboard']['games']
+
+                    nba_game_id = None
+                    for ng in nba_games:
+                        if (ng['homeTeam']['teamTricode'] == home_team and
+                            ng['awayTeam']['teamTricode'] == away_team):
+                            nba_game_id = ng['gameId']
+                            break
+
+                    if nba_game_id:
+                        bs = boxscore.BoxScore(nba_game_id)
+                        bs_data = bs.get_dict()
+                        starters = set()
+                        for team_key in ['homeTeam', 'awayTeam']:
+                            team_data = bs_data.get('game', {}).get(team_key, {})
+                            for player in team_data.get('players', []):
+                                if player.get('starter') == '1' or player.get('starter') == 1:
+                                    starters.add(player.get('name', '').strip())
+
+                        for team in ['home', 'away']:
+                            for p in player_stats.get(team, []):
+                                p['starter'] = p.get('name', '') in starters
+
+                        # Update saved history with starter info
+                        saved_history['player_stats'] = player_stats
+                        _dev_live_history[game_id] = saved_history
+                        save_dev_live_history(game_id)
+                        print(f"Enriched saved history for game {game_id} with starter info")
+                except Exception as e:
+                    print(f"Could not enrich starter info for saved game: {e}")
+
             # Return saved history for completed games
             if last_action == 0:
                 # Fresh load - return all messages
@@ -2365,6 +2413,35 @@ def api_dev_live_feed(game_id):
             # Get player stats from BallDontLie (with MIN and plus_minus)
             player_stats_raw = bdl.get_player_stats(bdl_game_id)
             player_stats_by_team = bdl.format_player_stats_for_frontend(player_stats_raw, home_team_id)
+
+            # Try to add starter info from NBA API boxscore
+            try:
+                from nba_api.live.nba.endpoints import scoreboard, boxscore
+                sb = scoreboard.ScoreBoard()
+                nba_games = sb.get_dict()['scoreboard']['games']
+
+                nba_game_id = None
+                for ng in nba_games:
+                    if (ng['homeTeam']['teamTricode'] == home_team and
+                        ng['awayTeam']['teamTricode'] == away_team):
+                        nba_game_id = ng['gameId']
+                        break
+
+                if nba_game_id:
+                    bs = boxscore.BoxScore(nba_game_id)
+                    bs_data = bs.get_dict()
+                    starters = set()
+                    for team_key in ['homeTeam', 'awayTeam']:
+                        team_data = bs_data.get('game', {}).get(team_key, {})
+                        for player in team_data.get('players', []):
+                            if player.get('starter') == '1' or player.get('starter') == 1:
+                                starters.add(player.get('name', '').strip())
+
+                    for team in ['home', 'away']:
+                        for p in player_stats_by_team.get(team, []):
+                            p['starter'] = p.get('name', '') in starters
+            except Exception as e:
+                print(f"NBA API boxscore for starters (regen) failed: {e}")
 
             # Save to history
             history_data = {
@@ -2621,6 +2698,32 @@ def api_dev_live_feed(game_id):
             player_stats_raw = bdl.get_player_stats(bdl_game_id)
             history['player_stats'] = bdl.format_player_stats_for_frontend(player_stats_raw, home_team_id)
 
+            # Try to add starter info from NBA API boxscore before saving
+            try:
+                from nba_api.live.nba.endpoints import boxscore
+                nba_game_id = None
+                for ng in nba_games:
+                    if (ng['homeTeam']['teamTricode'] == home_team and
+                        ng['awayTeam']['teamTricode'] == away_team):
+                        nba_game_id = ng['gameId']
+                        break
+
+                if nba_game_id:
+                    bs = boxscore.BoxScore(nba_game_id)
+                    bs_data = bs.get_dict()
+                    starters = set()
+                    for team_key in ['homeTeam', 'awayTeam']:
+                        team_data = bs_data.get('game', {}).get(team_key, {})
+                        for player in team_data.get('players', []):
+                            if player.get('starter') == '1' or player.get('starter') == 1:
+                                starters.add(player.get('name', '').strip())
+
+                    for team in ['home', 'away']:
+                        for p in history['player_stats'].get(team, []):
+                            p['starter'] = p.get('name', '') in starters
+            except Exception as e:
+                print(f"NBA API boxscore for starters (save) failed: {e}")
+
             # Convert set to list for JSON serialization before saving
             history_to_save = {k: v for k, v in history.items() if k != 'saved_action_numbers'}
             _dev_live_history[game_id] = history_to_save
@@ -2632,6 +2735,42 @@ def api_dev_live_feed(game_id):
         # Get player stats from BallDontLie API (includes MIN and plus_minus)
         player_stats_raw = bdl.get_player_stats(bdl_game_id)
         player_stats_by_team = bdl.format_player_stats_for_frontend(player_stats_raw, home_team_id)
+
+        # Try to get starter info from NBA API boxscore
+        try:
+            from nba_api.live.nba.endpoints import boxscore
+
+            # Find matching NBA game ID by checking today's games
+            nba_game_id = None
+            for ng in nba_games:
+                if (ng['homeTeam']['teamTricode'] == home_team and
+                    ng['awayTeam']['teamTricode'] == away_team):
+                    nba_game_id = ng['gameId']
+                    break
+
+            if nba_game_id:
+                bs = boxscore.BoxScore(nba_game_id)
+                bs_data = bs.get_dict()
+
+                # Build starter lookup by player name
+                starters = set()
+                for team_key in ['homeTeam', 'awayTeam']:
+                    team_data = bs_data.get('game', {}).get(team_key, {})
+                    for player in team_data.get('players', []):
+                        if player.get('starter') == '1' or player.get('starter') == 1:
+                            # Use name for matching
+                            starters.add(player.get('name', '').strip())
+
+                # Add starter field to player stats
+                for team in ['home', 'away']:
+                    for p in player_stats_by_team.get(team, []):
+                        p['starter'] = p.get('name', '') in starters
+        except Exception as e:
+            # If NBA API fails, mark all players as non-starters
+            print(f"NBA API boxscore for starters failed: {e}")
+            for team in ['home', 'away']:
+                for p in player_stats_by_team.get(team, []):
+                    p['starter'] = False
 
         # Build response
         response_data = {
