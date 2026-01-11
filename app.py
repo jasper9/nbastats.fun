@@ -1581,36 +1581,56 @@ def generate_pregame_preview(home_team, away_team, home_team_name='', away_team_
             'score': pregame_score,
         })
 
-    # Generate injury report - show ALL injuries for both teams with details
+    # Generate injury report - group by status level with bullet points
     if away_injuries or home_injuries:
-        # Format injury details: "Player (Injury - Status)"
-        def format_injury(inj):
-            name = inj['name']
-            injury_type = inj.get('injury_type', '')
-            status = inj.get('status', 'Out')
-            if injury_type:
-                return f"{name} ({injury_type} - {status})"
-            else:
-                return f"{name} ({status})"
+        # Group injuries by status level
+        def format_injury_report(injuries, team_abbrev):
+            """Format injuries grouped by status with bullet points."""
+            # Group by status
+            by_status = {}
+            for inj in injuries:
+                status = inj.get('status', 'Out')
+                if status not in by_status:
+                    by_status[status] = []
+                # Format: "Player (Injury)" or just "Player" if no injury type
+                injury_type = inj.get('injury_type', '')
+                name = inj['name']
+                if injury_type:
+                    by_status[status].append(f"{name} ({injury_type})")
+                else:
+                    by_status[status].append(name)
 
-        away_injury_details = [format_injury(inj) for inj in away_injuries]
-        home_injury_details = [format_injury(inj) for inj in home_injuries]
+            # Build formatted text with bullet points
+            # Order: Out first, then Doubtful, Questionable, Day-To-Day, Probable
+            status_order = ['Out', 'Doubtful', 'Questionable', 'Day-To-Day', 'Probable']
+            lines = [f"📋 {team_abbrev} injury report:"]
+            for status in status_order:
+                if status in by_status:
+                    players = ', '.join(by_status[status])
+                    lines.append(f"• {status}: {players}")
+            # Add any other statuses not in our order
+            for status in by_status:
+                if status not in status_order:
+                    players = ', '.join(by_status[status])
+                    lines.append(f"• {status}: {players}")
+
+            return '\n'.join(lines)
 
         # Create separate messages for each team's injuries
-        if away_injury_details:
+        if away_injuries:
             messages.append({
                 'bot': 'stats_nerd',
-                'text': f"📋 {away_team} injury report: {', '.join(away_injury_details)}",
+                'text': format_injury_report(away_injuries, away_team),
                 'type': 'injury_report',
                 'timestamp': datetime.now().isoformat(),
                 'action_number': -98,
                 'score': pregame_score,
             })
 
-        if home_injury_details:
+        if home_injuries:
             messages.append({
                 'bot': 'stats_nerd',
-                'text': f"📋 {home_team} injury report: {', '.join(home_injury_details)}",
+                'text': format_injury_report(home_injuries, home_team),
                 'type': 'injury_report',
                 'timestamp': datetime.now().isoformat(),
                 'action_number': -97,
