@@ -731,7 +731,7 @@
                     </div>
                 </div>
                 <div class="odds-item prob-display">
-                    <div class="odds-label">Win Probability</div>
+                    <div class="odds-label">Pre-Game Odds</div>
                     <div class="prob-bar-container">
                         <div class="prob-bar away" id="away-prob-bar"></div>
                         <div class="prob-bar home" id="home-prob-bar"></div>
@@ -759,7 +759,7 @@
                 </div>
             </div>
             <div class="mini-chart">
-                <div class="mini-chart-title">Win Probability</div>
+                <div class="mini-chart-title">Live Win Probability</div>
                 <div class="mini-chart-container">
                     <canvas id="probChart"></canvas>
                 </div>
@@ -1709,6 +1709,7 @@
                         });
                     } else {
                         // Live update - pass current period for quarter tracking
+                        // Note: Chart shows in-game probability based on score/time, NOT pre-game bookmaker odds
                         const currentPeriod = data.period || null;
                         updateCharts(data.score.home, data.score.away, data.game_info.home_team, data.game_info.away_team, null, currentPeriod);
                     }
