@@ -11,7 +11,9 @@ Trigger Events:
 """
 
 import os
+import random
 from datetime import datetime
+from collections import deque
 
 # Try to import anthropic, gracefully degrade if not available
 try:
@@ -20,17 +22,20 @@ try:
 except ImportError:
     ANTHROPIC_AVAILABLE = False
 
+# Track recent responses to help avoid repetition
+_recent_responses = deque(maxlen=20)
+
 # Commentary styles for different events
 # Each prompt emphasizes variety and unique phrasing
 COMMENTARY_PROMPTS = {
-    'lead_change': """You are an exciting NBA play-by-play commentator. Generate ONE short, enthusiastic sentence (max 15 words) about a lead change.
+    'lead_change': """You are a creative NBA commentator. Generate ONE short sentence (max 15 words) about this lead change.
 
-Game: {away_team} vs {home_team}
-New leader: {leader}
-Score: {away_team} {away_score} - {home_team} {home_score}
-Quarter: Q{period}
+{leader} now leads {away_team} vs {home_team}, Q{period}
 
-IMPORTANT: Be creative and unique! Vary your word choice. Avoid cliches like "takes the lead" - find fresh ways to describe it. Use NBA slang but be original. No hashtags or emojis.""",
+CRITICAL: Your response MUST be different from these recent calls:
+{recent_calls}
+
+Be inventive - use metaphors from sports, weather, warfare, or pop culture. No cliches like "takes the lead" or "in front". No emojis.""",
 
     'largest_lead': """You are an NBA stats analyst. Generate ONE insightful sentence (max 15 words) about a team building their largest lead.
 
@@ -42,13 +47,15 @@ Quarter: Q{period}
 
 IMPORTANT: Be creative! Don't just say "largest lead" - describe the momentum shift uniquely. Focus on game control or psychological edge. No hashtags or emojis.""",
 
-    'dunk': """You are a hype NBA announcer. Generate ONE explosive sentence (max 15 words) about a huge dunk.
+    'dunk': """You are a legendary NBA announcer known for unique, memorable calls. Generate ONE explosive sentence (max 15 words) about this dunk.
 
 Player: {player}
 Team: {team}
-Description: {description}
 
-IMPORTANT: Be WILDLY creative! Every dunk call should be different. Don't repeat phrases like "throws it down" or "slams it home". Use vivid imagery - earthquakes, explosions, destruction. Mix up your vocabulary every time. No hashtags or emojis.""",
+CRITICAL: Your response MUST be completely different from these recent calls - DO NOT use similar words or structure:
+{recent_calls}
+
+Be wildly creative with fresh vocabulary. Draw from: mythology, natural disasters, sci-fi, action movies, martial arts, video games, or invent something entirely new. Surprise me! No emojis.""",
 
     'tie_game': """You are a drama-building NBA announcer. Generate ONE tense sentence (max 15 words) about a tie game.
 
@@ -90,6 +97,8 @@ def generate_llm_commentary(event_type, context):
     Returns:
         str: Generated commentary or None if LLM unavailable/failed
     """
+    global _recent_responses
+
     client = get_client()
     if not client:
         return None
@@ -99,15 +108,23 @@ def generate_llm_commentary(event_type, context):
         return None
 
     try:
+        # Add recent responses to context for prompts that use it
+        if '{recent_calls}' in prompt_template:
+            recent = list(_recent_responses)[-10:] if _recent_responses else []
+            if recent:
+                context['recent_calls'] = '\n'.join(f'- "{r}"' for r in recent)
+            else:
+                context['recent_calls'] = '(none yet - be original!)'
+
         # Format the prompt with context
         prompt = prompt_template.format(**context)
 
         # Call Claude Haiku - fast and cheap
-        # Using temperature=0.9 for more creative/varied responses
+        # Using temperature=1.0 for maximum creativity and variety
         response = client.messages.create(
             model="claude-3-5-haiku-latest",
             max_tokens=50,  # Keep responses short
-            temperature=0.9,  # Higher temperature for more variety
+            temperature=1.0,  # Max temperature for variety
             messages=[
                 {"role": "user", "content": prompt}
             ]
@@ -115,7 +132,11 @@ def generate_llm_commentary(event_type, context):
 
         # Extract text from response
         if response.content and len(response.content) > 0:
-            return response.content[0].text.strip()
+            result = response.content[0].text.strip()
+            # Track this response to avoid repetition
+            if result:
+                _recent_responses.append(result)
+            return result
         return None
 
     except Exception as e:
