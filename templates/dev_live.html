@@ -672,8 +672,10 @@
             color: #000;
         }
         .quarter-scores {
-            padding: 10px 15px;
-            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
         }
         .quarter-scores-table {
             width: 100%;
@@ -706,6 +708,10 @@
         }
         .quarter-scores-table td.current-quarter {
             color: var(--nuggets-gold);
+            font-weight: 600;
+        }
+        .quarter-scores-table td.quarter-winner {
+            color: var(--positive);
             font-weight: 600;
         }
         .quarter-scores-table tr.winner td.total-col {
@@ -897,6 +903,24 @@
             </div>
         </div>
 
+        <div class="quarter-scores" id="quarter-scores" style="display: none;">
+            <table class="quarter-scores-table">
+                <thead>
+                    <tr>
+                        <th>Team</th>
+                        <th>Q1</th>
+                        <th>Q2</th>
+                        <th>Q3</th>
+                        <th>Q4</th>
+                        <th class="ot-col" style="display:none;">OT</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody id="quarter-scores-body">
+                </tbody>
+            </table>
+        </div>
+
         <div class="chat-container" id="chat-container" style="display: none;">
             <div class="chat-header">
                 <span class="chat-title">Live Feed</span>
@@ -946,23 +970,6 @@
                     <button class="team-toggle-btn active" id="toggle-away" data-team="away">Away</button>
                     <button class="team-toggle-btn" id="toggle-home" data-team="home">Home</button>
                 </div>
-            </div>
-            <div class="quarter-scores" id="quarter-scores">
-                <table class="quarter-scores-table">
-                    <thead>
-                        <tr>
-                            <th>Team</th>
-                            <th>Q1</th>
-                            <th>Q2</th>
-                            <th>Q3</th>
-                            <th>Q4</th>
-                            <th class="ot-col" style="display:none;">OT</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="quarter-scores-body">
-                    </tbody>
-                </table>
             </div>
             <div class="box-score-content">
                 <table class="player-stats-table">
@@ -1605,11 +1612,15 @@
 
         // Render quarter-by-quarter scores
         function renderQuarterScores(homePeriods, awayPeriods, homeTeam, awayTeam, homeTotal, awayTotal, currentPeriod) {
+            const container = document.getElementById('quarter-scores');
             const tbody = document.getElementById('quarter-scores-body');
-            if (!homePeriods || !awayPeriods) {
-                tbody.innerHTML = '';
+            if (!homePeriods || !awayPeriods || homePeriods.length === 0) {
+                container.style.display = 'none';
                 return;
             }
+
+            // Show the quarter scores section
+            container.style.display = 'block';
 
             // Check if there's overtime (more than 4 periods)
             const hasOT = homePeriods.length > 4 || awayPeriods.length > 4;
@@ -1625,41 +1636,60 @@
                 return p ? p.score : 0;
             };
 
-            // Build rows for away and home teams
-            let html = '';
-
-            // Away team row
+            // Get all quarter scores
             const awayQ1 = getScore(awayPeriods, 1);
             const awayQ2 = getScore(awayPeriods, 2);
             const awayQ3 = getScore(awayPeriods, 3);
             const awayQ4 = getScore(awayPeriods, 4);
             const awayOT = hasOT ? awayPeriods.filter(p => p.period > 4).reduce((sum, p) => sum + p.score, 0) : 0;
-            const awayWinner = awayTotal > homeTotal ? 'winner' : '';
 
-            html += `<tr class="${awayWinner}">
-                <td>${awayTeam}</td>
-                <td class="${currentPeriod === 1 ? 'current-quarter' : ''}">${awayQ1 || '-'}</td>
-                <td class="${currentPeriod === 2 ? 'current-quarter' : ''}">${awayQ2 || '-'}</td>
-                <td class="${currentPeriod === 3 ? 'current-quarter' : ''}">${awayQ3 || '-'}</td>
-                <td class="${currentPeriod === 4 ? 'current-quarter' : ''}">${awayQ4 || '-'}</td>
-                ${hasOT ? `<td class="ot-col ${currentPeriod > 4 ? 'current-quarter' : ''}">${awayOT || '-'}</td>` : ''}
-                <td class="total-col">${awayTotal}</td>
-            </tr>`;
-
-            // Home team row
             const homeQ1 = getScore(homePeriods, 1);
             const homeQ2 = getScore(homePeriods, 2);
             const homeQ3 = getScore(homePeriods, 3);
             const homeQ4 = getScore(homePeriods, 4);
             const homeOT = hasOT ? homePeriods.filter(p => p.period > 4).reduce((sum, p) => sum + p.score, 0) : 0;
+
+            // Determine quarter winners (only for completed quarters)
+            const q1AwayWins = awayQ1 > homeQ1 && currentPeriod > 1;
+            const q1HomeWins = homeQ1 > awayQ1 && currentPeriod > 1;
+            const q2AwayWins = awayQ2 > homeQ2 && currentPeriod > 2;
+            const q2HomeWins = homeQ2 > awayQ2 && currentPeriod > 2;
+            const q3AwayWins = awayQ3 > homeQ3 && currentPeriod > 3;
+            const q3HomeWins = homeQ3 > awayQ3 && currentPeriod > 3;
+            const q4AwayWins = awayQ4 > homeQ4 && (currentPeriod > 4 || (currentPeriod === 4 && awayQ4 > 0 && homeQ4 > 0));
+            const q4HomeWins = homeQ4 > awayQ4 && (currentPeriod > 4 || (currentPeriod === 4 && awayQ4 > 0 && homeQ4 > 0));
+
+            // Helper to get class for a quarter cell
+            const getQClass = (isWinner, isCurrent) => {
+                if (isCurrent) return 'current-quarter';
+                if (isWinner) return 'quarter-winner';
+                return '';
+            };
+
+            const awayWinner = awayTotal > homeTotal ? 'winner' : '';
             const homeWinner = homeTotal > awayTotal ? 'winner' : '';
 
+            // Build rows
+            let html = '';
+
+            // Away team row
+            html += `<tr class="${awayWinner}">
+                <td>${awayTeam}</td>
+                <td class="${getQClass(q1AwayWins, currentPeriod === 1)}">${awayQ1 || '-'}</td>
+                <td class="${getQClass(q2AwayWins, currentPeriod === 2)}">${awayQ2 || '-'}</td>
+                <td class="${getQClass(q3AwayWins, currentPeriod === 3)}">${awayQ3 || '-'}</td>
+                <td class="${getQClass(q4AwayWins, currentPeriod === 4)}">${awayQ4 || '-'}</td>
+                ${hasOT ? `<td class="ot-col ${currentPeriod > 4 ? 'current-quarter' : ''}">${awayOT || '-'}</td>` : ''}
+                <td class="total-col">${awayTotal}</td>
+            </tr>`;
+
+            // Home team row
             html += `<tr class="${homeWinner}">
                 <td>${homeTeam}</td>
-                <td class="${currentPeriod === 1 ? 'current-quarter' : ''}">${homeQ1 || '-'}</td>
-                <td class="${currentPeriod === 2 ? 'current-quarter' : ''}">${homeQ2 || '-'}</td>
-                <td class="${currentPeriod === 3 ? 'current-quarter' : ''}">${homeQ3 || '-'}</td>
-                <td class="${currentPeriod === 4 ? 'current-quarter' : ''}">${homeQ4 || '-'}</td>
+                <td class="${getQClass(q1HomeWins, currentPeriod === 1)}">${homeQ1 || '-'}</td>
+                <td class="${getQClass(q2HomeWins, currentPeriod === 2)}">${homeQ2 || '-'}</td>
+                <td class="${getQClass(q3HomeWins, currentPeriod === 3)}">${homeQ3 || '-'}</td>
+                <td class="${getQClass(q4HomeWins, currentPeriod === 4)}">${homeQ4 || '-'}</td>
                 ${hasOT ? `<td class="ot-col ${currentPeriod > 4 ? 'current-quarter' : ''}">${homeOT || '-'}</td>` : ''}
                 <td class="total-col">${homeTotal}</td>
             </tr>`;
