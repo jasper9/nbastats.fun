@@ -287,6 +287,14 @@ A real-time play-by-play chat feed with bot "personalities":
 - Pre-game status returns early (no API calls for future games)
 - Dropdown shows 📜 icon for games with saved history
 
+**TV Sync Delay** (client-side):
+- Allows syncing feed with TV broadcast (data feed is often ahead)
+- Configurable delay: 15s, 30s, 45s, 1min, 1.5min, 2min
+- Delays ALL data: scores, game clock, chat messages, stats
+- Only available during live games (hides for pregame/final)
+- Buffer cleared when switching games or game ends
+- Master flag `DELAY_FEATURE_ENABLED` to disable entirely
+
 ### LLM-Enhanced Commentary (Implemented)
 
 Uses Claude Haiku for cost-effective trigger-based commentary on exciting events.
