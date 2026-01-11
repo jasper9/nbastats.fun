@@ -1558,34 +1558,35 @@ def generate_pregame_preview(home_team, away_team, home_team_name='', away_team_
             'score': pregame_score,
         })
 
-    # Generate injury report
-    injury_parts = []
+    # Generate injury report - show ALL injuries for both teams
+    if away_injuries or home_injuries:
+        # Get all injured player names for each team
+        away_injured_names = [inj['name'] for inj in away_injuries]
+        home_injured_names = [inj['name'] for inj in home_injuries]
 
-    # Check for significant injuries (injured stars)
-    if away_injured_stars:
-        injury_parts.append(f"📋 {away_team} missing: {', '.join(away_injured_stars)}")
-    if home_injured_stars:
-        injury_parts.append(f"📋 {home_team} missing: {', '.join(home_injured_stars)}")
+        # Create separate messages for each team's injuries
+        if away_injured_names:
+            messages.append({
+                'bot': 'stats_nerd',
+                'text': f"📋 {away_team} injury report: {', '.join(away_injured_names)}",
+                'type': 'injury_report',
+                'timestamp': datetime.now().isoformat(),
+                'action_number': -98,
+                'score': pregame_score,
+            })
 
-    # Also mention total injuries if there are more
-    away_other_injuries = len(away_injuries) - len(away_injured_stars)
-    home_other_injuries = len(home_injuries) - len(home_injured_stars)
-
-    if injury_parts:
-        injury_text = ' | '.join(injury_parts)
-        if away_other_injuries > 0 or home_other_injuries > 0:
-            injury_text += f" (+{away_other_injuries + home_other_injuries} more players out)"
-        messages.append({
-            'bot': 'stats_nerd',
-            'text': injury_text,
-            'type': 'injury_report',
-            'timestamp': datetime.now().isoformat(),
-            'action_number': -98,
-            'score': pregame_score,
-        })
-    elif home_injuries or away_injuries:
+        if home_injured_names:
+            messages.append({
+                'bot': 'stats_nerd',
+                'text': f"📋 {home_team} injury report: {', '.join(home_injured_names)}",
+                'type': 'injury_report',
+                'timestamp': datetime.now().isoformat(),
+                'action_number': -97,
+                'score': pregame_score,
+            })
+    elif False:  # Keep structure but disable old fallback
         # No star injuries but some players out
-        total_injuries = len(home_injuries) + len(away_injuries)
+        total_injuries = 0
         messages.append({
             'bot': 'stats_nerd',
             'text': f"📋 Injury report: {total_injuries} players listed as out/questionable between both teams.",
