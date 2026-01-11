@@ -2953,6 +2953,12 @@
 
         loadGames();
 
+        // Pre-warm caches in background for faster game switching
+        // This fetches injuries and rosters for all teams playing today
+        setTimeout(() => {
+            fetch('/api/dev-live/prewarm').catch(() => {});
+        }, 500);  // Delay slightly to prioritize initial page load
+
         // Refresh game list every 60 seconds
         setInterval(loadGames, 60000);
     </script>

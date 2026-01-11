@@ -8,6 +8,7 @@ import requests
 from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # LLM commentary for exciting events (optional)
 try:
@@ -1080,15 +1081,31 @@ def clock_to_elapsed_seconds(clock_str, period):
         return (period - 1) * 720
 
 
+# Cache for odds data (saves ~1-2 seconds per page load)
+_odds_cache = {'data': None, 'date': None, 'updated_at': None}
+ODDS_CACHE_TTL = 60  # 60 seconds - odds don't change that often
+
+
 def fetch_dev_live_odds(game_ids, game_date=None):
     """Fetch odds for multiple games from balldontlie API.
-    Returns dict with both game_id and team-pair keys for flexible matching."""
+    Returns dict with both game_id and team-pair keys for flexible matching.
+    Results are cached for 60 seconds."""
+    global _odds_cache
+
     api_key = os.getenv('BALLDONTLIE_API_KEY')
     if not api_key:
         return {}
 
     if not game_date:
         game_date = datetime.now().strftime('%Y-%m-%d')
+
+    # Check cache first
+    now = datetime.now()
+    if (_odds_cache['data'] is not None and
+        _odds_cache['date'] == game_date and
+        _odds_cache['updated_at'] and
+        (now - _odds_cache['updated_at']).total_seconds() < ODDS_CACHE_TTL):
+        return _odds_cache['data']
 
     try:
         response = requests.get(
@@ -1198,6 +1215,11 @@ def fetch_dev_live_odds(game_ids, game_date=None):
                 if teams:
                     team_key = f"{teams['away']}@{teams['home']}"
                     result[team_key] = odds_data
+
+        # Update cache
+        _odds_cache['data'] = result
+        _odds_cache['date'] = game_date
+        _odds_cache['updated_at'] = now
 
         return result
 
@@ -1369,6 +1391,14 @@ TEAM_INJURIES_CACHE_TTL = 1800  # 30 minutes
 _team_roster_cache = {}  # team_abbrev -> {players: set(), updated_at: datetime}
 TEAM_ROSTER_CACHE_TTL = 3600  # 1 hour
 
+# Cache for games list (short TTL for navigation speed)
+_games_list_cache = {'data': None, 'updated_at': None}
+GAMES_LIST_CACHE_TTL = 30  # 30 seconds - fresh enough for UI, fast for switching
+
+# Cache for game info by ID (speeds up feed loading)
+_game_info_cache = {}  # game_id -> {data: {}, updated_at: datetime}
+GAME_INFO_CACHE_TTL = 15  # 15 seconds for live game freshness
+
 
 def normalize_name(name):
     """Normalize player name for comparison (remove accents, lowercase)."""
@@ -1537,13 +1567,30 @@ def generate_pregame_preview(home_team, away_team, home_team_name='', away_team_
     """
     messages = []
 
-    # Fetch injuries for both teams
-    home_injuries = fetch_team_injuries(home_team)
-    away_injuries = fetch_team_injuries(away_team)
+    # Fetch injuries and rosters in parallel to speed up pregame load
+    # This reduces 4+ sequential API calls to 2 parallel batches
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        # Submit all fetch tasks
+        futures = {
+            executor.submit(fetch_team_injuries, home_team): 'home_injuries',
+            executor.submit(fetch_team_injuries, away_team): 'away_injuries',
+            executor.submit(get_verified_stars, home_team): 'home_stars',
+            executor.submit(get_verified_stars, away_team): 'away_stars',
+        }
 
-    # Get star players - VERIFIED to be on current roster
-    home_stars = get_verified_stars(home_team)
-    away_stars = get_verified_stars(away_team)
+        results = {}
+        for future in as_completed(futures):
+            key = futures[future]
+            try:
+                results[key] = future.result()
+            except Exception as e:
+                print(f"Error fetching {key}: {e}")
+                results[key] = []
+
+    home_injuries = results.get('home_injuries', [])
+    away_injuries = results.get('away_injuries', [])
+    home_stars = results.get('home_stars', [])
+    away_stars = results.get('away_stars', [])
 
     # Filter out injured stars
     injured_names = set()
@@ -2382,6 +2429,49 @@ def dev_live_archive():
     return render_template('dev_live_archive.html')
 
 
+@app.route('/api/dev-live/prewarm')
+def api_dev_live_prewarm():
+    """Pre-warm caches for all today's games (injuries, rosters).
+    Call this on page load to speed up game switching."""
+    try:
+        if not BDL_AVAILABLE:
+            return jsonify({'status': 'skipped', 'reason': 'BDL not available'})
+
+        # Get today's games to know which teams need pre-warming
+        game_date = datetime.now().strftime('%Y-%m-%d')
+        games_data = bdl.get_todays_games(game_date)
+
+        # Collect unique teams
+        teams = set()
+        for g in games_data:
+            teams.add(g.get('home_team', {}).get('abbreviation', ''))
+            teams.add(g.get('visitor_team', {}).get('abbreviation', ''))
+        teams.discard('')  # Remove empty strings
+
+        # Pre-fetch injuries and rosters in parallel for all teams
+        warmed = 0
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = []
+            for team in teams:
+                futures.append(executor.submit(fetch_team_injuries, team))
+                futures.append(executor.submit(fetch_team_roster, team))
+
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                    warmed += 1
+                except Exception:
+                    pass
+
+        return jsonify({
+            'status': 'ok',
+            'teams_warmed': len(teams),
+            'cache_items': warmed,
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'error': str(e)})
+
+
 @app.route('/api/dev-live/games')
 def api_dev_live_games():
     """Get current live NBA games and games with saved history using BallDontLie API."""
@@ -2667,7 +2757,7 @@ def api_dev_live_feed(game_id):
         away_score = game_data.get('visitor_team_score', 0) or 0
 
         # BallDontLie doesn't provide timeouts, bonus, or quarter scores
-        # Supplement with NBA API scoreboard for these fields
+        # Supplement with NBA API scoreboard for these fields (ONLY for live games - skip for pregame)
         home_timeouts = 0
         away_timeouts = 0
         home_in_bonus = False
@@ -2675,39 +2765,41 @@ def api_dev_live_feed(game_id):
         home_periods = []
         away_periods = []
 
-        # Try to get supplemental data from NBA API scoreboard
-        try:
-            from nba_api.live.nba.endpoints import scoreboard
-            sb = scoreboard.ScoreBoard()
-            nba_games = sb.get_dict()['scoreboard']['games']
+        # Only fetch NBA API data for LIVE games (not pregame) - saves ~1 second
+        is_pregame_check = not is_live and game_status != 'Final' and home_score == 0 and away_score == 0
+        if not is_pregame_check and is_live:
+            try:
+                from nba_api.live.nba.endpoints import scoreboard
+                sb = scoreboard.ScoreBoard()
+                nba_games = sb.get_dict()['scoreboard']['games']
 
-            # Match by team abbreviations (IDs differ between APIs)
-            for ng in nba_games:
-                if (ng['homeTeam']['teamTricode'] == home_team and
-                    ng['awayTeam']['teamTricode'] == away_team):
-                    # Found matching game - extract timeout/bonus/quarter data
-                    home_timeouts = ng['homeTeam'].get('timeoutsRemaining', 0)
-                    away_timeouts = ng['awayTeam'].get('timeoutsRemaining', 0)
-                    home_in_bonus = ng['homeTeam'].get('inBonus', '0') == '1'
-                    away_in_bonus = ng['awayTeam'].get('inBonus', '0') == '1'
-                    home_periods = ng['homeTeam'].get('periods', [])
-                    away_periods = ng['awayTeam'].get('periods', [])
+                # Match by team abbreviations (IDs differ between APIs)
+                for ng in nba_games:
+                    if (ng['homeTeam']['teamTricode'] == home_team and
+                        ng['awayTeam']['teamTricode'] == away_team):
+                        # Found matching game - extract timeout/bonus/quarter data
+                        home_timeouts = ng['homeTeam'].get('timeoutsRemaining', 0)
+                        away_timeouts = ng['awayTeam'].get('timeoutsRemaining', 0)
+                        home_in_bonus = ng['homeTeam'].get('inBonus', '0') == '1'
+                        away_in_bonus = ng['awayTeam'].get('inBonus', '0') == '1'
+                        home_periods = ng['homeTeam'].get('periods', [])
+                        away_periods = ng['awayTeam'].get('periods', [])
 
-                    # Also get more accurate game clock from NBA API
-                    raw_clock = ng.get('gameClock', '')
-                    if raw_clock and raw_clock.startswith('PT'):
-                        try:
-                            match = re.match(r'PT(\d+)M([\d.]+)S', raw_clock)
-                            if match:
-                                mins = int(match.group(1))
-                                secs = int(float(match.group(2)))
-                                game_clock = f"{mins}:{secs:02d}"
-                        except:
-                            pass
-                    break
-        except Exception as e:
-            # NBA API failed - continue with BallDontLie data only
-            print(f"NBA API scoreboard supplement failed: {e}")
+                        # Also get more accurate game clock from NBA API
+                        raw_clock = ng.get('gameClock', '')
+                        if raw_clock and raw_clock.startswith('PT'):
+                            try:
+                                match = re.match(r'PT(\d+)M([\d.]+)S', raw_clock)
+                                if match:
+                                    mins = int(match.group(1))
+                                    secs = int(float(match.group(2)))
+                                    game_clock = f"{mins}:{secs:02d}"
+                            except:
+                                pass
+                        break
+            except Exception as e:
+                # NBA API failed - continue with BallDontLie data only
+                print(f"NBA API scoreboard supplement failed: {e}")
 
         # Get full team names for pregame display
         home_team_name = home_team_obj.get('full_name', '')

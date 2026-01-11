@@ -22,7 +22,26 @@ except ImportError:
 
 # API Configuration
 API_BASE = 'https://api.balldontlie.io/v1'
-CACHE_TTL = 5  # seconds between API calls for same data
+
+# Caching for API responses
+_cache = {}  # key -> {'data': ..., 'time': datetime}
+GAMES_CACHE_TTL = 30  # 30 seconds for games list
+GAME_INFO_CACHE_TTL = 15  # 15 seconds for individual game info
+PLAYS_CACHE_TTL = 5  # 5 seconds for play-by-play (needs to be fresh)
+
+
+def _get_cached(key: str, ttl: int):
+    """Get cached value if still valid."""
+    if key in _cache:
+        age = (datetime.now() - _cache[key]['time']).total_seconds()
+        if age < ttl:
+            return _cache[key]['data']
+    return None
+
+
+def _set_cache(key: str, data):
+    """Store value in cache."""
+    _cache[key] = {'data': data, 'time': datetime.now()}
 
 
 def get_api_key():
@@ -46,7 +65,7 @@ def _make_request(endpoint: str, params: dict = None) -> dict:
 
 def get_todays_games(date: str = None) -> list:
     """
-    Get all games for a specific date.
+    Get all games for a specific date. Results are cached for 30 seconds.
 
     Args:
         date: Date in YYYY-MM-DD format, defaults to today
@@ -57,8 +76,15 @@ def get_todays_games(date: str = None) -> list:
     if not date:
         date = datetime.now().strftime('%Y-%m-%d')
 
+    cache_key = f"games_{date}"
+    cached = _get_cached(cache_key, GAMES_CACHE_TTL)
+    if cached is not None:
+        return cached
+
     data = _make_request('games', {'dates[]': date})
-    return data.get('data', [])
+    result = data.get('data', [])
+    _set_cache(cache_key, result)
+    return result
 
 
 def get_play_by_play(game_id: int) -> list:
@@ -93,7 +119,7 @@ def get_player_stats(game_id: int) -> list:
 
 def get_game_info(game_id: int) -> dict:
     """
-    Get game info including teams, scores, status.
+    Get game info including teams, scores, status. Results are cached for 15 seconds.
 
     Args:
         game_id: BallDontLie game ID
@@ -101,8 +127,15 @@ def get_game_info(game_id: int) -> dict:
     Returns:
         Game info dict
     """
+    cache_key = f"game_{game_id}"
+    cached = _get_cached(cache_key, GAME_INFO_CACHE_TTL)
+    if cached is not None:
+        return cached
+
     data = _make_request(f'games/{game_id}')
-    return data.get('data', {})
+    result = data.get('data', {})
+    _set_cache(cache_key, result)
+    return result
 
 
 def parse_game_status(game: dict) -> tuple:
