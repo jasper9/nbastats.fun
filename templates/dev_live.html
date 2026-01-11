@@ -462,6 +462,49 @@
             flex-direction: column;
             gap: 8px;
         }
+        /* Load More History Button */
+        .load-more-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            padding: 10px;
+            background: linear-gradient(180deg, var(--bg-card), transparent);
+            border-radius: 8px;
+            margin-bottom: 5px;
+        }
+        .load-more-btn {
+            background: var(--nuggets-navy);
+            border: 1px solid var(--nuggets-gold);
+            color: var(--nuggets-gold);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .load-more-btn:hover {
+            background: var(--nuggets-gold);
+            color: var(--nuggets-navy);
+        }
+        .load-more-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .load-more-btn.loading {
+            pointer-events: none;
+        }
+        .load-more-icon {
+            font-size: 1rem;
+        }
+        .load-more-hint {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
         /* Chat Messages */
         .chat-message {
             display: flex;
@@ -951,6 +994,13 @@
                 </div>
             </div>
             <div class="chat-feed" id="chat-feed">
+                <div class="load-more-container" id="load-more-container" style="display: none;">
+                    <button class="load-more-btn" id="load-more-btn">
+                        <span class="load-more-icon">⏮</span>
+                        Load Full Game History
+                    </button>
+                    <span class="load-more-hint">Showing recent plays only</span>
+                </div>
                 <div class="loading" id="loading">
                     <div class="spinner"></div>
                     <p>Waiting for game updates...</p>
@@ -1077,6 +1127,11 @@
         // Player stats data
         let playerStats = { home: [], away: [] };
         let currentStatsTeam = 'away';  // Currently displayed team
+
+        // History loading state
+        let hasMoreHistory = false;
+        let historyCutoffAction = 0;
+        let isLoadingFullHistory = false;
 
         // Custom Chart.js plugin to draw vertical quarter lines
         const quarterLinesPlugin = {
@@ -2005,6 +2060,12 @@
                 lastActionNumber = 0;
                 scoreHistoryLoaded = false;  // Reset history loaded flag
 
+                // Reset history loading state
+                hasMoreHistory = false;
+                historyCutoffAction = 0;
+                isLoadingFullHistory = false;
+                document.getElementById('load-more-container').style.display = 'none';
+
                 // Clear chart data for new game
                 chartData = {
                     labels: [],
@@ -2261,6 +2322,7 @@
 
                     data.messages.forEach(msg => {
                         const msgEl = createMessageElement(msg);
+                        msgEl.dataset.actionNumber = msg.action_number;
                         feed.appendChild(msgEl);
                     });
 
@@ -2275,6 +2337,16 @@
                     if (loading) {
                         loading.innerHTML = '<p>No chat history available for this game.</p>';
                     }
+                }
+
+                // Handle "Load More History" button visibility
+                if (data.has_more_history && !isLoadingFullHistory) {
+                    hasMoreHistory = true;
+                    historyCutoffAction = data.history_cutoff_action || 0;
+                    document.getElementById('load-more-container').style.display = 'flex';
+                } else {
+                    hasMoreHistory = false;
+                    document.getElementById('load-more-container').style.display = 'none';
                 }
 
             } catch (error) {
@@ -2329,6 +2401,67 @@
             btn.addEventListener('click', () => {
                 switchTeamStats(btn.dataset.team);
             });
+        });
+
+        // Load Full History button click handler
+        document.getElementById('load-more-btn').addEventListener('click', async () => {
+            if (!currentGameId || isLoadingFullHistory) return;
+
+            isLoadingFullHistory = true;
+            const btn = document.getElementById('load-more-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="load-more-icon">⏳</span> Loading...';
+            btn.disabled = true;
+
+            try {
+                // Fetch full history (recent_only=false)
+                const response = await fetch(`/api/dev-live/feed/${currentGameId}?last_action=0&client_id=${clientId}&recent_only=false`);
+                const data = await response.json();
+
+                if (data.messages && data.messages.length > 0) {
+                    const feed = document.getElementById('chat-feed');
+                    const loadMoreContainer = document.getElementById('load-more-container');
+
+                    // Get existing messages to avoid duplicates
+                    const existingMessages = feed.querySelectorAll('.chat-message');
+                    const existingActionNumbers = new Set();
+                    existingMessages.forEach(el => {
+                        const actionNum = el.dataset.actionNumber;
+                        if (actionNum) existingActionNumbers.add(actionNum);
+                    });
+
+                    // Filter to only older messages (before cutoff)
+                    const olderMessages = data.messages.filter(msg =>
+                        msg.action_number < historyCutoffAction &&
+                        !existingActionNumbers.has(String(msg.action_number))
+                    );
+
+                    // Create message elements and collect them
+                    const newElements = olderMessages.map(msg => {
+                        const el = createMessageElement(msg);
+                        el.dataset.actionNumber = msg.action_number;
+                        return el;
+                    });
+
+                    // Insert older messages at the top (after load-more-container)
+                    const insertPoint = loadMoreContainer.nextSibling;
+                    newElements.forEach(el => {
+                        feed.insertBefore(el, insertPoint);
+                    });
+
+                    console.log(`Loaded ${newElements.length} older messages`);
+                }
+
+                // Hide the button since we've loaded full history
+                document.getElementById('load-more-container').style.display = 'none';
+                hasMoreHistory = false;
+
+            } catch (error) {
+                console.error('Error loading full history:', error);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                isLoadingFullHistory = false;
+            }
         });
 
         // Display user's timezone

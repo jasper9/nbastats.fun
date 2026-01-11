@@ -2144,6 +2144,8 @@ def api_dev_live_feed(game_id):
         # Get last seen action number and client ID from query params
         last_action = int(request.args.get('last_action', 0))
         client_id = request.args.get('client_id', str(uuid.uuid4()))
+        # recent_only: only load recent plays for faster initial load (default true for fresh loads)
+        recent_only = request.args.get('recent_only', 'true').lower() == 'true'
 
         # Check for saved history first (for completed games)
         saved_history = load_dev_live_history(game_id)
@@ -2486,6 +2488,29 @@ def api_dev_live_feed(game_id):
         # Filter to new plays only (BallDontLie uses 'order' instead of 'actionNumber')
         new_plays = [p for p in plays if p.get('order', 0) > last_action]
 
+        # For fresh loads with recent_only, filter to recent plays only (for faster loading)
+        # Still need full plays for lead change count and scores (handled separately)
+        has_more_history = False
+        history_cutoff_action = 0
+        if last_action == 0 and recent_only and len(new_plays) > 0:
+            # Filter to current period and previous period only
+            # This gives ~5-10 minutes of action
+            min_period = max(1, current_period - 1)
+            recent_plays = [p for p in new_plays if p.get('period', 1) >= min_period]
+
+            # If we filtered out some plays, track that there's more history
+            if len(recent_plays) < len(new_plays):
+                has_more_history = True
+                # Find the cutoff action (first action we're showing)
+                if recent_plays:
+                    history_cutoff_action = min(p.get('order', 0) for p in recent_plays)
+                # Use filtered plays for message generation
+                new_plays_for_messages = recent_plays
+            else:
+                new_plays_for_messages = new_plays
+        else:
+            new_plays_for_messages = new_plays
+
         # Generate chat messages with lead change detection
         all_messages = []
         lead_changes_in_batch = 0
@@ -2522,9 +2547,9 @@ def api_dev_live_feed(game_id):
                 game_odds
             )
 
-        for i, play in enumerate(new_plays):
+        for i, play in enumerate(new_plays_for_messages):
             # Use previous play for comparison (either from before batch or previous in batch)
-            compare_play = prev_play if i == 0 else new_plays[i - 1]
+            compare_play = prev_play if i == 0 else new_plays_for_messages[i - 1]
             messages = bdl.generate_messages_from_play(play, game_info, compare_play, _dev_live_largest_leads[game_id])
 
             # Add action_number to each message
@@ -2794,6 +2819,9 @@ def api_dev_live_feed(game_id):
             # Quarter-by-quarter scores
             'home_periods': home_periods,
             'away_periods': away_periods,
+            # History loading optimization
+            'has_more_history': has_more_history,
+            'history_cutoff_action': history_cutoff_action,
         }
 
         # Include score history on first load for chart reconstruction
