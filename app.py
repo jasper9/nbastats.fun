@@ -58,6 +58,14 @@ MONTH_MAP = {
     'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
 }
 
+# NBA uses Eastern time for scheduling
+EASTERN_TZ = ZoneInfo('America/New_York')
+
+
+def get_nba_game_date():
+    """Get the current date in Eastern time (what NBA uses for game scheduling)."""
+    return datetime.now(EASTERN_TZ).strftime('%Y-%m-%d')
+
 
 def parse_return_date(date_str):
     """Parse 'Jan 4' format to sortable tuple (month, day)."""
@@ -1424,7 +1432,7 @@ def fetch_dev_live_odds(game_ids, game_date=None):
         return {}
 
     if not game_date:
-        game_date = datetime.now().strftime('%Y-%m-%d')
+        game_date = get_nba_game_date()
 
     # Check cache first
     now = datetime.now()
@@ -3019,7 +3027,7 @@ def api_beta_live_prewarm():
             return jsonify({'status': 'skipped', 'reason': 'BDL not available'})
 
         # Get today's games to know which teams need pre-warming
-        game_date = datetime.now().strftime('%Y-%m-%d')
+        game_date = get_nba_game_date()
         games_data = bdl.get_todays_games(game_date)
 
         # Collect unique teams
@@ -3063,8 +3071,8 @@ def api_beta_live_games():
         # Check if we should only return today's games (for main page performance)
         today_only = request.args.get('today_only', 'false').lower() == 'true'
 
-        # Get today's games from BallDontLie
-        game_date = datetime.now().strftime('%Y-%m-%d')
+        # Get today's games from BallDontLie (use Eastern time - NBA's schedule timezone)
+        game_date = get_nba_game_date()
         games_data = bdl.get_todays_games(game_date)
 
         # Pre-fetch odds for all games (single API call)
@@ -3512,7 +3520,7 @@ def api_beta_live_feed(game_id):
             # Only show pregame preview on fresh load (not polling updates)
             if last_action == 0:
                 # Get odds for pregame preview
-                game_date = datetime.now().strftime('%Y-%m-%d')
+                game_date = get_nba_game_date()
                 team_key = f"{away_team}@{home_team}"
                 game_odds = get_cached_odds(team_key, game_date)
 
@@ -3753,7 +3761,7 @@ def api_beta_live_feed(game_id):
         pregame_msgs_to_add = []
         if last_action == 0 and current_period == 1 and len(plays) < 50:
             # Game just started - add pregame preview
-            game_date = datetime.now().strftime('%Y-%m-%d')
+            game_date = get_nba_game_date()
             team_key = f"{away_team}@{home_team}"
             game_odds = get_cached_odds(team_key, game_date)
 
