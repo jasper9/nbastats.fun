@@ -77,6 +77,14 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 - `BALLDONTLIE_API_KEY` - balldontlie.io
 - `GA_TRACKING_ID` - Google Analytics
 
+### IMPORTANT: Timezone Handling
+- **Production server runs in UTC** (not local time)
+- **NBA games are scheduled in Eastern Time** (ET)
+- **Late-night games cross midnight** - A game starting at 10:30 PM ET on Jan 12 may still be live at 1:00 AM ET on Jan 13
+- When querying for "today's games", always check **both today AND yesterday** to catch games that started yesterday but are still in progress
+- Use `ZoneInfo('America/New_York')` for Eastern time calculations
+- The BallDontLie API returns game dates in the date the game started (not current date)
+
 ## Data Sources
 
 ### NBA Stats API (via nba_api package)
