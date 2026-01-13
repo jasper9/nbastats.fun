@@ -2108,8 +2108,8 @@
                 consensus.vendor_count ? `Consensus from ${consensus.vendor_count} bookmakers` : '';
         }
 
-        // Track active filters (all active by default)
-        let activeFilters = new Set(['play_by_play', 'stats_nerd', 'hype_man', 'historian', 'ai_commentator']);
+        // Track active filters (all active by default except debug)
+        let activeFilters = new Set(['play_by_play', 'stats_nerd', 'hype_man', 'referee', 'historian', 'ai_commentator']);
 
         function toggleFilter(botType) {
             if (activeFilters.has(botType)) {
