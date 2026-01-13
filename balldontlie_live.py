@@ -387,11 +387,13 @@ def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = N
             block_match = re.match(r'^([A-Za-z\s\'\-]+?)\s+blocks', text)
             if block_match:
                 blocker = block_match.group(1).strip()
+        # The play's team is who got blocked, blocker is on the OPPOSITE team
+        blocker_team = away_team if team == home_team else home_team
         messages.append({
             'bot': 'play_by_play',
-            'text': f"🚫 {blocker} with the REJECTION!",
+            'text': f"🚫 {blocker} ({blocker_team}) with the REJECTION!",
             'type': 'block',
-            'team': team,
+            'team': blocker_team,
         })
 
     # Steals - check both play_type AND text
@@ -403,11 +405,13 @@ def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = N
             steal_match = re.search(r'([A-Za-z\s\'\-]+?)\s+steals?', text)
             if steal_match:
                 stealer = steal_match.group(1).strip()
+        # The play's team is who lost the ball, stealer is on the OPPOSITE team
+        stealer_team = away_team if team == home_team else home_team
         messages.append({
             'bot': 'play_by_play',
-            'text': f"👋 {stealer} ({team}) picks the pocket! Steal!",
+            'text': f"👋 {stealer} ({stealer_team}) picks the pocket! Steal!",
             'type': 'steal',
-            'team': team,
+            'team': stealer_team,
         })
 
     # Turnovers
