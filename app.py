@@ -1353,6 +1353,7 @@ def get_player_stats_from_nba_boxscore(bs_data, home_team_tricode):
             'pf': stats.get('foulsPersonal', 0),
             'plus_minus': stats.get('plusMinusPoints', 0),
             'starter': player.get('starter') == '1' or player.get('starter') == 1,
+            'oncourt': player.get('oncourt') == '1' or player.get('oncourt') == 1,
         }
         result['home'].append(player_stat)
 
@@ -1380,6 +1381,7 @@ def get_player_stats_from_nba_boxscore(bs_data, home_team_tricode):
             'pf': stats.get('foulsPersonal', 0),
             'plus_minus': stats.get('plusMinusPoints', 0),
             'starter': player.get('starter') == '1' or player.get('starter') == 1,
+            'oncourt': player.get('oncourt') == '1' or player.get('oncourt') == 1,
         }
         result['away'].append(player_stat)
 

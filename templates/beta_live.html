@@ -2227,8 +2227,8 @@
                 const plusMinus = p.plus_minus !== undefined ? (p.plus_minus > 0 ? `+${p.plus_minus}` : p.plus_minus) : '-';
                 const plusMinusClass = p.plus_minus > 0 ? 'positive' : (p.plus_minus < 0 ? 'negative' : '');
 
-                // Check if player is on court (team variable is from parent scope)
-                const isOnCourt = isPlayerOnCourt(p.name, team);
+                // Check if player is on court - use API oncourt field if available, otherwise infer from plays
+                const isOnCourt = p.oncourt === true || (p.oncourt === undefined && isPlayerOnCourt(p.name, team));
                 const onCourtClass = isOnCourt ? 'active' : '';
 
                 // Add to totals
