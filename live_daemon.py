@@ -767,12 +767,9 @@ def warm_dev_live_cache(api_key, game):
 
 def warm_all_dev_live_caches(api_key):
     """Warm dev-live caches for all currently live games."""
-    logger.info("=== DEBUG: warm_all_dev_live_caches called ===")
     live_games = get_all_live_games(api_key)
-    logger.info(f"=== DEBUG: get_all_live_games returned {len(live_games)} games ===")
 
     if not live_games:
-        logger.info("=== DEBUG: No live games found, returning 0 ===")
         return 0
 
     logger.info(f"Warming dev-live cache for {len(live_games)} live games...")
@@ -801,7 +798,6 @@ def run_daemon():
     ensure_dirs()
     save_live_status(False)  # Initialize status as not live
     logger.info("Live daemon started")
-    logger.info("=== CODE VERSION: 2026-01-13-v2 ===")
     logger.info(f"Cache directory: {CACHE_DIR}")
 
     current_game_id = None
@@ -824,9 +820,7 @@ def run_daemon():
                     logger.info("Post-game wait complete, returning to idle")
 
             # Check for today's game
-            logger.info("=== DEBUG: Checking for Nuggets game... ===")
             game = get_todays_game(api_key)
-            logger.info(f"=== DEBUG: get_todays_game returned: {game.get('id') if game else None} ===")
 
             if not game:
                 logger.debug("No Nuggets game today")
@@ -837,13 +831,9 @@ def run_daemon():
 
             game_id = game.get('id')
             status = game.get('status', '')
-            home_score_check = game.get('home_team_score', 0) or 0
-            away_score_check = game.get('visitor_team_score', 0) or 0
-            logger.info(f"=== DEBUG: Game {game_id} status='{status}' score={home_score_check}-{away_score_check} ===")
 
             # Check if game is final
             if status == 'Final':
-                logger.info("=== DEBUG: Game is Final ===")
                 # Still warm dev-live caches for any other live NBA games
                 warm_all_dev_live_caches(api_key)
                 if current_game_id == game_id and not game_finished:
