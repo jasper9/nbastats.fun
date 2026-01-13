@@ -215,6 +215,30 @@
         .delay-indicator.active {
             display: inline-block;
         }
+        /* Fast mode selector for skipping AI commentary */
+        .fast-mode-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 15px;
+            padding-left: 15px;
+            border-left: 1px solid var(--border);
+        }
+        .fast-mode-selector label {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .fast-mode-selector input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--nuggets-gold);
+            cursor: pointer;
+        }
+        .fast-mode-hint {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
         .delay-indicator .delay-countdown {
             font-weight: 600;
             font-variant-numeric: tabular-nums;
@@ -1129,6 +1153,11 @@
                     Delayed by <span class="delay-countdown" id="delay-countdown">0s</span>
                 </span>
             </div>
+            <div class="fast-mode-selector" id="fast-mode-selector" style="display: none;">
+                <label for="fast-mode-toggle">⚡ Fast Mode:</label>
+                <input type="checkbox" id="fast-mode-toggle" title="Skip AI commentary for faster updates">
+                <span class="fast-mode-hint">Skip AI</span>
+            </div>
         </div>
 
         <div class="scoreboard" id="scoreboard" style="display: none;">
@@ -1346,6 +1375,9 @@
         let delayDisplayInterval = null;  // Interval for processing delayed display
         let lastDisplayedScore = { home: 0, away: 0 };
         let lastDisplayedClock = { period: 0, clock: '' };
+
+        // Fast mode - skip AI commentary for faster updates
+        let skipLlm = false;
 
         // Bot emoji mapping
         const botEmojis = {
@@ -2714,14 +2746,18 @@
                 // Initialize charts (will use currentHomeTeam/currentAwayTeam for labels)
                 initCharts();
 
-                // Show delay selector for live games only (not pregame, not final, not historical)
-                if (DELAY_FEATURE_ENABLED && gameData) {
+                // Show delay/fast mode selectors for live games only (not pregame, not final, not historical)
+                if (gameData) {
                     const isLiveGame = gameData.status &&
                         (gameData.status.includes('Q') || gameData.status === 'Half') &&
                         !gameData.status.includes('Final');
-                    document.getElementById('delay-selector').style.display = isLiveGame ? 'flex' : 'none';
+                    if (DELAY_FEATURE_ENABLED) {
+                        document.getElementById('delay-selector').style.display = isLiveGame ? 'flex' : 'none';
+                    }
+                    document.getElementById('fast-mode-selector').style.display = isLiveGame ? 'flex' : 'none';
                 } else {
                     document.getElementById('delay-selector').style.display = 'none';
+                    document.getElementById('fast-mode-selector').style.display = 'none';
                 }
 
                 // Only add initial 0-0 chart points for PRE-GAME games (not yet started)
@@ -2739,7 +2775,7 @@
                 // Start polling for new game
                 fetchFeed();
                 if (pollInterval) clearInterval(pollInterval);
-                pollInterval = setInterval(fetchFeed, 5000); // Poll every 5 seconds
+                pollInterval = setInterval(fetchFeed, 3000); // Poll every 3 seconds for faster updates
             }
         }
 
@@ -2750,7 +2786,7 @@
             const requestGameId = currentGameId;
 
             try {
-                const response = await fetch(`/api/beta-live/feed/${requestGameId}?last_action=${lastActionNumber}&client_id=${clientId}`);
+                const response = await fetch(`/api/beta-live/feed/${requestGameId}?last_action=${lastActionNumber}&client_id=${clientId}&skip_llm=${skipLlm}`);
                 const data = await response.json();
 
                 // Ignore stale responses if game changed while request was in flight
@@ -2891,6 +2927,12 @@
             });
         }
 
+        // Fast mode toggle event handler
+        document.getElementById('fast-mode-toggle').addEventListener('change', (e) => {
+            skipLlm = e.target.checked;
+            console.log('Fast mode:', skipLlm ? 'ON' : 'OFF');
+        });
+
         // Process delayed buffer - displays items that are old enough
         function processDelayBuffer() {
             if (!DELAY_FEATURE_ENABLED || delaySeconds === 0 || delayBuffer.length === 0) return;
@@ -2961,7 +3003,13 @@
                 stopCountdownTimer();
             }
 
-            // Show/hide delay selector based on live status
+            // Show/hide delay and fast mode selectors based on live status
+            const fastModeSel = document.getElementById('fast-mode-selector');
+            if (isGameLive && !data.is_pregame) {
+                fastModeSel.style.display = 'flex';
+            } else {
+                fastModeSel.style.display = 'none';
+            }
             if (DELAY_FEATURE_ENABLED) {
                 const delaySel = document.getElementById('delay-selector');
                 if (isGameLive && !data.is_pregame) {
@@ -3186,7 +3234,7 @@
 
             try {
                 // Fetch full history (recent_only=false)
-                const response = await fetch(`/api/beta-live/feed/${currentGameId}?last_action=0&client_id=${clientId}&recent_only=false`);
+                const response = await fetch(`/api/beta-live/feed/${currentGameId}?last_action=0&client_id=${clientId}&recent_only=false&skip_llm=${skipLlm}`);
                 const data = await response.json();
 
                 if (data.messages && data.messages.length > 0) {

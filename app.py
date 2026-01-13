@@ -3265,6 +3265,8 @@ def api_beta_live_feed(game_id):
         client_id = request.args.get('client_id', str(uuid.uuid4()))
         # recent_only: only load recent plays for faster initial load (default true for fresh loads)
         recent_only = request.args.get('recent_only', 'true').lower() == 'true'
+        # skip_llm: skip LLM commentary for faster response (default false)
+        skip_llm = request.args.get('skip_llm', 'false').lower() == 'true'
 
         # Check for saved history first (for completed games AND live games on first load)
         saved_history = load_dev_live_history(game_id)
@@ -3822,7 +3824,8 @@ def api_beta_live_feed(game_id):
 
             # Try to add LLM commentary for exciting events
             # Only call LLM when there are actual viewers to save API costs
-            if LLM_AVAILABLE and viewer_count > 0:
+            # Skip if skip_llm flag is set (for faster response)
+            if LLM_AVAILABLE and viewer_count > 0 and not skip_llm:
                 for msg in messages:
                     # Only enhance lead changes, largest leads, dunks, ties, quarter summaries
                     if msg.get('is_lead_change') or msg.get('is_largest_lead') or \
