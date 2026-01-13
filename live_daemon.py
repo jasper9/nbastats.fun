@@ -29,6 +29,7 @@ from dotenv import load_dotenv
 SCRIPT_DIR = Path(__file__).parent
 CACHE_DIR = SCRIPT_DIR / 'cache'
 LIVE_HISTORY_DIR = CACHE_DIR / 'live_history'
+DEV_LIVE_HISTORY_DIR = CACHE_DIR / 'dev_live_history'
 
 # Load environment
 load_dotenv(SCRIPT_DIR / '.env')
@@ -66,6 +67,7 @@ def ensure_dirs():
     """Ensure cache directories exist."""
     CACHE_DIR.mkdir(exist_ok=True)
     LIVE_HISTORY_DIR.mkdir(exist_ok=True)
+    DEV_LIVE_HISTORY_DIR.mkdir(exist_ok=True)
 
 
 def atomic_write_json(filepath, data, indent=2):
@@ -616,6 +618,162 @@ def get_game_start_time(game):
     return None
 
 
+# ============================================================================
+# DEV-LIVE CACHE WARMING
+# ============================================================================
+
+def get_all_live_games(api_key):
+    """Get all NBA games that are currently live or recently started."""
+    try:
+        # Use Eastern timezone for NBA game dates
+        eastern = ZoneInfo('America/New_York')
+        today = datetime.now(eastern).strftime('%Y-%m-%d')
+
+        resp = requests.get(
+            'https://api.balldontlie.io/v1/games',
+            params={'dates[]': today, 'per_page': 50},
+            headers={'Authorization': api_key},
+            timeout=15
+        )
+        resp.raise_for_status()
+        games = resp.json().get('data', [])
+
+        live_games = []
+        for game in games:
+            status = game.get('status', '')
+            home_score = game.get('home_team_score', 0) or 0
+            away_score = game.get('visitor_team_score', 0) or 0
+
+            # Game is live if it has scores but isn't final
+            is_live = (home_score > 0 or away_score > 0) and status != 'Final'
+
+            if is_live:
+                live_games.append(game)
+
+        return live_games
+    except Exception as e:
+        logger.error(f"Error fetching all games: {e}")
+        return []
+
+
+def warm_dev_live_cache(api_key, game):
+    """
+    Warm the dev-live cache for a game by fetching play-by-play and building scores.
+    This ensures the cache file has complete history from game start.
+    """
+    game_id = game.get('id')
+    cache_file = DEV_LIVE_HISTORY_DIR / f'game_{game_id}.json'
+
+    try:
+        # Fetch play-by-play from BallDontLie
+        resp = requests.get(
+            f'https://api.balldontlie.io/v1/play_by_play',
+            params={'game_ids[]': game_id, 'per_page': 1000},
+            headers={'Authorization': api_key},
+            timeout=30
+        )
+        resp.raise_for_status()
+        plays = resp.json().get('data', [])
+
+        if not plays:
+            return False
+
+        # Build scores array from all plays
+        scores = []
+        for p in plays:
+            h = int(p.get('home_score', 0) or 0)
+            aw = int(p.get('away_score', 0) or 0)
+            if h > 0 or aw > 0:
+                if not scores or scores[-1]['home'] != h or scores[-1]['away'] != aw:
+                    clock = p.get('clock', '')
+                    period = p.get('period', 1)
+                    # Calculate elapsed time
+                    elapsed = 0
+                    if clock and period:
+                        try:
+                            if ':' in clock:
+                                parts = clock.split(':')
+                                mins = int(parts[0])
+                                secs = int(float(parts[1]))
+                            else:
+                                mins = 0
+                                secs = int(float(clock))
+                            remaining = mins * 60 + secs
+                            quarter_elapsed = 720 - remaining
+                            elapsed = (period - 1) * 720 + quarter_elapsed
+                        except:
+                            elapsed = (period - 1) * 720
+
+                    scores.append({
+                        'home': h,
+                        'away': aw,
+                        'action': p.get('order', 0),
+                        'period': period,
+                        'clock': clock,
+                        'elapsed': elapsed
+                    })
+
+        # Get game info
+        home_team = game.get('home_team', {})
+        away_team = game.get('visitor_team', {})
+        home_score = game.get('home_team_score', 0) or 0
+        away_score = game.get('visitor_team_score', 0) or 0
+
+        game_info = {
+            'home_team': home_team.get('abbreviation', ''),
+            'away_team': away_team.get('abbreviation', ''),
+            'game_id': str(game_id),
+        }
+
+        # Load existing cache or create new
+        existing = None
+        if cache_file.exists():
+            try:
+                with open(cache_file, 'r') as f:
+                    existing = json.load(f)
+            except:
+                pass
+
+        # Preserve existing messages if any, but always update scores
+        cache_data = {
+            'messages': existing.get('messages', []) if existing else [],
+            'scores': scores,  # Always use fresh complete scores
+            'game_info': game_info,
+            'status': game.get('status', ''),
+            'last_action': plays[-1].get('order', 0) if plays else 0,
+            'lead_changes': existing.get('lead_changes', 0) if existing else 0,
+            'final_score': {'home': home_score, 'away': away_score},
+            'total_actions': len(plays),
+            'daemon_updated': datetime.now().isoformat(),
+        }
+
+        atomic_write_json(cache_file, cache_data)
+        logger.debug(f"Warmed dev-live cache for game {game_id}: {len(scores)} score points")
+        return True
+
+    except Exception as e:
+        logger.error(f"Error warming dev-live cache for game {game_id}: {e}")
+        return False
+
+
+def warm_all_dev_live_caches(api_key):
+    """Warm dev-live caches for all currently live games."""
+    live_games = get_all_live_games(api_key)
+
+    if not live_games:
+        return 0
+
+    warmed = 0
+    for game in live_games:
+        if warm_dev_live_cache(api_key, game):
+            warmed += 1
+
+    if warmed > 0:
+        logger.info(f"Warmed dev-live cache for {warmed}/{len(live_games)} live games")
+
+    return warmed
+
+
 def run_daemon():
     """Main daemon loop."""
     api_key = os.getenv('BALLDONTLIE_API_KEY')
@@ -652,6 +810,8 @@ def run_daemon():
 
             if not game:
                 logger.debug("No Nuggets game today")
+                # Still warm dev-live caches for any other live NBA games
+                warm_all_dev_live_caches(api_key)
                 time.sleep(IDLE_INTERVAL)
                 continue
 
@@ -702,6 +862,9 @@ def run_daemon():
                 logger.info(f"Q{data['period']} {data['time_remaining']} | "
                            f"DEN {data['nuggets_score']} - {data['opponent_name']} {data['opponent_score']} | "
                            f"Prob: {data['consensus_prob']}% | Snapshots: {snapshot_count}")
+
+                # Warm dev-live caches for all live NBA games
+                warm_all_dev_live_caches(api_key)
 
                 time.sleep(LIVE_INTERVAL)
                 continue
