@@ -824,7 +824,9 @@ def run_daemon():
                     logger.info("Post-game wait complete, returning to idle")
 
             # Check for today's game
+            logger.info("=== DEBUG: Checking for Nuggets game... ===")
             game = get_todays_game(api_key)
+            logger.info(f"=== DEBUG: get_todays_game returned: {game.get('id') if game else None} ===")
 
             if not game:
                 logger.debug("No Nuggets game today")
