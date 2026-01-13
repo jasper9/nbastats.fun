@@ -674,9 +674,10 @@ def warm_dev_live_cache(api_key, game):
 
     try:
         # Fetch play-by-play from BallDontLie
+        # Note: endpoint is /plays with game_id parameter (not /play_by_play with game_ids[])
         resp = requests.get(
-            f'https://api.balldontlie.io/v1/play_by_play',
-            params={'game_ids[]': game_id, 'per_page': 1000},
+            'https://api.balldontlie.io/v1/plays',
+            params={'game_id': game_id, 'per_page': 1000},
             headers={'Authorization': api_key},
             timeout=30
         )
