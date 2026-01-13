@@ -623,15 +623,22 @@ def get_game_start_time(game):
 # ============================================================================
 
 def get_all_live_games(api_key):
-    """Get all NBA games that are currently live or recently started."""
+    """Get all NBA games that are currently live or recently started.
+
+    Checks both today and yesterday to catch late-night games that
+    cross midnight (e.g., West Coast games).
+    """
     try:
         # Use Eastern timezone for NBA game dates
         eastern = ZoneInfo('America/New_York')
-        today = datetime.now(eastern).strftime('%Y-%m-%d')
+        now = datetime.now(eastern)
+        today = now.strftime('%Y-%m-%d')
+        yesterday = (now - timedelta(days=1)).strftime('%Y-%m-%d')
 
+        # Query both today and yesterday to catch games crossing midnight
         resp = requests.get(
             'https://api.balldontlie.io/v1/games',
-            params={'dates[]': today, 'per_page': 50},
+            params={'dates[]': [yesterday, today], 'per_page': 50},
             headers={'Authorization': api_key},
             timeout=15
         )
@@ -650,6 +657,7 @@ def get_all_live_games(api_key):
             if is_live:
                 live_games.append(game)
 
+        logger.debug(f"Found {len(live_games)} live games out of {len(games)} total")
         return live_games
     except Exception as e:
         logger.error(f"Error fetching all games: {e}")
@@ -761,16 +769,22 @@ def warm_all_dev_live_caches(api_key):
     live_games = get_all_live_games(api_key)
 
     if not live_games:
+        logger.debug("No live games to warm")
         return 0
 
+    logger.info(f"Warming dev-live cache for {len(live_games)} live games...")
     warmed = 0
     for game in live_games:
+        game_id = game.get('id')
+        home = game.get('home_team', {}).get('abbreviation', '?')
+        away = game.get('visitor_team', {}).get('abbreviation', '?')
         if warm_dev_live_cache(api_key, game):
             warmed += 1
+            logger.debug(f"  Warmed {game_id}: {away}@{home}")
+        else:
+            logger.warning(f"  Failed to warm {game_id}: {away}@{home}")
 
-    if warmed > 0:
-        logger.info(f"Warmed dev-live cache for {warmed}/{len(live_games)} live games")
-
+    logger.info(f"Warmed {warmed}/{len(live_games)} dev-live caches")
     return warmed
 
 
