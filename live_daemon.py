@@ -767,10 +767,12 @@ def warm_dev_live_cache(api_key, game):
 
 def warm_all_dev_live_caches(api_key):
     """Warm dev-live caches for all currently live games."""
+    logger.info("=== DEBUG: warm_all_dev_live_caches called ===")
     live_games = get_all_live_games(api_key)
+    logger.info(f"=== DEBUG: get_all_live_games returned {len(live_games)} games ===")
 
     if not live_games:
-        logger.debug("No live games to warm")
+        logger.info("=== DEBUG: No live games found, returning 0 ===")
         return 0
 
     logger.info(f"Warming dev-live cache for {len(live_games)} live games...")
@@ -799,6 +801,7 @@ def run_daemon():
     ensure_dirs()
     save_live_status(False)  # Initialize status as not live
     logger.info("Live daemon started")
+    logger.info("=== CODE VERSION: 2026-01-13-v2 ===")
     logger.info(f"Cache directory: {CACHE_DIR}")
 
     current_game_id = None
