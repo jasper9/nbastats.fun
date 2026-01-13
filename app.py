@@ -1396,6 +1396,7 @@ def clock_to_elapsed_seconds(clock_str, period):
     """
     Convert game clock (MM:SS remaining) and period to elapsed seconds.
     Q1 12:00 → 0, Q1 0:00 → 720, Q2 12:00 → 720, Q4 0:00 → 2880
+    Handles both "MM:SS" and "SS.S" (seconds only when under 1 minute) formats.
     """
     if not clock_str or not period:
         return 0
@@ -1404,6 +1405,10 @@ def clock_to_elapsed_seconds(clock_str, period):
         if len(parts) == 2:
             mins = int(parts[0])
             secs = int(float(parts[1]))  # Handle "12:00.0" format
+        elif ':' not in clock_str:
+            # Seconds only format (e.g., "54.6" when under 1 minute)
+            mins = 0
+            secs = int(float(clock_str))
         else:
             return (period - 1) * 720  # Default to start of period
 
