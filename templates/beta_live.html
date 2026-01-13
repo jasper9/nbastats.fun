@@ -770,6 +770,10 @@
             border-left-color: #60a5fa;
             background: linear-gradient(90deg, rgba(96, 165, 250, 0.1), var(--bg-card));
         }
+        .chat-message.bot-debug {
+            border-left-color: #10b981;
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.15), var(--bg-card));
+        }
         .msg-avatar {
             font-size: 1.5rem;
             flex-shrink: 0;
@@ -795,6 +799,7 @@
         .msg-bot-name.bot-referee { color: #fbbf24; }
         .msg-bot-name.bot-historian { color: #a855f7; }
         .msg-bot-name.bot-ai_commentator { color: #60a5fa; }
+        .msg-bot-name.bot-debug { color: #10b981; }
         .msg-time {
             font-size: 0.7rem;
             color: var(--text-muted);
@@ -1312,6 +1317,10 @@
                 <span class="filter-dot"></span>
                 AI
             </button>
+            <button class="filter-btn" data-bot="debug" style="--btn-color: #10b981;">
+                <span class="filter-dot"></span>
+                Debug
+            </button>
         </div>
 
         <!-- Box Score Section -->
@@ -1387,7 +1396,8 @@
             'hype_man': '&#x1F525;',
             'referee': '&#x1F6A8;',  // Police light/siren for ref calls
             'historian': '&#x1F4DC;',
-            'ai_commentator': '&#x1F916;'
+            'ai_commentator': '&#x1F916;',
+            'debug': '&#x1F41B;'  // Bug emoji for debug
         };
 
         const botNames = {
@@ -1397,7 +1407,8 @@
             'hype_man': 'HypeMan',
             'referee': 'Referee',
             'historian': 'Historian',
-            'ai_commentator': 'AI'
+            'ai_commentator': 'AI',
+            'debug': 'Debug'
         };
 
         // NBA team ID mapping for logos (abbreviation -> NBA team ID)
@@ -1425,6 +1436,11 @@
         let lastActionNumber = 0;
         let pollInterval = null;
         let clientId = 'client_' + Math.random().toString(36).substr(2, 9);
+
+        // Debug timer for troubleshooting
+        let debugInterval = null;
+        let debugActionCounter = 900000;  // Start high to avoid conflicts with real action numbers
+        let lastDebugClock = { period: 0, clock: '', status: '' };
 
         // Countdown timer for pregame
         let countdownInterval = null;
@@ -2601,6 +2617,8 @@
                     clearInterval(pollInterval);
                     pollInterval = null;
                 }
+                // Stop debug interval
+                stopDebugInterval();
                 // Clear URL parameter
                 if (updateUrl) {
                     window.history.replaceState({}, '', '/beta-live');
@@ -2650,6 +2668,10 @@
                 // Reset on-court player tracking
                 onCourtPlayers = { home: new Set(), away: new Set() };
                 recentPlayPlayers = [];
+
+                // Reset debug state
+                lastDebugClock = { period: 0, clock: '', status: '' };
+                debugActionCounter = 900000;
 
                 // Hide odds section until new game's odds load
                 document.getElementById('odds-section').classList.remove('visible');
@@ -2776,6 +2798,9 @@
                 fetchFeed();
                 if (pollInterval) clearInterval(pollInterval);
                 pollInterval = setInterval(fetchFeed, 3000); // Poll every 3 seconds for faster updates
+
+                // Start debug interval (only emits if debug filter is active)
+                startDebugInterval();
             }
         }
 
@@ -2896,6 +2921,55 @@
             `;
 
             return div;
+        }
+
+        // Emit debug message with current game clock
+        function emitDebugMessage() {
+            // Only emit if debug filter is active
+            if (!activeFilters.has('debug')) return;
+
+            const feed = document.getElementById('chat-feed');
+            if (!feed) return;
+
+            // Get current time
+            const now = new Date();
+            const timestamp = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            // Build debug message with all timing info
+            const period = lastDebugClock.period || '?';
+            const clock = lastDebugClock.clock || '??:??';
+            const status = lastDebugClock.status || 'unknown';
+
+            const msg = {
+                bot: 'debug',
+                text: `[${timestamp}] Game: Q${period} ${clock} | Status: ${status} | Poll interval: 3s`,
+                score: '',
+                period: period,
+                clock: clock,
+                action_number: debugActionCounter++
+            };
+
+            const msgEl = createMessageElement(msg);
+            msgEl.dataset.actionNumber = msg.action_number;
+            feed.appendChild(msgEl);
+
+            // Auto-scroll to bottom
+            feed.scrollTop = feed.scrollHeight;
+        }
+
+        // Start/stop debug interval
+        function startDebugInterval() {
+            if (debugInterval) return;  // Already running
+            debugInterval = setInterval(emitDebugMessage, 10000);  // Every 10 seconds
+            console.log('Debug interval started');
+        }
+
+        function stopDebugInterval() {
+            if (debugInterval) {
+                clearInterval(debugInterval);
+                debugInterval = null;
+                console.log('Debug interval stopped');
+            }
         }
 
         // Initialize
@@ -3033,11 +3107,14 @@
                 document.getElementById('game-quarter').textContent = periodText;
                 document.getElementById('game-clock').textContent = data.game_clock;
                 lastDisplayedClock = { period: data.period, clock: data.game_clock };
+                // Update debug clock tracking
+                lastDebugClock = { period: data.period, clock: data.game_clock, status: data.status || 'live' };
             } else if (data.status === 'Final') {
                 // Show "FINAL" for completed games
                 clockSection.style.display = 'block';
                 document.getElementById('game-quarter').textContent = 'FINAL';
                 document.getElementById('game-clock').textContent = '';
+                lastDebugClock = { period: data.period || 4, clock: '0:00', status: 'Final' };
             } else if (data.is_pregame) {
                 // Show countdown for upcoming games
                 clockSection.style.display = 'block';
