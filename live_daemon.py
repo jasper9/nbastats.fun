@@ -837,9 +837,13 @@ def run_daemon():
 
             game_id = game.get('id')
             status = game.get('status', '')
+            home_score_check = game.get('home_team_score', 0) or 0
+            away_score_check = game.get('visitor_team_score', 0) or 0
+            logger.info(f"=== DEBUG: Game {game_id} status='{status}' score={home_score_check}-{away_score_check} ===")
 
             # Check if game is final
             if status == 'Final':
+                logger.info("=== DEBUG: Game is Final, sleeping... ===")
                 if current_game_id == game_id and not game_finished:
                     # Game just ended - do final processing
                     logger.info("Game ended - doing final processing")
@@ -909,6 +913,8 @@ def run_daemon():
                     logger.debug(f"Game in {int(time_until_game)} min - waiting")
 
             # Idle - check less frequently
+            # Still warm dev-live caches for any other live NBA games
+            warm_all_dev_live_caches(api_key)
             time.sleep(IDLE_INTERVAL)
 
         except KeyboardInterrupt:
