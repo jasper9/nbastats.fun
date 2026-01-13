@@ -1852,6 +1852,19 @@
                 elapsed = chartData.elapsed.length * 30;
             }
 
+            // Skip adding point if nothing changed (halftime, timeout, etc.)
+            // This prevents the chart from extending during game stoppages
+            const lastIdx = chartData.labels.length - 1;
+            if (lastIdx >= 0) {
+                const lastElapsed = chartData.elapsed[lastIdx];
+                const lastHome = chartData.homeScores[lastIdx];
+                const lastAway = chartData.awayScores[lastIdx];
+                if (elapsed === lastElapsed && homeScore === lastHome && awayScore === lastAway) {
+                    // Nothing changed, skip this update
+                    return;
+                }
+            }
+
             // Check for quarter change - add marker at current index
             if (period && period > lastPeriod) {
                 // Store the index where this quarter starts (for vertical line positioning)
