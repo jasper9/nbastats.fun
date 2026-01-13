@@ -3351,7 +3351,7 @@ def api_beta_live_feed(game_id):
                     'player_stats': saved_history.get('player_stats', {'home': [], 'away': []}),
                 })
 
-        # For live games with saved history on first load: return saved messages + fresh game status
+        # For live games with saved history on first load: return saved messages + fresh game status + fresh scores
         if use_saved_history and saved_status != 'Final':
             # Get fresh game info from API for current status/score
             game_data = bdl.get_game_info(bdl_game_id)
@@ -3365,14 +3365,33 @@ def api_beta_live_feed(game_id):
                 # Don't use saved history - fall through to regenerate
                 pass
             else:
-                # Return saved messages with fresh status
-                print(f"Using saved history for live game {game_id}: {len(saved_history.get('messages', []))} messages")
+                # Rebuild scores from fresh play-by-play (scores change during game, messages don't)
+                fresh_plays = bdl.get_play_by_play(bdl_game_id)
+                fresh_scores = []
+                for p in fresh_plays:
+                    h = int(p.get('home_score', 0) or 0)
+                    aw = int(p.get('away_score', 0) or 0)
+                    if h > 0 or aw > 0:
+                        if not fresh_scores or fresh_scores[-1]['home'] != h or fresh_scores[-1]['away'] != aw:
+                            p_clock = p.get('clock', '')
+                            p_period = p.get('period', 1)
+                            fresh_scores.append({
+                                'home': h,
+                                'away': aw,
+                                'action': p.get('order', 0),
+                                'period': p_period,
+                                'clock': p_clock,
+                                'elapsed': clock_to_elapsed_seconds(p_clock, p_period)
+                            })
+
+                # Return saved messages with fresh status and fresh scores
+                print(f"Using saved history for live game {game_id}: {len(saved_history.get('messages', []))} messages, {len(fresh_scores)} scores")
                 return jsonify({
                     'messages': saved_history.get('messages', []),
                     'last_action': saved_history.get('last_action', 0),
                     'game_info': saved_history.get('game_info', {}),
                     'score': {'home': home_score, 'away': away_score},
-                    'scores': saved_history.get('scores', []),
+                    'scores': fresh_scores,  # Use fresh scores, not cached
                     'total_actions': saved_history.get('total_actions', 0),
                     'viewer_count': 0,
                     'client_id': client_id,
