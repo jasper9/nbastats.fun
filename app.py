@@ -3405,6 +3405,7 @@ def api_beta_live_feed(game_id):
                     'period': period,
                     'game_clock': clock,
                     'is_historical': False,
+                    'is_first_load': True,  # Signal frontend to load scores array
                     'is_cached': True,  # Indicate this is from cache
                     'player_stats': saved_history.get('player_stats', {'home': [], 'away': []}),
                 })
