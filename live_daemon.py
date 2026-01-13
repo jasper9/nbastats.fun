@@ -843,7 +843,9 @@ def run_daemon():
 
             # Check if game is final
             if status == 'Final':
-                logger.info("=== DEBUG: Game is Final, sleeping... ===")
+                logger.info("=== DEBUG: Game is Final ===")
+                # Still warm dev-live caches for any other live NBA games
+                warm_all_dev_live_caches(api_key)
                 if current_game_id == game_id and not game_finished:
                     # Game just ended - do final processing
                     logger.info("Game ended - doing final processing")
