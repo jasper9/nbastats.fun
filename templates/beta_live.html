@@ -1430,7 +1430,7 @@
         // On-court player tracking
         // Tracks players mentioned in recent plays to infer who's on court
         let onCourtPlayers = { home: new Set(), away: new Set() };
-        const RECENT_PLAYS_WINDOW = 8;  // Number of recent plays to consider
+        const RECENT_PLAYS_WINDOW = 12;  // Number of recent plays to consider (enough for 5 players per team)
         let recentPlayPlayers = [];  // Array of {player, team, timestamp}
 
         // Custom Chart.js plugin to draw vertical quarter lines (at data index positions)
@@ -2336,7 +2336,8 @@
             // Common patterns in play-by-play messages
             // "Player Name (TEAM) hits..." or "Player Name (TEAM) makes..."
             const patterns = [
-                /^[💥✓🚫👋💨🚨⭐🔥]+\s*([A-Z][a-z']+(?:\s+[A-Z][a-z']+)+)\s*\(/i,  // Emoji + name + (
+                // Emoji + name + ( - includes all emojis: score💥, miss❌, rebound📥, sub🔄, block🚫, steal👋, turnover💨, foul🚨, timeout⏸️, hot🔥, star⭐, check✓
+                /^[💥❌📥🔄✓🚫👋💨🚨⭐🔥⏸️]+\s*([A-Z][a-z']+(?:\s+[A-Z][a-z']+)+)\s*\(/i,
                 /POSTER!\s*([A-Z][a-z']+(?:\s+[A-Z][a-z']+)+)/i,  // POSTER! name
                 /by\s+([A-Z][a-z']+(?:\s+[A-Z][a-z']+)+)/i,  // "by Name"
                 /on\s+([A-Z][a-z']+(?:\s+[A-Z][a-z']+)+)\s*\(/i,  // "on Name ("
