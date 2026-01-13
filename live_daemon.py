@@ -725,8 +725,14 @@ def warm_dev_live_cache(api_key, game):
         # Get game info
         home_team = game.get('home_team', {})
         away_team = game.get('visitor_team', {})
-        home_score = game.get('home_team_score', 0) or 0
-        away_score = game.get('visitor_team_score', 0) or 0
+
+        # Use the last score from plays data (more accurate than stale game object)
+        if scores:
+            home_score = scores[-1]['home']
+            away_score = scores[-1]['away']
+        else:
+            home_score = game.get('home_team_score', 0) or 0
+            away_score = game.get('visitor_team_score', 0) or 0
 
         game_info = {
             'home_team': home_team.get('abbreviation', ''),
