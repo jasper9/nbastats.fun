@@ -3956,6 +3956,12 @@ def api_beta_live_feed(game_id):
         # Track score progression for charts (include period and clock for game time x-axis)
         play_period = plays[-1].get('period', 1) if plays else current_period
         play_clock = plays[-1].get('clock', game_clock) if plays else game_clock
+
+        # Use play-by-play clock/period if available (more accurate than BallDontLie game status)
+        if plays and play_clock:
+            game_clock = play_clock
+            current_period = play_period
+
         if latest_score['home'] > 0 or latest_score['away'] > 0:
             # Only add if score changed from last recorded score
             if not history['scores'] or \
