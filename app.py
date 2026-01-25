@@ -1012,18 +1012,24 @@ def get_player_season_averages(player_name, team_abbrev=None):
 
 def parse_game_time_for_sort(status: str) -> tuple:
     """
-    Parse game status/time for sorting. Returns tuple (is_live, is_final, time_minutes).
+    Parse game status/time for sorting. Returns tuple (category, sort_key).
     Sort order: Live games first (0), then upcoming by time (1), then final (2).
     """
     import re
 
     # Live games - currently in progress
     if any(x in status for x in ['Q1', 'Q2', 'Q3', 'Q4', 'OT', 'Half']):
-        return (0, 0, 0)  # Live games first
+        return (0, '')  # Live games first
 
     # Final games
     if 'Final' in status:
-        return (2, 0, 0)  # Final games last
+        return (2, '')  # Final games last
+
+    # ISO timestamp format from BallDontLie API: "2026-01-25T22:30:00Z"
+    # Use full timestamp as sort key for correct chronological order
+    iso_match = re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z?$', status)
+    if iso_match:
+        return (1, status)  # Upcoming, sorted by full ISO timestamp string
 
     # Upcoming games - parse time like "7:00 PM ET" or "10:30 PM"
     time_match = re.search(r'(\d{1,2}):(\d{2})\s*(AM|PM)', status, re.IGNORECASE)
@@ -1038,11 +1044,11 @@ def parse_game_time_for_sort(status: str) -> tuple:
         elif ampm == 'AM' and hour == 12:
             hour = 0
 
-        time_minutes = hour * 60 + minute
-        return (1, 0, time_minutes)  # Upcoming, sorted by time
+        # Format as sortable string
+        return (1, f'{hour:02d}:{minute:02d}')
 
     # Unknown format - treat as upcoming, sort to end
-    return (1, 0, 9999)
+    return (1, 'ZZ')
 
 
 def build_beta_live_games_list() -> list:
