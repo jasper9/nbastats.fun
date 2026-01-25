@@ -3077,6 +3077,8 @@ def api_beta_live_games():
 
         # Check if we should only return today's games (for main page performance)
         today_only = request.args.get('today_only', 'false').lower() == 'true'
+        # Check if we should include odds (skip for faster dropdown loading)
+        include_odds = request.args.get('include_odds', 'false').lower() == 'true'
 
         # Get games from BallDontLie (use Eastern time - NBA's schedule timezone)
         # IMPORTANT: Query both today AND yesterday to catch late-night games that cross midnight
@@ -3094,8 +3096,8 @@ def api_beta_live_games():
             if g.get('date', '')[:10] == today or g.get('status', '') != 'Final'
         ]
 
-        # Pre-fetch odds for all games (single API call)
-        all_odds = fetch_dev_live_odds([], game_date)
+        # Pre-fetch odds for all games (only if requested - slow API calls)
+        all_odds = fetch_dev_live_odds([], game_date) if include_odds else {}
 
         # Merge pre_game_odds from file cache (captured once, never changes)
         # This preserves the opening line before any in-game movement
