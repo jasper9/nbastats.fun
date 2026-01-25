@@ -87,6 +87,43 @@ def get_todays_games(date: str = None) -> list:
     return result
 
 
+def get_games_for_dates(dates: list) -> list:
+    """
+    Get all games for multiple dates. Useful for catching late-night games
+    that cross midnight (e.g., West Coast games still in progress after ET midnight).
+
+    Results are cached per-date for 30 seconds.
+
+    Args:
+        dates: List of dates in YYYY-MM-DD format
+
+    Returns:
+        List of game objects from all dates (deduplicated by game ID)
+    """
+    all_games = []
+    seen_ids = set()
+
+    for date in dates:
+        cache_key = f"games_{date}"
+        cached = _get_cached(cache_key, GAMES_CACHE_TTL)
+
+        if cached is not None:
+            games = cached
+        else:
+            data = _make_request('games', {'dates[]': date})
+            games = data.get('data', [])
+            _set_cache(cache_key, games)
+
+        # Add games, avoiding duplicates
+        for game in games:
+            game_id = game.get('id')
+            if game_id and game_id not in seen_ids:
+                seen_ids.add(game_id)
+                all_games.append(game)
+
+    return all_games
+
+
 def get_play_by_play(game_id: int) -> list:
     """
     Get play-by-play data for a game.

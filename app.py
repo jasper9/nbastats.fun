@@ -3078,9 +3078,14 @@ def api_beta_live_games():
         # Check if we should only return today's games (for main page performance)
         today_only = request.args.get('today_only', 'false').lower() == 'true'
 
-        # Get today's games from BallDontLie (use Eastern time - NBA's schedule timezone)
-        game_date = get_nba_game_date()
-        games_data = bdl.get_todays_games(game_date)
+        # Get games from BallDontLie (use Eastern time - NBA's schedule timezone)
+        # IMPORTANT: Query both today AND yesterday to catch late-night games that cross midnight
+        # (e.g., West Coast games starting at 10:30 PM ET may still be live at 1:00 AM ET)
+        now_eastern = datetime.now(EASTERN_TZ)
+        today = now_eastern.strftime('%Y-%m-%d')
+        yesterday = (now_eastern - timedelta(days=1)).strftime('%Y-%m-%d')
+        games_data = bdl.get_games_for_dates([yesterday, today])
+        game_date = today  # For odds fetching, use today
 
         # Pre-fetch odds for all games (single API call)
         all_odds = fetch_dev_live_odds([], game_date)
