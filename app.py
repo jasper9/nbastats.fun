@@ -938,6 +938,10 @@ _dev_live_odds_cache = {}  # game_id -> {'odds': [], 'consensus': {}, 'updated_a
 DEV_LIVE_ODDS_CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache', 'dev_live_odds.json')
 DEV_LIVE_ODDS_CACHE_TTL = 60  # seconds before refreshing odds
 
+# Games list cache for fast dropdown loading
+DEV_LIVE_GAMES_CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache', 'dev_live_games.json')
+DEV_LIVE_GAMES_CACHE_TTL = 60  # seconds before cache is considered stale (but still usable)
+
 # Probability history per game (for charts)
 _dev_live_prob_history = {}  # game_id -> [{'home_prob': N, 'away_prob': N, 'home_score': N, 'away_score': N, 'action': N}]
 
@@ -1004,6 +1008,162 @@ def get_player_season_averages(player_name, team_abbrev=None):
     default = {'ppg': 10.0, 'rpg': 4.0, 'apg': 2.5, 'bpg': 0.5, 'spg': 0.7, 'cached_at': datetime.now()}
     _player_season_averages[player_name] = default
     return default
+
+
+def parse_game_time_for_sort(status: str) -> tuple:
+    """
+    Parse game status/time for sorting. Returns tuple (is_live, is_final, time_minutes).
+    Sort order: Live games first (0), then upcoming by time (1), then final (2).
+    """
+    import re
+
+    # Live games - currently in progress
+    if any(x in status for x in ['Q1', 'Q2', 'Q3', 'Q4', 'OT', 'Half']):
+        return (0, 0, 0)  # Live games first
+
+    # Final games
+    if 'Final' in status:
+        return (2, 0, 0)  # Final games last
+
+    # Upcoming games - parse time like "7:00 PM ET" or "10:30 PM"
+    time_match = re.search(r'(\d{1,2}):(\d{2})\s*(AM|PM)', status, re.IGNORECASE)
+    if time_match:
+        hour = int(time_match.group(1))
+        minute = int(time_match.group(2))
+        ampm = time_match.group(3).upper()
+
+        # Convert to 24-hour for sorting
+        if ampm == 'PM' and hour != 12:
+            hour += 12
+        elif ampm == 'AM' and hour == 12:
+            hour = 0
+
+        time_minutes = hour * 60 + minute
+        return (1, 0, time_minutes)  # Upcoming, sorted by time
+
+    # Unknown format - treat as upcoming, sort to end
+    return (1, 0, 9999)
+
+
+def build_beta_live_games_list() -> list:
+    """
+    Build the games list for beta-live dropdown. Called by daemon to warm cache.
+    Returns list of game dicts ready for JSON response.
+    """
+    if not BDL_AVAILABLE:
+        return []
+
+    now_eastern = datetime.now(EASTERN_TZ)
+    today = now_eastern.strftime('%Y-%m-%d')
+    yesterday = (now_eastern - timedelta(days=1)).strftime('%Y-%m-%d')
+
+    # Fetch games for both days
+    games_data = bdl.get_games_for_dates([yesterday, today])
+
+    # Filter out yesterday's Final games
+    games_data = [
+        g for g in games_data
+        if g.get('date', '')[:10] == today or g.get('status', '') != 'Final'
+    ]
+
+    games = []
+    seen_game_ids = set()
+
+    for g in games_data:
+        game_id = str(g['id'])
+        seen_game_ids.add(game_id)
+
+        has_history = os.path.exists(os.path.join(DEV_LIVE_HISTORY_DIR, f'game_{game_id}.json'))
+
+        home_team = g.get('home_team', {})
+        away_team = g.get('visitor_team', {})
+
+        status = g.get('status', '')
+        period = g.get('period', 0)
+        time_str = g.get('time', '')
+
+        if status == 'Final':
+            status_text = 'Final'
+        elif period > 0:
+            if time_str:
+                if time_str.startswith('Q') or time_str.startswith('OT'):
+                    status_text = time_str
+                else:
+                    quarter = f"Q{period}" if period <= 4 else f"OT{period-4}"
+                    status_text = f"{quarter} {time_str}"
+            else:
+                status_text = f"Q{period}" if period <= 4 else f"OT{period-4}"
+        else:
+            status_text = status
+
+        game_data = {
+            'game_id': game_id,
+            'home_team': home_team.get('abbreviation', ''),
+            'away_team': away_team.get('abbreviation', ''),
+            'home_team_name': home_team.get('name', ''),
+            'away_team_name': away_team.get('name', ''),
+            'home_team_city': home_team.get('city', ''),
+            'away_team_city': away_team.get('city', ''),
+            'status': status_text,
+            'home_score': g.get('home_team_score', 0) or 0,
+            'away_score': g.get('visitor_team_score', 0) or 0,
+            'has_history': has_history,
+            'bdl_id': g['id'],
+            'game_date': g.get('date', today),
+        }
+
+        games.append(game_data)
+
+    # Sort: Live first, then upcoming by time, then final
+    games.sort(key=lambda g: parse_game_time_for_sort(g['status']))
+
+    return games
+
+
+def save_beta_live_games_cache(games: list):
+    """Save games list to file cache."""
+    try:
+        cache_data = {
+            'games': games,
+            'updated_at': datetime.now().isoformat(),
+        }
+        os.makedirs(os.path.dirname(DEV_LIVE_GAMES_CACHE_FILE), exist_ok=True)
+        # Atomic write
+        tmp_file = DEV_LIVE_GAMES_CACHE_FILE + '.tmp'
+        with open(tmp_file, 'w') as f:
+            json.dump(cache_data, f)
+        os.replace(tmp_file, DEV_LIVE_GAMES_CACHE_FILE)
+    except Exception as e:
+        print(f"Error saving games cache: {e}")
+
+
+def load_beta_live_games_cache() -> tuple:
+    """
+    Load games list from file cache.
+    Returns (games_list, is_fresh) where is_fresh indicates if cache is within TTL.
+    """
+    try:
+        if os.path.exists(DEV_LIVE_GAMES_CACHE_FILE):
+            with open(DEV_LIVE_GAMES_CACHE_FILE, 'r') as f:
+                cache_data = json.load(f)
+
+            updated_at = datetime.fromisoformat(cache_data.get('updated_at', '2000-01-01'))
+            age = (datetime.now() - updated_at).total_seconds()
+            is_fresh = age < DEV_LIVE_GAMES_CACHE_TTL
+
+            return cache_data.get('games', []), is_fresh
+    except Exception:
+        pass
+
+    return [], False
+
+
+def warm_beta_live_games_cache():
+    """Warm the games cache - call this from daemon or on app startup."""
+    games = build_beta_live_games_list()
+    if games:
+        save_beta_live_games_cache(games)
+    return games
 
 
 def track_player_stats_from_play(game_id, play):
@@ -3079,146 +3239,39 @@ def api_beta_live_games():
         today_only = request.args.get('today_only', 'false').lower() == 'true'
         # Check if we should include odds (skip for faster dropdown loading)
         include_odds = request.args.get('include_odds', 'false').lower() == 'true'
+        # Check if we should force refresh (skip cache)
+        force_refresh = request.args.get('refresh', 'false').lower() == 'true'
 
-        # Get games from BallDontLie (use Eastern time - NBA's schedule timezone)
-        # IMPORTANT: Query both today AND yesterday to catch late-night games that cross midnight
-        # (e.g., West Coast games starting at 10:30 PM ET may still be live at 1:00 AM ET)
-        now_eastern = datetime.now(EASTERN_TZ)
-        today = now_eastern.strftime('%Y-%m-%d')
-        yesterday = (now_eastern - timedelta(days=1)).strftime('%Y-%m-%d')
-        games_data = bdl.get_games_for_dates([yesterday, today])
-        game_date = today  # For odds fetching, use today
+        # Try to use cached games list for fast response
+        if today_only and not force_refresh:
+            cached_games, is_fresh = load_beta_live_games_cache()
+            if cached_games:
+                # Return cached data immediately
+                # If stale, trigger async refresh in background (fire and forget)
+                if not is_fresh:
+                    # Schedule background refresh - don't block response
+                    import threading
+                    threading.Thread(target=warm_beta_live_games_cache, daemon=True).start()
+                return jsonify({'games': cached_games})
 
-        # Filter out yesterday's games that are already Final - we only want yesterday's
-        # games if they're still in progress (late-night games crossing midnight)
-        games_data = [
-            g for g in games_data
-            if g.get('date', '')[:10] == today or g.get('status', '') != 'Final'
-        ]
+        # No cache or force refresh - build fresh (slower path)
+        games = build_beta_live_games_list()
 
-        # Pre-fetch odds for all games (only if requested - slow API calls)
-        all_odds = fetch_dev_live_odds([], game_date) if include_odds else {}
+        # Save to cache for next request
+        if games:
+            save_beta_live_games_cache(games)
 
-        # Merge pre_game_odds from file cache (captured once, never changes)
-        # This preserves the opening line before any in-game movement
-        if all_odds:
-            file_cache = {}
-            try:
-                if os.path.exists(DEV_LIVE_ODDS_CACHE_FILE):
-                    with open(DEV_LIVE_ODDS_CACHE_FILE, 'r') as f:
-                        file_cache = json.load(f)
-            except Exception:
-                pass
+        # For today_only mode, we're done (no odds, no historical games)
+        if today_only:
+            return jsonify({'games': games})
 
-            # For each game's odds, preserve or capture pre_game_odds
-            for key, odds_data in all_odds.items():
-                if key in file_cache and 'pre_game_odds' in file_cache[key]:
-                    # Use preserved pre_game_odds from file cache
-                    odds_data['pre_game_odds'] = file_cache[key]['pre_game_odds']
-                elif 'pre_game_odds' not in odds_data:
-                    # First time seeing this game - capture pre_game_odds
-                    odds_data['pre_game_odds'] = {
-                        'consensus': odds_data.get('consensus', {}),
-                        'captured_at': datetime.now().isoformat()
-                    }
-                    # Save to file cache for persistence
-                    file_cache[key] = odds_data
-                    try:
-                        os.makedirs(os.path.dirname(DEV_LIVE_ODDS_CACHE_FILE), exist_ok=True)
-                        with open(DEV_LIVE_ODDS_CACHE_FILE, 'w') as f:
-                            json.dump(file_cache, f)
-                    except Exception:
-                        pass
-
-        games = []
-        seen_game_ids = set()
-
-        for g in games_data:
-            game_id = str(g['id'])  # BallDontLie uses numeric IDs
-            seen_game_ids.add(game_id)
-
-            # Check if history exists for this game
-            has_history = os.path.exists(os.path.join(DEV_LIVE_HISTORY_DIR, f'game_{game_id}.json'))
-
-            home_team = g.get('home_team', {})
-            away_team = g.get('visitor_team', {})
-
-            # Get odds for this game - match by team pair since IDs differ between APIs
-            team_key = f"{away_team.get('abbreviation', '')}@{home_team.get('abbreviation', '')}"
-            game_odds = all_odds.get(team_key, {})
-
-            # Parse game status from BallDontLie format
-            status = g.get('status', '')
-            period = g.get('period', 0)
-            time_str = g.get('time', '')  # Can be "7:21" or "Q4 7:21" or empty
-
-            # Build status text similar to NBA API format
-            if status == 'Final':
-                status_text = 'Final'
-            elif period > 0:
-                # Game in progress - time_str might already include quarter
-                if time_str:
-                    # If time_str already has "Q" prefix, use it as-is
-                    if time_str.startswith('Q') or time_str.startswith('OT'):
-                        status_text = time_str
-                    else:
-                        # Add quarter prefix
-                        quarter = f"Q{period}" if period <= 4 else f"OT{period-4}"
-                        status_text = f"{quarter} {time_str}"
-                else:
-                    status_text = f"Q{period}" if period <= 4 else f"OT{period-4}"
-            else:
-                # Scheduled game - status might be time like "7:00 PM" or ISO timestamp
-                status_text = status
-
-            game_data = {
-                'game_id': game_id,
-                'home_team': home_team.get('abbreviation', ''),
-                'away_team': away_team.get('abbreviation', ''),
-                'home_team_name': home_team.get('name', ''),
-                'away_team_name': away_team.get('name', ''),
-                'home_team_city': home_team.get('city', ''),
-                'away_team_city': away_team.get('city', ''),
-                'status': status_text,
-                'game_time_utc': None,  # BallDontLie doesn't provide UTC time directly
-                'home_score': g.get('home_team_score', 0) or 0,
-                'away_score': g.get('visitor_team_score', 0) or 0,
-                'has_history': has_history,
-                'bdl_id': g['id'],  # Keep original BallDontLie ID for API calls
-                'game_date': g.get('date', game_date),  # Date from API or fallback to today
-            }
-
-            # Add odds if available
-            if game_odds:
-                consensus = game_odds.get('consensus', {})
-                game_data['odds'] = {
-                    'consensus': {
-                        'home_prob': consensus.get('home_prob'),
-                        'away_prob': consensus.get('away_prob'),
-                        'vendor_count': consensus.get('vendor_count', 0),
-                        'spread': consensus.get('spread'),
-                        'total': consensus.get('total'),
-                        'home_ml': consensus.get('home_ml'),
-                        'away_ml': consensus.get('away_ml'),
-                    }
-                }
-                # Add pre_game_odds (captured once, never changes)
-                pre_game = game_odds.get('pre_game_odds', {})
-                if pre_game:
-                    game_data['pre_game_odds'] = pre_game.get('consensus', consensus)
-
-            games.append(game_data)
-
-        # Track seen team matchups to avoid duplicates from old NBA API history
-        seen_matchups = set()
-        for g in games:
-            # Create matchup key: "away@home" with scores to identify same game
-            matchup = f"{g['away_team']}@{g['home_team']}"
-            seen_matchups.add(matchup)
+        # Below is the full path with historical games (rarely used)...
+        # Build set of seen game IDs and matchups
+        seen_game_ids = set(g['game_id'] for g in games)
+        seen_matchups = set(f"{g['away_team']}@{g['home_team']}" for g in games)
 
         # Also include saved historical games not in today's scoreboard
-        # Skip if today_only mode or if we already have this matchup from BallDontLie
-        if not today_only and os.path.exists(DEV_LIVE_HISTORY_DIR):
+        if os.path.exists(DEV_LIVE_HISTORY_DIR):
             for filename in os.listdir(DEV_LIVE_HISTORY_DIR):
                 if filename.startswith('game_') and filename.endswith('.json'):
                     game_id = filename.replace('game_', '').replace('.json', '')

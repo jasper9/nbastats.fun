@@ -794,6 +794,22 @@ def warm_all_dev_live_caches(api_key):
     return warmed
 
 
+def warm_beta_live_games_list():
+    """Warm the beta-live games dropdown cache for fast page loads."""
+    try:
+        # Import here to avoid circular imports
+        import sys
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from app import warm_beta_live_games_cache
+        games = warm_beta_live_games_cache()
+        if games:
+            logger.debug(f"Warmed beta-live games cache: {len(games)} games")
+            return True
+    except Exception as e:
+        logger.error(f"Error warming beta-live games cache: {e}")
+    return False
+
+
 def run_daemon():
     """Main daemon loop."""
     api_key = os.getenv('BALLDONTLIE_API_KEY')
@@ -830,8 +846,9 @@ def run_daemon():
 
             if not game:
                 logger.debug("No Nuggets game today")
-                # Still warm dev-live caches for any other live NBA games
+                # Warm caches for any other live NBA games and dropdown
                 warm_all_dev_live_caches(api_key)
+                warm_beta_live_games_list()
                 time.sleep(IDLE_INTERVAL)
                 continue
 
@@ -840,8 +857,9 @@ def run_daemon():
 
             # Check if game is final
             if status == 'Final':
-                # Still warm dev-live caches for any other live NBA games
+                # Warm caches for any other live NBA games and dropdown
                 warm_all_dev_live_caches(api_key)
+                warm_beta_live_games_list()
                 if current_game_id == game_id and not game_finished:
                     # Game just ended - do final processing
                     logger.info("Game ended - doing final processing")
@@ -885,8 +903,9 @@ def run_daemon():
                            f"DEN {data['nuggets_score']} - {data['opponent_name']} {data['opponent_score']} | "
                            f"Prob: {data['consensus_prob']}% | Snapshots: {snapshot_count}")
 
-                # Warm dev-live caches for all live NBA games
+                # Warm caches for all live NBA games and dropdown
                 warm_all_dev_live_caches(api_key)
+                warm_beta_live_games_list()
 
                 time.sleep(LIVE_INTERVAL)
                 continue
@@ -911,8 +930,9 @@ def run_daemon():
                     logger.debug(f"Game in {int(time_until_game)} min - waiting")
 
             # Idle - check less frequently
-            # Still warm dev-live caches for any other live NBA games
+            # Warm caches for any other live NBA games and dropdown
             warm_all_dev_live_caches(api_key)
+            warm_beta_live_games_list()
             time.sleep(IDLE_INTERVAL)
 
         except KeyboardInterrupt:
