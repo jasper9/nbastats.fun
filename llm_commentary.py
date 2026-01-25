@@ -164,9 +164,14 @@ Current Score: {away_team} {away_score} - {home_team} {home_score}
 Leader: {leader} by {lead_diff}
 Lead changes: {lead_changes} | Largest lead: {largest_lead_team} +{largest_lead}
 
+TOP PERFORMERS (actual stats from this game):
+{top_performers}
+
+CRITICAL: You may ONLY mention players listed above. Do NOT assume or guess which players played. If a star player is not listed, they did not play or score - do NOT mention them.
+
 Respond with EXACTLY 3 short bullet points (use • character), each 10-15 words max:
-• [Who controlled this quarter and how]
-• [Key moment or player that made the difference]
+• [Who controlled this quarter based on the stats above]
+• [Standout performer from the stats - mention their actual numbers]
 • [What the trailing team needs to do]
 
 Keep it punchy and insightful. No long sentences. No hashtags or emojis.""",
@@ -178,15 +183,15 @@ Winner: {winner} by {margin}
 Lead changes: {lead_changes}
 Biggest lead: {largest_lead_team} +{largest_lead}
 
+TOP PERFORMERS (actual stats from this game):
+{top_performers}
+
+CRITICAL: You may ONLY mention players listed above. Do NOT assume or guess which players played. If a star player is not listed, they did not play or score - do NOT mention them.
+
 Respond with EXACTLY 3 bullet points (use • character), each 8-12 words max:
 • [Key storyline or turning point]
-• [Standout performance or deciding factor]
+• [Standout performer from the stats above - cite their numbers]
 • [What this means going forward]
-
-Example format:
-• Jazz dominated early but couldn't sustain momentum
-• Hornets' bench outscored starters in crucial third quarter
-• Charlotte improves playoff positioning with this road win
 
 Keep it punchy and insightful. No hashtags or emojis.""",
 

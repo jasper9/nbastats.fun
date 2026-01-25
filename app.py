@@ -3818,10 +3818,13 @@ def api_beta_live_feed(game_id):
             compare_play = prev_play if i == 0 else new_plays_for_messages[i - 1]
             # Get current lead changes count for LLM context
             current_lead_changes = _dev_live_lead_changes.get(game_id, {}).get('count', 0)
+            # Get current player stats for accurate summaries
+            current_player_stats = _dev_live_player_stats.get(game_id, {})
             messages = bdl.generate_messages_from_play(
                 play, game_info, compare_play, _dev_live_largest_leads[game_id],
                 lead_changes=current_lead_changes,
-                is_game_final=False  # Live games are not final
+                is_game_final=False,  # Live games are not final
+                player_stats=current_player_stats
             )
 
             # Add action_number to each message

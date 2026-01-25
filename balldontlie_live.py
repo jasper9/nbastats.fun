@@ -341,7 +341,58 @@ def extract_player_from_text(text: str) -> str:
     return ''
 
 
-def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = None, largest_leads: dict = None, lead_changes: int = 0, is_game_final: bool = False, skip_llm: bool = False) -> list:
+def format_top_performers(player_stats: dict, home_team: str, away_team: str, top_n: int = 3) -> str:
+    """
+    Format top performers from player stats for LLM context.
+
+    Args:
+        player_stats: Dict of player_name -> {'pts': N, 'reb': N, 'ast': N, 'team': 'XXX'}
+        home_team: Home team abbreviation
+        away_team: Away team abbreviation
+        top_n: Number of top scorers to include per team
+
+    Returns:
+        Formatted string with top performers
+    """
+    if not player_stats:
+        return "No player stats available yet."
+
+    home_players = []
+    away_players = []
+
+    for player, stats in player_stats.items():
+        team = stats.get('team', '')
+        pts = stats.get('pts', 0)
+        reb = stats.get('reb', 0)
+        ast = stats.get('ast', 0)
+
+        player_line = f"{player}: {pts}pts"
+        if reb > 0:
+            player_line += f", {reb}reb"
+        if ast > 0:
+            player_line += f", {ast}ast"
+
+        if team == home_team:
+            home_players.append((pts, player_line))
+        elif team == away_team:
+            away_players.append((pts, player_line))
+
+    # Sort by points descending and take top N
+    home_players.sort(reverse=True)
+    away_players.sort(reverse=True)
+
+    result_lines = []
+    if home_players:
+        home_top = [p[1] for p in home_players[:top_n]]
+        result_lines.append(f"{home_team}: {' | '.join(home_top)}")
+    if away_players:
+        away_top = [p[1] for p in away_players[:top_n]]
+        result_lines.append(f"{away_team}: {' | '.join(away_top)}")
+
+    return "\n".join(result_lines) if result_lines else "No scoring yet."
+
+
+def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = None, largest_leads: dict = None, lead_changes: int = 0, is_game_final: bool = False, skip_llm: bool = False, player_stats: dict = None) -> list:
     """
     Generate chat messages from a BallDontLie play.
 
@@ -353,6 +404,7 @@ def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = N
         lead_changes: Total number of lead changes so far
         is_game_final: Whether the game has ended (for game summary)
         skip_llm: If True, skip LLM calls (for historical regeneration, faster loading)
+        player_stats: Dict of player stats for accurate summaries (player_name -> stats dict)
 
     Returns:
         List of message dicts
@@ -594,6 +646,9 @@ def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = N
 
             # Generate LLM quarter summary (skip for historical regeneration)
             if LLM_AVAILABLE and not skip_llm:
+                # Format top performers for LLM context
+                top_performers = format_top_performers(player_stats, home_team, away_team) if player_stats else "No player stats available."
+
                 llm_context = {
                     'home_team': home_team,
                     'away_team': away_team,
@@ -605,6 +660,7 @@ def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = N
                     'lead_changes': lead_changes,
                     'largest_lead_team': largest_lead_team,
                     'largest_lead': largest_lead,
+                    'top_performers': top_performers,
                 }
                 llm_summary = generate_llm_commentary('quarter_summary', llm_context)
                 if llm_summary:
@@ -718,6 +774,9 @@ def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = N
             largest_lead_team = 'Neither'
             largest_lead = 0
 
+        # Format top performers for LLM context
+        top_performers = format_top_performers(player_stats, home_team, away_team) if player_stats else "No player stats available."
+
         llm_context = {
             'home_team': home_team,
             'away_team': away_team,
@@ -728,6 +787,7 @@ def generate_messages_from_play(play: dict, game_info: dict, prev_play: dict = N
             'lead_changes': lead_changes,
             'largest_lead_team': largest_lead_team,
             'largest_lead': largest_lead,
+            'top_performers': top_performers,
         }
         llm_summary = generate_llm_commentary('game_summary', llm_context)
         if llm_summary:
