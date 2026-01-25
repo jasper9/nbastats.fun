@@ -3087,6 +3087,13 @@ def api_beta_live_games():
         games_data = bdl.get_games_for_dates([yesterday, today])
         game_date = today  # For odds fetching, use today
 
+        # Filter out yesterday's games that are already Final - we only want yesterday's
+        # games if they're still in progress (late-night games crossing midnight)
+        games_data = [
+            g for g in games_data
+            if g.get('date', '')[:10] == today or g.get('status', '') != 'Final'
+        ]
+
         # Pre-fetch odds for all games (single API call)
         all_odds = fetch_dev_live_odds([], game_date)
 
