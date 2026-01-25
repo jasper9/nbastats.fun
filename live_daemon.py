@@ -810,6 +810,112 @@ def warm_beta_live_games_list():
     return False
 
 
+# Track previously seen live games to detect when they finish
+_previous_live_game_ids = set()
+
+
+def refresh_standings_and_recent_games():
+    """Refresh standings and recent games caches after a game finishes."""
+    try:
+        logger.info("Refreshing standings and recent games...")
+
+        # Import refresh functions
+        import sys
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from refresh_cache import refresh_team_standings
+        from refresh_balldontlie import refresh_recent_games
+
+        # Refresh standings
+        refresh_team_standings()
+        logger.info("  Standings refreshed")
+
+        # Refresh recent games
+        refresh_recent_games()
+        logger.info("  Recent games refreshed")
+
+        return True
+    except Exception as e:
+        logger.error(f"Error refreshing standings/recent games: {e}")
+        return False
+
+
+def check_for_finished_games(api_key):
+    """
+    Check if any games have finished since last check.
+    Returns list of newly finished games.
+    """
+    global _previous_live_game_ids
+
+    try:
+        # Get all games for today/yesterday
+        eastern = ZoneInfo('America/New_York')
+        now = datetime.now(eastern)
+        today = now.strftime('%Y-%m-%d')
+        yesterday = (now - timedelta(days=1)).strftime('%Y-%m-%d')
+
+        resp = requests.get(
+            'https://api.balldontlie.io/v1/games',
+            params={'dates[]': [yesterday, today], 'per_page': 50},
+            headers={'Authorization': api_key},
+            timeout=15
+        )
+        resp.raise_for_status()
+        games = resp.json().get('data', [])
+
+        # Find currently live games
+        current_live_ids = set()
+        final_games = []
+
+        for game in games:
+            game_id = game.get('id')
+            status = game.get('status', '')
+            home_score = game.get('home_team_score', 0) or 0
+            away_score = game.get('visitor_team_score', 0) or 0
+
+            is_live = (home_score > 0 or away_score > 0) and status != 'Final'
+
+            if is_live:
+                current_live_ids.add(game_id)
+            elif status == 'Final' and game_id in _previous_live_game_ids:
+                # This game was live before but is now Final
+                final_games.append(game)
+
+        # Update tracking set
+        newly_finished = _previous_live_game_ids - current_live_ids
+        _previous_live_game_ids = current_live_ids
+
+        return final_games
+
+    except Exception as e:
+        logger.error(f"Error checking for finished games: {e}")
+        return []
+
+
+def handle_game_completions(api_key):
+    """
+    Check for finished games and trigger cache updates.
+    Called periodically by the daemon loop.
+    """
+    finished_games = check_for_finished_games(api_key)
+
+    if finished_games:
+        logger.info(f"Detected {len(finished_games)} newly finished game(s)")
+        for game in finished_games:
+            home = game.get('home_team', {}).get('abbreviation', '?')
+            away = game.get('visitor_team', {}).get('abbreviation', '?')
+            home_score = game.get('home_team_score', 0)
+            away_score = game.get('visitor_team_score', 0)
+            logger.info(f"  {away} {away_score} @ {home} {home_score} - FINAL")
+
+        # Refresh caches
+        refresh_standings_and_recent_games()
+        warm_beta_live_games_list()
+
+        return len(finished_games)
+
+    return 0
+
+
 def run_daemon():
     """Main daemon loop."""
     api_key = os.getenv('BALLDONTLIE_API_KEY')
@@ -846,6 +952,8 @@ def run_daemon():
 
             if not game:
                 logger.debug("No Nuggets game today")
+                # Check for finished games and update standings/caches
+                handle_game_completions(api_key)
                 # Warm caches for any other live NBA games and dropdown
                 warm_all_dev_live_caches(api_key)
                 warm_beta_live_games_list()
@@ -857,6 +965,8 @@ def run_daemon():
 
             # Check if game is final
             if status == 'Final':
+                # Check for finished games and update standings/caches
+                handle_game_completions(api_key)
                 # Warm caches for any other live NBA games and dropdown
                 warm_all_dev_live_caches(api_key)
                 warm_beta_live_games_list()
@@ -903,6 +1013,8 @@ def run_daemon():
                            f"DEN {data['nuggets_score']} - {data['opponent_name']} {data['opponent_score']} | "
                            f"Prob: {data['consensus_prob']}% | Snapshots: {snapshot_count}")
 
+                # Check for finished games and update standings/caches
+                handle_game_completions(api_key)
                 # Warm caches for all live NBA games and dropdown
                 warm_all_dev_live_caches(api_key)
                 warm_beta_live_games_list()
@@ -930,6 +1042,8 @@ def run_daemon():
                     logger.debug(f"Game in {int(time_until_game)} min - waiting")
 
             # Idle - check less frequently
+            # Check for finished games and update standings/caches
+            handle_game_completions(api_key)
             # Warm caches for any other live NBA games and dropdown
             warm_all_dev_live_caches(api_key)
             warm_beta_live_games_list()

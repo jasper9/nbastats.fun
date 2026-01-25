@@ -2563,14 +2563,8 @@
                 gamesData = {};
 
                 if (data.games && data.games.length > 0) {
-                    // Sort games: Live first, then upcoming, then final
-                    const getGameOrder = (game) => {
-                        if (game.status.includes('Q') || game.status === 'Half' || game.status.includes('OT')) return 0;  // Live
-                        if (game.status === 'Final' || game.status === 'Final (Saved)') return 2;  // Final
-                        return 1;  // Upcoming
-                    };
-
-                    data.games.sort((a, b) => getGameOrder(a) - getGameOrder(b));
+                    // Games come pre-sorted from backend: Live first, then upcoming by time, then final
+                    // No need to re-sort here - backend handles it correctly
 
                     // Add all games directly (no optgroups needed for today only)
                     data.games.forEach(game => {
