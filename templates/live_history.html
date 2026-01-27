@@ -316,6 +316,108 @@
             color: var(--text-secondary);
             font-size: 0.65rem;
         }
+
+        /* Post-game Media Section */
+        .postgame-media-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        .postgame-media-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--nuggets-gold);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+        .video-card {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .video-card a {
+            text-decoration: none;
+            color: inherit;
+        }
+        .video-thumbnail {
+            width: 100%;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            background: var(--bg-primary);
+        }
+        .video-info {
+            padding: 12px;
+        }
+        .video-title {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .video-source {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+        .twitter-links {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+        .twitter-links-title {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+        .twitter-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .twitter-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+        .twitter-link:hover {
+            background: #1d9bf0;
+            color: white;
+        }
+        .twitter-link svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+        .no-videos-msg {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            padding: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -579,6 +681,52 @@
                     </tr>
                 </tbody>
             </table>
+        </div>
+        {% endif %}
+
+        <!-- Post-game Media Section -->
+        {% if history.postgame_media %}
+        <div class="postgame-media-section">
+            <div class="postgame-media-title">Post-Game Media</div>
+
+            {% if history.postgame_media.youtube_videos %}
+            <div class="media-grid">
+                {% for video in history.postgame_media.youtube_videos[:6] %}
+                <div class="video-card">
+                    <a href="{{ video.url }}" target="_blank" rel="noopener">
+                        {% if video.thumbnail %}
+                        <img class="video-thumbnail" src="{{ video.thumbnail }}" alt="{{ video.title }}" loading="lazy">
+                        {% else %}
+                        <div class="video-thumbnail" style="display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"><path d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+                        </div>
+                        {% endif %}
+                        <div class="video-info">
+                            <div class="video-title">{{ video.title }}</div>
+                            <div class="video-source">{{ video.source or video.channel }}</div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="no-videos-msg">No videos found yet. Videos are typically posted 1-3 hours after the game ends.</p>
+            {% endif %}
+
+            <!-- Twitter/X Links -->
+            {% if history.postgame_media.twitter_links %}
+            <div class="twitter-links">
+                <div class="twitter-links-title">Find more post-game content on X:</div>
+                <div class="twitter-grid">
+                    {% for account in history.postgame_media.twitter_links %}
+                    <a href="{{ account.url }}" target="_blank" rel="noopener" class="twitter-link" title="{{ account.description }}">
+                        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        @{{ account.handle }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
         </div>
         {% endif %}
 

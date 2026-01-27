@@ -810,6 +810,42 @@ def warm_beta_live_games_list():
     return False
 
 
+def fetch_postgame_videos_for_game(game_id, opponent_name, game_date_str):
+    """
+    Fetch post-game videos for a Nuggets game and save to history.
+
+    Args:
+        game_id: The game ID
+        opponent_name: Opponent team name (e.g., "Grizzlies")
+        game_date_str: Game date as string (YYYY-MM-DD)
+    """
+    try:
+        from postgame_videos import fetch_videos_for_game_history
+        from datetime import datetime
+
+        game_datetime = datetime.strptime(game_date_str, '%Y-%m-%d')
+        game_datetime = game_datetime.replace(tzinfo=MOUNTAIN_TZ)
+
+        logger.info(f"Fetching post-game videos for game {game_id} vs {opponent_name}...")
+        videos_data = fetch_videos_for_game_history(game_id, opponent_name, game_datetime)
+
+        # Load existing history and add videos
+        history = load_live_history(game_id)
+        if history:
+            history['postgame_media'] = videos_data.get('postgame_media', {})
+            save_live_history(game_id, history)
+
+            video_count = len(videos_data.get('postgame_media', {}).get('youtube_videos', []))
+            logger.info(f"Saved {video_count} post-game videos for game {game_id}")
+        else:
+            logger.warning(f"No history found for game {game_id} to save videos")
+
+    except ImportError:
+        logger.debug("postgame_videos module not available - skipping video fetch")
+    except Exception as e:
+        logger.error(f"Error fetching post-game videos: {e}")
+
+
 # Track previously seen live games to detect when they finish
 _previous_live_game_ids = set()
 
@@ -988,6 +1024,9 @@ def run_daemon():
                             history['player_stats'] = player_stats
                             save_live_history(game_id, history)
                             logger.info(f"Saved player stats for {len(player_stats)} players")
+
+                    # Fetch post-game videos (interviews, press conferences)
+                    fetch_postgame_videos_for_game(game_id, data['opponent_name'], game_date_str)
 
                     game_finished = True
                     postgame_time = now + timedelta(seconds=POSTGAME_WAIT)
