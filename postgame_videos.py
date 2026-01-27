@@ -28,7 +28,7 @@ YOUTUBE_API_BASE = 'https://www.googleapis.com/youtube/v3'
 # YouTube channels to search for Nuggets content
 YOUTUBE_CHANNELS = {
     'DNVR_Sports': {
-        'channel_id': 'UCbT-a4MHWQZCX_wSZPLzWdg',  # DNVR Sports channel ID
+        'channel_id': 'UC8aOXvlqQqMlTFvbbAarD-A',  # DNVR Sports channel ID
         'name': 'DNVR Sports',
         'priority': 1,
     },
