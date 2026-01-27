@@ -5,7 +5,7 @@ import math
 import os
 import re
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -1010,6 +1010,75 @@ def get_player_season_averages(player_name, team_abbrev=None):
     return default
 
 
+def get_game_eastern_date(api_date: str, status: str) -> str:
+    """
+    Get the correct Eastern time date for a game.
+
+    The BallDontLie API returns dates in UTC, so a game starting at 10 PM Eastern
+    on Jan 25th might have a date of Jan 26 in the API (because it's after midnight UTC).
+
+    This function uses the game's scheduled start time to determine the correct
+    Eastern date for display purposes.
+
+    Args:
+        api_date: Date from API (YYYY-MM-DD format, in UTC)
+        status: Game status - contains time like "10:00 PM ET" for scheduled games
+
+    Returns:
+        Correct date in YYYY-MM-DD format for Eastern timezone
+    """
+    import re
+
+    # If status is an ISO timestamp (e.g., "2026-01-26T03:00:00Z"), parse it
+    iso_match = re.match(r'^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):\d{2}Z?$', status)
+    if iso_match:
+        # Parse the UTC timestamp and convert to Eastern
+        utc_date = iso_match.group(1)
+        utc_hour = int(iso_match.group(2))
+        utc_minute = int(iso_match.group(3))
+
+        # Create UTC datetime
+        from datetime import datetime
+        utc_dt = datetime(
+            int(utc_date[:4]), int(utc_date[5:7]), int(utc_date[8:10]),
+            utc_hour, utc_minute, tzinfo=timezone.utc
+        )
+        # Convert to Eastern
+        eastern_dt = utc_dt.astimezone(EASTERN_TZ)
+        return eastern_dt.strftime('%Y-%m-%d')
+
+    # If status contains a time like "10:00 PM ET", the API date should be correct
+    # for games that haven't started, but we still need to be careful about
+    # late night games where UTC rolled over
+    time_match = re.search(r'(\d{1,2}):(\d{2})\s*(AM|PM)', status, re.IGNORECASE)
+    if time_match:
+        hour = int(time_match.group(1))
+        ampm = time_match.group(3).upper()
+
+        # Convert to 24-hour
+        if ampm == 'PM' and hour != 12:
+            hour += 12
+        elif ampm == 'AM' and hour == 12:
+            hour = 0
+
+        # Games starting after 7 PM Eastern (hour >= 19) that show as the next day
+        # in UTC may need date adjustment. Compare with current Eastern date.
+        if hour >= 19:  # Late evening games
+            from datetime import datetime
+            now_eastern = datetime.now(EASTERN_TZ)
+            today_eastern = now_eastern.strftime('%Y-%m-%d')
+            yesterday_eastern = (now_eastern - timedelta(days=1)).strftime('%Y-%m-%d')
+
+            # If API date is tomorrow in Eastern, but game is late evening,
+            # it probably belongs to today
+            if api_date > today_eastern:
+                return today_eastern
+
+    # For Final games or other statuses, use the API date as-is
+    # (it's already in the past, so we can't easily correct it without more info)
+    return api_date
+
+
 def parse_game_time_for_sort(status: str) -> tuple:
     """
     Parse game status/time for sorting. Returns tuple (category, sort_key).
@@ -1102,6 +1171,10 @@ def build_beta_live_games_list() -> list:
         else:
             status_text = status
 
+        # Calculate correct Eastern date (API returns UTC dates which may be off by 1 day)
+        api_date = g.get('date', today)
+        eastern_date = get_game_eastern_date(api_date, status)
+
         game_data = {
             'game_id': game_id,
             'home_team': home_team.get('abbreviation', ''),
@@ -1115,7 +1188,7 @@ def build_beta_live_games_list() -> list:
             'away_score': g.get('visitor_team_score', 0) or 0,
             'has_history': has_history,
             'bdl_id': g['id'],
-            'game_date': g.get('date', today),
+            'game_date': eastern_date,
         }
 
         games.append(game_data)
@@ -3295,10 +3368,15 @@ def api_beta_live_games():
                                     continue
 
                                 final_score = history.get('final_score', {'home': 0, 'away': 0})
-                                # Get date from file modification time
-                                file_path = os.path.join(DEV_LIVE_HISTORY_DIR, filename)
-                                file_mtime = os.path.getmtime(file_path)
-                                file_date = datetime.fromtimestamp(file_mtime).strftime('%Y-%m-%d')
+                                # Get date from game_info if available, else from file modification time
+                                # Use Eastern timezone for consistency
+                                game_date = game_info.get('game_date')
+                                if not game_date:
+                                    file_path = os.path.join(DEV_LIVE_HISTORY_DIR, filename)
+                                    file_mtime = os.path.getmtime(file_path)
+                                    # Convert to Eastern time
+                                    file_dt = datetime.fromtimestamp(file_mtime, tz=timezone.utc).astimezone(EASTERN_TZ)
+                                    game_date = file_dt.strftime('%Y-%m-%d')
                                 games.append({
                                     'game_id': game_id,
                                     'home_team': home,
@@ -3309,7 +3387,7 @@ def api_beta_live_games():
                                     'home_score': final_score.get('home', 0),
                                     'away_score': final_score.get('away', 0),
                                     'has_history': True,
-                                    'game_date': file_date,
+                                    'game_date': game_date,
                                 })
                                 seen_matchups.add(matchup)
                         except Exception:
@@ -3567,10 +3645,15 @@ def api_beta_live_feed(game_id):
         home_team_name = home_team_obj.get('full_name', '')
         away_team_name = away_team_obj.get('full_name', '')
 
+        # Calculate correct Eastern date for this game (API dates are in UTC)
+        api_date = game_data.get('date', datetime.now(EASTERN_TZ).strftime('%Y-%m-%d'))
+        eastern_game_date = get_game_eastern_date(api_date, game_status)
+
         game_info = {
             'home_team': home_team,
             'away_team': away_team,
             'game_id': game_id,
+            'game_date': eastern_game_date,
         }
 
         # For games that haven't started yet, return pregame preview
