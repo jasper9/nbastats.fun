@@ -2603,9 +2603,21 @@
                 // Check URL for game parameter and auto-select
                 const urlParams = new URLSearchParams(window.location.search);
                 const gameFromUrl = urlParams.get('game');
-                if (gameFromUrl && gamesData[gameFromUrl]) {
-                    select.value = gameFromUrl;
-                    selectGame(gameFromUrl, false);  // Don't update URL again
+                if (gameFromUrl) {
+                    if (gamesData[gameFromUrl]) {
+                        // Game is in today's list - select it in dropdown
+                        select.value = gameFromUrl;
+                        selectGame(gameFromUrl, false);  // Don't update URL again
+                    } else {
+                        // Game not in today's list (archived game) - try loading it anyway
+                        // Add a placeholder option for the archived game
+                        const archivedOption = document.createElement('option');
+                        archivedOption.value = gameFromUrl;
+                        archivedOption.textContent = `Archived Game #${gameFromUrl}`;
+                        select.appendChild(archivedOption);
+                        select.value = gameFromUrl;
+                        selectGame(gameFromUrl, false);
+                    }
                 }
             } catch (error) {
                 console.error('Error loading games:', error);
@@ -3073,6 +3085,11 @@
             if (data.game_info) {
                 document.getElementById('home-team').textContent = homeCity;
                 document.getElementById('away-team').textContent = awayCity;
+                // Set logos from game_info (needed for archived games not in gamesData)
+                if (!storedGame && data.game_info.home_team && data.game_info.away_team) {
+                    document.getElementById('home-logo').src = getTeamLogoUrl(data.game_info.home_team);
+                    document.getElementById('away-logo').src = getTeamLogoUrl(data.game_info.away_team);
+                }
             }
 
             // Update game clock, quarter, timeouts, and bonus indicators
