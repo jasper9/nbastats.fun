@@ -60,6 +60,8 @@ MONTH_MAP = {
 
 # NBA uses Eastern time for scheduling
 EASTERN_TZ = ZoneInfo('America/New_York')
+# Mountain time for UI display (dropdown "today" logic)
+MOUNTAIN_TZ = ZoneInfo('America/Denver')
 
 
 def get_nba_game_date():
@@ -1062,17 +1064,17 @@ def get_game_eastern_date(api_date: str, status: str) -> str:
             hour = 0
 
         # Games starting after 7 PM Eastern (hour >= 19) that show as the next day
-        # in UTC may need date adjustment. Compare with current Eastern date.
+        # in UTC may need date adjustment. Compare with current Mountain date
+        # (using Mountain for consistency with UI dropdown).
         if hour >= 19:  # Late evening games
             from datetime import datetime
-            now_eastern = datetime.now(EASTERN_TZ)
-            today_eastern = now_eastern.strftime('%Y-%m-%d')
-            yesterday_eastern = (now_eastern - timedelta(days=1)).strftime('%Y-%m-%d')
+            now_mountain = datetime.now(MOUNTAIN_TZ)
+            today_mountain = now_mountain.strftime('%Y-%m-%d')
 
-            # If API date is tomorrow in Eastern, but game is late evening,
+            # If API date is after today in Mountain time, but game is late evening,
             # it probably belongs to today
-            if api_date > today_eastern:
-                return today_eastern
+            if api_date > today_mountain:
+                return today_mountain
 
     # For Final games or other statuses, use the API date as-is
     # (it's already in the past, so we can't easily correct it without more info)
@@ -1124,22 +1126,46 @@ def build_beta_live_games_list() -> list:
     """
     Build the games list for beta-live dropdown. Called by daemon to warm cache.
     Returns list of game dicts ready for JSON response.
+    
+    Uses Mountain time to determine "today" so games don't roll over at 10 PM MT
+    (which is midnight Eastern). This keeps the UI intuitive for Mountain time users.
     """
     if not BDL_AVAILABLE:
         return []
 
-    now_eastern = datetime.now(EASTERN_TZ)
-    today = now_eastern.strftime('%Y-%m-%d')
-    yesterday = (now_eastern - timedelta(days=1)).strftime('%Y-%m-%d')
+    # Use Mountain time for "today" to prevent premature rollover at 10 PM MT
+    now_mountain = datetime.now(MOUNTAIN_TZ)
+    today = now_mountain.strftime('%Y-%m-%d')
+    yesterday = (now_mountain - timedelta(days=1)).strftime('%Y-%m-%d')
+    # Also fetch tomorrow in case some games are already showing for next day in API
+    tomorrow = (now_mountain + timedelta(days=1)).strftime('%Y-%m-%d')
 
-    # Fetch games for both days
-    games_data = bdl.get_games_for_dates([yesterday, today])
+    # Fetch games for yesterday, today, and tomorrow to catch edge cases
+    games_data = bdl.get_games_for_dates([yesterday, today, tomorrow])
 
-    # Filter out yesterday's Final games
-    games_data = [
-        g for g in games_data
-        if g.get('date', '')[:10] == today or g.get('status', '') != 'Final'
-    ]
+    # Filter games:
+    # - Keep all of today's games
+    # - Keep yesterday's games only if still in progress (not Final)
+    # - Keep tomorrow's games only if they're actually today's late games mis-dated by UTC
+    filtered_games = []
+    for g in games_data:
+        api_date = g.get('date', '')[:10]
+        status = g.get('status', '')
+        
+        if api_date == today:
+            # Today's games - keep all
+            filtered_games.append(g)
+        elif api_date == yesterday and status != 'Final':
+            # Yesterday's in-progress games (rare but possible)
+            filtered_games.append(g)
+        elif api_date == tomorrow:
+            # Tomorrow's games might actually be today's late games (UTC offset)
+            # Check if the game time (when converted) is actually today
+            eastern_date = get_game_eastern_date(api_date, status)
+            if eastern_date == today or eastern_date == yesterday:
+                filtered_games.append(g)
+    
+    games_data = filtered_games
 
     games = []
     seen_game_ids = set()
