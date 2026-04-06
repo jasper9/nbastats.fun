@@ -1458,6 +1458,76 @@
             color: var(--text-muted);
             margin-top: 8px;
         }
+        /* Season series styles */
+        .game-modal-series {
+            margin-top: 15px;
+            padding: 10px 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border-left: 3px solid var(--nuggets-gold);
+        }
+        .game-modal-series-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .series-record {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        .series-record .series-wins { color: #4ade80; }
+        .series-record .series-losses { color: #f87171; }
+        .series-game {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            font-size: 0.8rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .series-game:last-child { border-bottom: none; }
+        .series-game-date {
+            color: var(--text-muted);
+            min-width: 70px;
+        }
+        .series-game-loc {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            min-width: 35px;
+            text-align: center;
+        }
+        .series-game-score {
+            font-weight: 600;
+            min-width: 60px;
+            text-align: right;
+        }
+        .series-game-score.win { color: #4ade80; }
+        .series-game-score.loss { color: #f87171; }
+        .series-game-upcoming {
+            color: var(--text-muted);
+            font-style: italic;
+            min-width: 60px;
+            text-align: right;
+        }
+        .series-game.current {
+            background: rgba(251, 191, 36, 0.1);
+            border-radius: 4px;
+            padding: 4px 6px;
+            margin: 2px -6px;
+        }
+        .series-divider {
+            border-top: 1px dashed rgba(255,255,255,0.15);
+            margin: 6px 0;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding-top: 4px;
+        }
         /* Modal injuries styles */
         .game-modal-injuries {
             margin-top: 15px;
@@ -2451,7 +2521,79 @@
             }
         }
 
-        document.getElementById('modalContent').innerHTML = content;
+        // Build season series section
+        const allGames = document.querySelectorAll('.calendar-game');
+        const seriesGames = [];
+        allGames.forEach(g => {
+            const gMatchup = g.dataset.matchup;
+            const gOpponent = gMatchup.replace(/^(vs |@ )/, '');
+            if (gOpponent === opponent) {
+                seriesGames.push({
+                    date: g.dataset.gameDate,
+                    isHome: g.dataset.isHome === 'true',
+                    result: g.dataset.result,
+                    homeScore: g.dataset.homeScore,
+                    awayScore: g.dataset.awayScore,
+                    isCurrent: g.dataset.gameDate === gameDate
+                });
+            }
+        });
+
+        // Sort by date to ensure correct chronological order
+        seriesGames.sort((a, b) => a.date.localeCompare(b.date));
+
+        if (seriesGames.length > 1) {
+            const played = seriesGames.filter(g => g.result);
+            const unplayed = seriesGames.filter(g => !g.result);
+            const wins = played.filter(g => g.result === 'W').length;
+            const losses = played.filter(g => g.result === 'L').length;
+
+            const formatDate = (d) => {
+                const dt = new Date(d + 'T12:00:00');
+                return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            };
+
+            const renderGame = (g) => {
+                const loc = g.isHome ? 'HOME' : 'AWAY';
+                const currentClass = g.isCurrent ? ' current' : '';
+                if (g.result) {
+                    const scoreClass = g.result === 'W' ? 'win' : 'loss';
+                    const label = g.result === 'W' ? 'W' : 'L';
+                    return '<div class="series-game' + currentClass + '">'
+                        + '<span class="series-game-date">' + formatDate(g.date) + '</span>'
+                        + '<span class="series-game-loc">' + loc + '</span>'
+                        + '<span class="series-game-score ' + scoreClass + '">' + label + ' ' + g.homeScore + '-' + g.awayScore + '</span>'
+                        + '</div>';
+                } else {
+                    return '<div class="series-game' + currentClass + '">'
+                        + '<span class="series-game-date">' + formatDate(g.date) + '</span>'
+                        + '<span class="series-game-loc">' + loc + '</span>'
+                        + '<span class="series-game-upcoming">' + (g.isCurrent ? 'This game' : 'Upcoming') + '</span>'
+                        + '</div>';
+                }
+            };
+
+            let seriesHtml = '<div class="game-modal-series">'
+                + '<div class="game-modal-series-title">Season Series</div>';
+
+            if (played.length > 0) {
+                const leadText = wins > losses ? 'DEN leads' : (losses > wins ? 'DEN trails' : 'Tied');
+                seriesHtml += '<div class="series-record">' + leadText + ': <span class="series-wins">' + wins + 'W</span> - <span class="series-losses">' + losses + 'L</span></div>';
+                played.forEach(g => { seriesHtml += renderGame(g); });
+            }
+
+            if (unplayed.length > 0) {
+                if (played.length > 0) {
+                    seriesHtml += '<div class="series-divider">Remaining</div>';
+                }
+                unplayed.forEach(g => { seriesHtml += renderGame(g); });
+            }
+
+            seriesHtml += '</div>';
+            content += seriesHtml;
+        }
+
+        document.getElementById('modalContent').innerHTML = content;  // data from server-rendered attributes, not user input
         modal.classList.add('active');
     }
 
