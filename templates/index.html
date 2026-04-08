@@ -1169,10 +1169,31 @@
             border: 2px solid var(--nuggets-gold);
             border-radius: 12px;
             padding: 24px;
-            max-width: 340px;
-            width: 90%;
+            max-width: 600px;
+            width: 92%;
+            max-height: 90vh;
+            overflow-y: auto;
             box-shadow: 0 8px 32px rgba(0,0,0,0.6);
             position: relative;
+        }
+        /* Two-column grid for modal content on wider screens */
+        #modalContent {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        @media (min-width: 540px) {
+            #modalContent {
+                grid-template-columns: 1fr 1fr;
+                align-items: start;
+            }
+            /* Banners and headline blocks span full width */
+            #modalContent > .game-modal-special,
+            #modalContent > .game-modal-jersey,
+            #modalContent > .game-modal-result,
+            #modalContent > .live-history-link {
+                grid-column: 1 / -1;
+            }
         }
         .game-modal-close {
             position: absolute;
@@ -1232,7 +1253,6 @@
             font-size: 2rem;
             padding: 16px;
             border-radius: 8px;
-            margin-bottom: 12px;
         }
         .game-modal-result.win {
             background: linear-gradient(135deg, #166534 0%, #14532d 100%);
@@ -1256,7 +1276,6 @@
             display: block;
             text-align: center;
             padding: 12px 20px;
-            margin: 15px 0;
             background: var(--bg-card);
             border: 1px solid var(--nuggets-gold);
             border-radius: 8px;
@@ -1367,7 +1386,6 @@
             color: #1a1a2e;
             padding: 12px;
             border-radius: 8px;
-            margin-bottom: 15px;
             text-align: center;
         }
         .game-modal-special-title {
@@ -1387,7 +1405,6 @@
             padding: 12px 16px;
             background: var(--bg-secondary);
             border-radius: 8px;
-            margin-bottom: 15px;
         }
         .game-modal-jersey .jersey-img {
             width: 60px;
@@ -1460,7 +1477,6 @@
         }
         /* Season series styles */
         .game-modal-series {
-            margin-top: 15px;
             padding: 10px 12px;
             background: var(--bg-secondary);
             border-radius: 8px;
@@ -1530,7 +1546,6 @@
         }
         /* Modal injuries styles */
         .game-modal-injuries {
-            margin-top: 15px;
             padding: 10px 12px;
             background: var(--bg-secondary);
             border-radius: 8px;
