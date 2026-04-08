@@ -996,21 +996,12 @@
         .consensus-extra strong {
             color: var(--text-secondary);
         }
-        /* Schedule layout - cards + calendar side by side */
+        /* Schedule layout - cards + calendar side by side (always 2-col) */
         .schedule-layout {
             display: grid;
             grid-template-columns: minmax(300px, 400px) 1fr;
             gap: 25px;
             align-items: start;
-        }
-        @media (max-width: 1100px) {
-            .schedule-layout {
-                grid-template-columns: 1fr;
-            }
-            .schedule-cards-section {
-                max-width: 500px;
-                margin: 0 auto;
-            }
         }
         .schedule-cards-section h3,
         .schedule-calendar-section h3 {
